@@ -58,7 +58,7 @@ def mean(flags):
     hp.write_map(outname, outmap, overwrite=True)
 
 def map2pdf(flags, png=False):
-    from plotter import Plotter
+    from c3postproc.plotter import Plotter
     optn_flags = []
     map = flags[0]
     if len(flags) > 1:
