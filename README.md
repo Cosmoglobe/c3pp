@@ -7,7 +7,7 @@ A python code for processing commander3 files
 Install tools by running 
 
 ```bash
-pip install pip install git+https://github.com/trygvels/c3pp.git -U
+pip install git+https://github.com/trygvels/c3pp.git -U
 ```
 
 ## Contributing

@@ -3,6 +3,8 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+scripts = [os.path.join("bin", script) for script in os.listdir("bin")]
+
 setuptools.setup(
     name="c3postproc", # Replace with your own username
     version="0.0.1",
@@ -13,6 +15,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/trygvels/c3postproc",
     packages=setuptools.find_packages(),
+    scripts=scripts,
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
