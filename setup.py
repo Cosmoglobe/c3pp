@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
 scripts = [os.path.join("bin", script) for script in os.listdir("bin")]
 
 setuptools.setup(
-    name="c3postproc", # Replace with your own username
+    name="c3pp", # Replace with your own username
     version="0.0.1",
     author="Trygve Leithe Svalheim",
     author_email="trygvels@astro.uio.no",

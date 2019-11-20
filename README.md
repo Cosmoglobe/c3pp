@@ -10,6 +10,26 @@ Install tools by running
 pip install git+https://github.com/trygvels/c3pp.git -U
 ```
 
+or 
+
+
+```bash
+pip install git+https://github.com/trygvels/c3pp.git --user
+```
+
+and make sure that
+```bash
+PATH=$PATH:~/.local/bin
+````
+is in your path.
+
+
+## Usage
+```bash
+c3pp
+````
+
+
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
