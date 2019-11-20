@@ -15,21 +15,15 @@ from c3postproc.c3helper import c3help, operations
 def main():
     nsysargs = len(sys.argv)
 
-    if nsysargs < 2: 
-        print("Usage: c3postproc [operation] [flags] [outname]")
-        print("help:  c3postproc [operation]")
-        print("List of possible operations:")
-        print(operations())
-        sys.exit()
+    if nsysargs < 2:                # If you only call c3pp, show help
+        c3help_general()
 
     operation = sys.argv[1]        # Operation to be done
     c3help(operation, nsysargs)    # Checks if you are using operation correctly, if not helps you out.
 
     flags = sys.argv[2:]         # Flags are everything between operation and outname
-
+    
     globals()[str(operation)](flags) # Call whatever function you chose with flags and outname
 
-
 if __name__ == "__main__":
-    print(sys.version)
     main()

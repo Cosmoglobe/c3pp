@@ -14,13 +14,13 @@ def c3help(op, nsysargs):
             print("c3postproc stddev [input tag: cmb, dust, dust_t etc.] [signal T/Q/U or 1/2/3] [sample range min] [sample range max] [outname]")
             print("This thing calculates the standard deviation for all sky maps.")
             sys.exit()
-    if str(op) == "mean":
+    elif str(op) == "mean":
         if nsysargs < 7:
             print("Usage: ")
             print("c3postproc mean [input tag: cmb, dust, dust_t etc.] [signal T/Q/U or 1/2/3] [sample range min] [sample range max] [outname]")
             print("This thing calculates the mean for all sky maps.")
             sys.exit()
-    if str(op) == "map2pdf":
+    elif str(op) == "map2pdf":
         if nsysargs < 3:
             print()
             print("Usage: ")
@@ -30,7 +30,7 @@ def c3help(op, nsysargs):
             print("Most amplitudes will be plotted with a semi-logarithmic scale by default. You will be notified. ")
             print()
             sys.exit()
-    if str(op) == "map2png":
+    elif str(op) == "map2png":
         if nsysargs < 3:
             print()
             print("Usage: ")
@@ -40,7 +40,21 @@ def c3help(op, nsysargs):
             print("Most amplitudes will be plotted with a semi-logarithmic scale by default. You will be notified. ")
             print()
             sys.exit()
+    elif str(op) == "readhdf":
+        pass
+    elif str(op) == "help":
+        c3help_general()
+    else:
+        print("Operation not recognized. Try", operations(), " or c3pp help")
+        sys.exit()
+
+
+def c3help_general():
+    print("help:  c3pp [operation]")
+    print("List of possible operations:")
+    print(operations())
+    sys.exit()
 
 def operations():
-    operations_list = ["stddev", "mean"]
+    operations_list = ["stddev", "mean", "map2pdf", "map2png"]
     return operations_list

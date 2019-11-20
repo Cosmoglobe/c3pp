@@ -6,7 +6,7 @@ import healpy as hp
 import numpy as np
 from astropy.io import fits
 import matplotlib.pyplot as plt
-
+import pandas as pd
 
 def stddev(flags):
     tag = str(flags[0])
@@ -68,3 +68,9 @@ def map2pdf(flags, png=False):
 def map2png(flags):
     map2pdf(flags, png=True)
 
+def readhdf(flags):
+    filename = str(flags[0])
+    store = pd.HDFStore(filename)
+    # Access HDF
+    # Calculate stddev and mean of maps, alms, and sigma_l. Using existing code
+    pd.read_hdf(filename)
