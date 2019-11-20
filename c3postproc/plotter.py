@@ -1,6 +1,3 @@
-#!/Users/svalheim/anaconda2/bin/python
-#-*- mode: python -*-
-
 import sys
 import os
 import matplotlib
