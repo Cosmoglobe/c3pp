@@ -10,7 +10,7 @@ from astropy.io import fits
 import matplotlib.pyplot as plt
 
 from c3postproc.functions import *
-from c3postproc.c3helper import c3help, operations
+from c3postproc.c3helper import c3help, operations, c3help_general
 
 def main():
     nsysargs = len(sys.argv)
