@@ -1,13 +1,13 @@
-# Commander3 postprocessing tool (c3postproc)
+# Commander3 postprocessing tool (c3pp)
 
 A python code for processing commander3 files
 
 ## Installation
 
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install c3postproc.
+Install tools by running 
 
 ```bash
-pip install c3postproc
+pip install pip install git+https://github.com/trygvels/c3pp.git -U
 ```
 
 ## Contributing
