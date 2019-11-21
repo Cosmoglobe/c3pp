@@ -9,7 +9,7 @@ import matplotlib.colors as col
 import matplotlib.ticker as ticker
 from matplotlib import rcParams, rc
 
-def Plotter(map_, optn_flags=None, png=False):
+def Plotter(flags=None, png=False):
     rcParams['backend'] = 'pdf' #
     rcParams['legend.fancybox'] = True
     rcParams['lines.linewidth'] = 2
@@ -27,7 +27,7 @@ def Plotter(map_, optn_flags=None, png=False):
     darkmode = False
     masked   = False
 
-    if "-darkmode" in optn_flags:
+    if "-darkmode" in flags:
         darkmode = True
         rcParams['text.color']   = 'white'   # axes background color
         rcParams['axes.facecolor']   = 'white'   # axes background color
@@ -42,32 +42,86 @@ def Plotter(map_, optn_flags=None, png=False):
     rc('text.latex', preamble=r'\usepackage{sfmath}')
 
      # Which signal to plot
-    pollist = get_pollist(optn_flags)
+    map_= flags[0] # Map is always first flag
+    pollist = get_pollist(flags)
     signal_labels = ["I", "Q", "U"]
+
+    print()
+    print("Plotting " + map_)
+
+    #######################
+    ####   READ MAP   #####
+    #######################
+    
+    if ".fits" in map_[-5:]:
+        # Make sure its the right shape for indexing
+        # This is a really dumb way of doing it
+        idx = tuple(pollist)
+        dats = [0, 0, 0]
+        for i in idx:
+            dats[i] = hp.ma(hp.read_map(map_, field=i))
+            nside = hp.npix2nside(len(dats[i]))
+        maps = np.array(dats)
+        outfile = map_.replace(".fits", "")
+
+    elif ".h5" in map_[-3:]:
+        import h5py
+        dataset =  get_key(flags, map_) 
+        with h5py.File(map_, 'r') as f:
+            maps = f[dataset][()]
+
+        
+        if "alm" in dataset[-3:]:
+            alms = maps.astype(complex)
+            # Convert alms to map
+            print("Converting alms to map")
+
+            if "-lmax" in flags:
+                lmax = int(get_key(flags, "-lmax"))
+                mmax = lmax
+            else:
+                lmax = None
+                mmax = lmax
+            
+            if "-fwhm" in flags:
+                fwhm = float(get_key(flags, "-fwhm"))
+            else:
+                fwhm = 0.0
+
+            if "-lmin" in flags:
+                lmin = int(get_key(flags, "-lmin"))
+            else:
+                lmin = None
+            
+            print(alms[0].shape)
+            nside = int(get_key(flags, dataset))
+            print(alms[:,lmin:].shape)
+            maps = hp.sphtfunc.alm2map(alms[:,lmin:], nside, lmax=lmax, fwhm=arcmin2rad(fwhm))
+
+            outfile =  dataset.replace("/", "_")
+            outfile = outfile.replace("_alm","")
+
+        elif "map" in dataset[-3:]:
+            print("Reading map from h5")
+            nside = hp.npix2nside(len(maps))
+            outfile =  dataset.replace("/", "_")
+            outfile = outfile.replace("_map","")
+
+    print("nside", nside, "total file shape", maps.shape)
+
     for polt in pollist:
-        print()
-        print("Plotting " + str(map_))
-
-        #######################
-        ####   READ MAP   #####
-        #######################
-        map_=str(map_)
-        scale = 1 # Scale by a factor of
-        filename = str(map_)
-
-        m = hp.ma(hp.read_map(filename,field=(polt)))*scale
-        nside = hp.npix2nside(len(m))
+        m = maps[polt] # Select map signal (I,Q,U)
 
         #######################
         #### Auto-param   #####
         #######################
-        title, ticks, ticklabels, unit, coltype, color, logscale = get_params(m, map_, polt, signal_labels)
+        title, ticks, ticklabels, unit, coltype, color, logscale = get_params(m, outfile, polt, signal_labels)
         vmin = ticks[0]
         vmax = ticks[-1]
         tmin = ticklabels[0]
         tmax = ticklabels[-1]
         
-        min, max = get_range(optn_flags)
+        min, max = get_range(flags)
         if min != None:
             vmin = min
             tmin = str(min)
@@ -78,10 +132,9 @@ def Plotter(map_, optn_flags=None, png=False):
         ##########################
         #### Plotting Params #####
         ##########################
-        outfile = map_.replace(".fits", "")
         unit       = unit
         title      = title        # Short name upper right
-        colorbar   = 1 if "-bar" in optn_flags else 0           # Colorbar on
+        colorbar   = 1 if "-bar" in flags else 0           # Colorbar on
 
         # Image size -  ratio is always 1/2
         xsize = 2000
@@ -91,7 +144,7 @@ def Plotter(map_, optn_flags=None, png=False):
         ####   logscale   #####
         #######################
         # Some maps turns on logscale automatically
-        if "-logscale" in optn_flags or logscale: 
+        if "-logscale" in flags or logscale: 
             m = np.log10(0.5*(m+np.sqrt(4.+m*m)))
             m = np.maximum(np.minimum(m,vmax),vmin)
 
@@ -138,9 +191,9 @@ def Plotter(map_, optn_flags=None, png=False):
         ######################
         ######## Mask ########
         ######################
-        if "-mask" in optn_flags:
+        if "-mask" in flags:
             masked = True
-            mask_name = get_key(optn_flags, "-mask")
+            mask_name = get_key(flags, "-mask")
             m.mask = np.logical_not(hp.read_map(mask_name,1))
             grid_mask = m.mask[grid_pix]
             grid_map = np.ma.MaskedArray(m[grid_pix], grid_mask)
@@ -164,7 +217,7 @@ def Plotter(map_, optn_flags=None, png=False):
 
 
 
-        sizes = get_sizes(optn_flags)
+        sizes = get_sizes(flags)
         for width in sizes:
             print("Plotting size " + str(width))
 
@@ -231,14 +284,14 @@ def Plotter(map_, optn_flags=None, png=False):
             ##############
             plt.tight_layout()
             filetype = ".png" if png else ".pdf"
-            tp = False if "-white_background" in optn_flags else True # Turn on transparency unless told otherwise
+            tp = False if "-white_background" in flags else True # Turn on transparency unless told otherwise
 
             ##############
             ## filename ##
             ##############
             filename = []
-            filename.append('masked') if "-mask" in optn_flags else None
-            filename.append('darkmode') if "-darkmode" in optn_flags else None
+            filename.append('masked') if "-mask" in flags else None
+            filename.append('darkmode') if "-darkmode" in flags else None
             fn = outfile+"_"+signal_labels[polt]+"_w"+str(int(width))
             for i in filename:
                 fn += "_"+i
@@ -248,12 +301,31 @@ def Plotter(map_, optn_flags=None, png=False):
             plt.close()
 
 
-def get_params(m, map_, polt, signal_labels):
+def get_params(m, outfile, polt, signal_labels):
     print()
     logscale = False
-    # AMPLITUDE MAPS
-    if "cmb" in map_:
-        print("Plotting CMB " + signal_labels[polt])
+    
+    # Everything listed here will be recognized
+    # If tag is found in output file, use template
+    cmb_tags = ["cmb"]
+    chisq_tags = ["chisq"]
+    synch_tags = ["synch_c", "synch_amp"]
+    dust_tags  = ["dust_c", "dust_amp"]
+    ame_tags   = ["ame_c", "ame_amp", "ame1_c", "ame1_amp"]
+    ff_tags    = ["ff_c", "ff_amp"]
+    co10_tags    = ["co10", "co-100"]
+    co21_tags    = ["co21", "co-217"]
+    co32_tags    = ["co32", "co-353"]
+    hcn_tags    = ["hcn"]
+    dust_T_tags = ["dust_T", "dust_Td"]
+    dust_beta_tags = ["dust_beta"]
+    synch_beta_tags = ["synch_beta"]
+    ff_Te_tags = ["ff_T_e", "ff_Te"]
+    ff_EM_tags = ["ff_EM"]
+    res_tags = ["residual_", "res_"]
+
+    if tag_lookup(cmb_tags, outfile):
+        print("Plotting CMB " + signal_labels[polt] )
 
         title = r"$"+ signal_labels[polt]+"$" + r"$_{\mathrm{CMB}}$"
 
@@ -279,7 +351,7 @@ def get_params(m, map_, polt, signal_labels):
         from pathlib import Path
         color = Path(__file__).parent / 'parchment1.dat'
 
-    elif "chisq" in map_:
+    elif tag_lookup(chisq_tags, outfile):
         
         title = r"$\chi^2$ " + signal_labels[polt]
 
@@ -302,7 +374,7 @@ def get_params(m, map_, polt, signal_labels):
         coltype = 0
         color = "none"
 
-    elif "synch_c" in map_:
+    elif tag_lookup(synch_tags, outfile):
         print("Plotting Synchrotron" +" "+ signal_labels[polt])
         title = r"$"+ signal_labels[polt]+"$" + r"${\mathrm{s}}$ "
         print("Applying logscale (Rewrite if not)")
@@ -337,7 +409,7 @@ def get_params(m, map_, polt, signal_labels):
 
         unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
 
-    elif "ff_" in map_:
+    elif tag_lookup(ff_tags, outfile):
         print("Plotting freefree")
         print("Applying logscale (Rewrite if not)")
 
@@ -358,7 +430,7 @@ def get_params(m, map_, polt, signal_labels):
         coltype = 0
         color = "Navy"
 
-    elif "dust_c" in map_:
+    elif tag_lookup(dust_tags, outfile):
         print("Plotting Thermal dust" +" "+ signal_labels[polt])
         print("Applying logscale (Rewrite if not)")
         title = r"$"+ signal_labels[polt]+"$" + r"${\mathrm{d}}$ " 
@@ -397,7 +469,7 @@ def get_params(m, map_, polt, signal_labels):
 
         unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
 
-    elif "ame1_c" in map_ or "ame_" in map_:
+    elif tag_lookup(ame_tags, outfile):
         print("Plotting AME")
         print("Applying logscale (Rewrite if not)")
        
@@ -418,7 +490,7 @@ def get_params(m, map_, polt, signal_labels):
         coltype=0
         color="DarkOrange"
 
-    elif "co-100" in map_ or "co10" in map_:
+    elif tag_lookup(co10_tags, outfile):
         print("Plotting CO10")
         print("Applying logscale (Rewrite if not)")
         vmin = 0
@@ -439,7 +511,7 @@ def get_params(m, map_, polt, signal_labels):
         color="gray"
 
 
-    elif "co-217" in map_ or "co21" in map_:
+    elif tag_lookup(co21_tags, outfile):
         print("Plotting CO21")
         print("Applying logscale (Rewrite if not)")
         vmin = 0
@@ -458,7 +530,7 @@ def get_params(m, map_, polt, signal_labels):
         coltype=1
         color="gray"
 
-    elif "co-353" in map_ or "co32" in map_:
+    elif tag_lookup(co32_tags, outfile):
         print("Plotting 32")
         print("Applying logscale (Rewrite if not)")
         vmin = 0
@@ -477,7 +549,7 @@ def get_params(m, map_, polt, signal_labels):
         coltype=1
         color="gray"
 
-    elif "hcn_c" in map_:
+    elif tag_lookup(hcn_tags, outfile):
         print("Plotting HCN")
         print("Applying logscale (Rewrite if not)")
         vmin = -14
@@ -494,8 +566,7 @@ def get_params(m, map_, polt, signal_labels):
         coltype=1
         color="gray"
 
-        # SPECTRAL PARAMETER MAPS
-    elif "ame1_nu" in map_:
+    elif tag_lookup(ame_tags, outfile):
         print("Plotting AME nu_p")
 
         vmin = 17
@@ -511,7 +582,8 @@ def get_params(m, map_, polt, signal_labels):
         coltype=1
         color="bone"
 
-    elif "dust_Td" in map_:
+    # SPECTRAL PARAMETER MAPS
+    elif tag_lookup(dust_T_tags, outfile):
         print("Plotting Thermal dust Td")
 
         title =  r"$"+ signal_labels[polt]+"$" + r"$T_d$ "
@@ -528,7 +600,7 @@ def get_params(m, map_, polt, signal_labels):
         coltype=1
         color="bone"
 
-    elif "dust_beta" in map_:
+    elif tag_lookup(dust_beta_tags, outfile):
         print("Plotting Thermal dust beta")
 
         title =  r"$"+ signal_labels[polt]+"$" + r"$\beta_d$ "
@@ -544,7 +616,7 @@ def get_params(m, map_, polt, signal_labels):
         coltype=1
         color="bone"
 
-    elif "synch_beta" in map_:
+    elif tag_lookup(synch_beta_tags, outfile):
         print("Plotting Synchrotron beta")
 
         title = r"$"+ signal_labels[polt]+"$" +  r"$\beta_s$ " 
@@ -561,7 +633,7 @@ def get_params(m, map_, polt, signal_labels):
         coltype=1
         color="bone"
 
-    elif "ff_T_e" in map_:
+    elif tag_lookup(ff_Te_tags, outfile):
         print("Plotting freefree T_e")
 
         vmin = 5000
@@ -577,17 +649,38 @@ def get_params(m, map_, polt, signal_labels):
         coltype=1
         color="bone"
 
+    elif tag_lookup(ff_EM_tags, outfile):
+        print("Plotting freefree EM MIN AND MAX VALUES UPDATE!")
+
+        vmin = 5000
+        vmax = 8000
+        tmin = str(vmin)
+        tmax = str(vmax)
+
+        vmax = np.percentile(m,95)
+        vmin = np.percentile(m,5)
+        tmin = False
+        tmax = False
+        ticks = [vmin, vmax]
+        ticklabels = [tmin, tmax]
+
+        unit = r"$\mathrm{K}$"
+        title = r"$T_{e}$"
+        coltype=1
+        color="bone"
+
+
     #################
     # RESIDUAL MAPS #
     #################
 
-    elif "residual_" in map_ or "res_" in map_:
+    elif tag_lookup(res_tags, outfile):
         print("Plotting residual map" +" "+ signal_labels[polt])
 
-        if "res_" in map_:
-            tit  = str(re.findall(r'res_smooth3idual_(.*?)_',map_)[0])
+        if "res_" in outfile:
+            tit  = str(re.findall(r'res_smooth3idual_(.*?)_',outfile)[0])
         else:
-            tit = str(re.findall(r'residual_(.*?)_',map_)[0])
+            tit = str(re.findall(r'residual_(.*?)_',outfile)[0])
 
         title =  r"$"+ signal_labels[polt]+"$" +  r"{} GHz ".format(tit)
 
@@ -598,20 +691,19 @@ def get_params(m, map_, polt, signal_labels):
         tmid = str(vmid)
         tmax = str(vmax)
 
-
         unit =  r"$\mu\mathrm{K}$"
         coltype=2
 
         from pathlib import Path
         color = Path(__file__).parent / 'parchment1.dat'
 
-        if "545" in map_:
+        if "545" in outfile:
             vmin = -1e2
             vmax = 1e2
             tmin = str(vmin)
             tmax = str(vmax)
             unit = r"$\mathrm{MJy/sr}$"
-        elif "857" in map_:
+        elif "857" in outfile:
             vmin = -0.05 #-1e4
             vmax = 0.05 #1e4
             tmin = str(vmin)
@@ -630,50 +722,54 @@ def get_params(m, map_, polt, signal_labels):
         ticks = [vmin, vmax]
         ticklabels = [tmin, tmax]
         unit = ""
-        title =  r"$"+ signal_labels[polt]+"$" + 
+        title =  r"$"+ signal_labels[polt]+"$"
         coltype=2
         from pathlib import Path
         color = Path(__file__).parent / 'parchment1.dat'
 
     return title, ticks, ticklabels, unit, coltype, color, logscale
 
-def get_pollist(optn_flags):
+def get_pollist(flags):
     pollist = []
-    if "-Q" in optn_flags:
+    if "-I" in flags:
+        pollist.append(0)
+    if "-Q" in flags:
         pollist.append(1)
-    if "-U" in optn_flags:
+    if "-U" in flags:
         pollist.append(2)
-    if "-QU" in optn_flags:
-        pollist.append(1, 2)
-    if "-IQU" in optn_flags:
-        pollist.append(0, 1, 2)
+    if "-QU" in flags:
+        pollist.extend((1, 2))
+    if "-IU" in flags:
+        pollist.extend((0, 2))
+    if "-IQU" in flags:
+        pollist.extend((0, 1, 2))
     if len(pollist) == 0:
         pollist = [0]
     return pollist
 
-def get_sizes(optn_flags):
+def get_sizes(flags):
     sizes = []
-    if "-small" in optn_flags:
+    if "-small" in flags:
         sizes.append(8.8)
-    if "-medium" in optn_flags:
+    if "-medium" in flags:
         sizes.append(12.0)
-    if "-large" in optn_flags:
+    if "-large" in flags:
         sizes.append(18.0)
     if len(sizes) == 0:
         sizes = [8.8, 12.0, 18.0]
     return sizes
 
-def get_range(optn_flags):
-    min = float(get_key(optn_flags, "-min")) if "-min" in optn_flags else None
-    max = float(get_key(optn_flags, "-max")) if "-max" in optn_flags else None
-    if "-range" in optn_flags:
-        r = float(get_key(optn_flags, "-range"))
+def get_range(flags):
+    min = float(get_key(flags, "-min")) if "-min" in flags else None
+    max = float(get_key(flags, "-max")) if "-max" in flags else None
+    if "-range" in flags:
+        r = float(get_key(flags, "-range"))
         min = -r
         max =  r
     return min, max
 
-def get_key(optn_index, keyword):
-    return optn_index[optn_flags.index(keyword) + 1]
+def get_key(flags, keyword):
+    return flags[flags.index(keyword) + 1]
 
 def fmt(x, pos):
     '''
@@ -692,3 +788,9 @@ def fmt(x, pos):
 
 def cm2inch(cm):
     return cm*0.393701
+
+def tag_lookup(tags, outfile):
+    return any(e in outfile for e in tags)
+
+def arcmin2rad(arcmin):
+    return arcmin*(2*np.pi)/21600
