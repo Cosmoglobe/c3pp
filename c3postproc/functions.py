@@ -34,12 +34,9 @@ def stddev(flags):
     h5handler(flags, np.std)
 
 
-def map2pdf(flags, png=False):
+def plot(flags):
     from c3postproc.plotter import Plotter
-    Plotter(flags, png)
-
-def map2png(flags):
-    map2pdf(flags, png=True)
+    Plotter(flags)
 
 
         

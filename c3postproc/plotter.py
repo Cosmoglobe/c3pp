@@ -9,20 +9,12 @@ import matplotlib.colors as col
 import matplotlib.ticker as ticker
 from matplotlib import rcParams, rc
 
-def Plotter(flags=None, png=False):
+def Plotter(flags=None):
     rcParams['backend'] = 'pdf' #
     rcParams['legend.fancybox'] = True
     rcParams['lines.linewidth'] = 2
     rcParams['savefig.dpi'] = 300
     rcParams['axes.linewidth'] = 1
-    rcParams['axes.titlesize'] = 'x-large'
-    rcParams['axes.labelsize'] = 10 #'large'
-    rcParams['legend.fontsize'] = 10 #
-    rcParams['xtick.labelsize'] = 10 #
-    rcParams['ytick.labelsize'] = 10 #
-    rcParams['xtick.major.pad'] = 6 #
-    rcParams['ytick.major.pad'] = 6 #
-    rcParams['font.size'] = 10 #
     # use of Sans Serif also in math mode
     darkmode = False
     masked   = False
@@ -69,20 +61,24 @@ def Plotter(flags=None, png=False):
         dataset =  get_key(flags, map_) 
         with h5py.File(map_, 'r') as f:
             maps = f[dataset][()]
+            lmax = f[dataset[:-4]+"_lmax"][()] # Get lmax from h5
 
-        
         if "alm" in dataset[-3:]:
-            alms = maps.astype(complex)
+            alms = np.array(maps,dtype=np.complex128)
             # Convert alms to map
             print("Converting alms to map")
-
+            
+            
             if "-lmax" in flags:
                 lmax = int(get_key(flags, "-lmax"))
+                print("Setting lmax to ", lmax)
                 mmax = lmax
             else:
-                lmax = None
+                # Let alm2map chose
+                # This does NOT work
+                #lmax = None
                 mmax = lmax
-            
+
             if "-fwhm" in flags:
                 fwhm = float(get_key(flags, "-fwhm"))
             else:
@@ -91,19 +87,19 @@ def Plotter(flags=None, png=False):
             if "-lmin" in flags:
                 lmin = int(get_key(flags, "-lmin"))
             else:
-                lmin = None
-            
-            print(alms[0].shape)
-            nside = int(get_key(flags, dataset))
-            print(alms[:,lmin:].shape)
-            maps = hp.sphtfunc.alm2map(alms[:,lmin:], nside, lmax=lmax, fwhm=arcmin2rad(fwhm))
+                lmin = 0
 
+            nside = int(get_key(flags, dataset))
+            
+            # does the +lmin make sense here?
+            hehe = int(mmax * (2 * lmax + 1 - mmax) / 2 + lmax + 1) + lmin
+
+            maps = hp.sphtfunc.alm2map(alms[:,lmin:hehe], nside, lmax=lmax, fwhm=arcmin2rad(fwhm))
             outfile =  dataset.replace("/", "_")
             outfile = outfile.replace("_alm","")
-
         elif "map" in dataset[-3:]:
             print("Reading map from h5")
-            nside = hp.npix2nside(len(maps))
+            nside = hp.npix2nside(maps.shape[-1])
             outfile =  dataset.replace("/", "_")
             outfile = outfile.replace("_map","")
 
@@ -111,7 +107,8 @@ def Plotter(flags=None, png=False):
 
     for polt in pollist:
         m = maps[polt] # Select map signal (I,Q,U)
-
+        #m= m[hp.ring2nest(nside, range(12*(nside)**2))]
+        
         #######################
         #### Auto-param   #####
         #######################
@@ -220,16 +217,26 @@ def Plotter(flags=None, png=False):
         sizes = get_sizes(flags)
         for width in sizes:
             print("Plotting size " + str(width))
-
             height = width/2.
-            if colorbar: # Same text size. (Hardcoded for 12)
-                height = height + 1.65
+            height *=  1.275 if colorbar else 1
+
+            ################
+            ##### font #####
+            ################
+            if width > 12.:
+                fontsize=8
+            elif width == 12.:
+                fontsize=7 
+
+            else:
+                fontsize=6
+
+
 
             fig = plt.figure(figsize=(cm2inch(width), cm2inch(height)))
 
             ax = fig.add_subplot(111,projection='mollweide')
-            # remove white space around the image
-            #plt.subplots_adjust(left=0.01, right=0.99, top=0.95, bottom=0.01)
+
 
             # rasterized makes the map bitmap while the labels remain vectorial
             # flip longitude to the astro convention
@@ -242,7 +249,9 @@ def Plotter(flags=None, png=False):
             if width < 10:
                 ax.set_latitude_grid(45)
                 ax.set_longitude_grid_ends(90)
-
+            
+        
+            
             ################
             ### COLORBAR ###
             ################
@@ -252,8 +261,9 @@ def Plotter(flags=None, png=False):
                 if tmax != False or tmin != False: # let function format if not autoset
                     cb.ax.set_xticklabels(ticklabels)
                 cb.ax.xaxis.set_label_text(unit) 
+                cb.ax.xaxis.label.set_size(fontsize)
                 cb.ax.minorticks_on()
-                cb.ax.tick_params(which='both', axis='x', direction='in')
+                cb.ax.tick_params(which='both', axis='x', direction='in', labelsize=fontsize)
                 cb.ax.xaxis.labelpad = 4 #-11
                 # workaround for issue with viewers, see colorbar docstring
                 cb.solids.set_edgecolor("face")
@@ -272,27 +282,25 @@ def Plotter(flags=None, png=False):
             #############
             ## TITLE ####
             #############
-            if width > 12.:
-                plt.text(6.,  1.3, r"%s" % title, ha='center', va='center', fontsize=8)
-            elif width == 12.:
-                plt.text(6.,  1.3, r"%s" % title, ha='center', va='center', fontsize=7)
-            else:
-                plt.text(6.,  1.3, r"%s" % title, ha='center', va='center', fontsize=6)
+            plt.text(6.,  1.3, r"%s" % title, ha='center', va='center', fontsize=fontsize)
 
             ##############
             #### SAVE ####
             ##############
             plt.tight_layout()
-            filetype = ".png" if png else ".pdf"
+            filetype = ".png" if "-png" in flags else ".pdf"
             tp = False if "-white_background" in flags else True # Turn on transparency unless told otherwise
 
             ##############
             ## filename ##
             ##############
             filename = []
+            filename.append('{}arcmin'.format(str(int(fwhm)))) if "-fwhm" in flags else None
+            filename.append('cb') if "-bar" in flags else None
             filename.append('masked') if "-mask" in flags else None
-            filename.append('darkmode') if "-darkmode" in flags else None
-            fn = outfile+"_"+signal_labels[polt]+"_w"+str(int(width))
+            filename.append('dark') if "-darkmode" in flags else None
+        
+            fn = outfile+"_"+signal_labels[polt]+"_w"+str(int(width))+"_n"+str(int(nside))
             for i in filename:
                 fn += "_"+i
             fn += filetype
@@ -376,7 +384,7 @@ def get_params(m, outfile, polt, signal_labels):
 
     elif tag_lookup(synch_tags, outfile):
         print("Plotting Synchrotron" +" "+ signal_labels[polt])
-        title = r"$"+ signal_labels[polt]+"$" + r"${\mathrm{s}}$ "
+        title = r"$"+ signal_labels[polt]+"$" + r"$_{\mathrm{s}}$ "
         print("Applying logscale (Rewrite if not)")
         if polt>0:
             vmin = -1.69
@@ -425,7 +433,7 @@ def get_params(m, outfile, polt, signal_labels):
         ticklabels = [tmin,tmid,tmax]
 
         unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
-        title = r"$"+ signal_labels[polt]+"$" + r"${\mathrm{ff}}$"
+        title = r"$"+ signal_labels[polt]+"$" + r"$_{\mathrm{ff}}$"
         logscale=True
         coltype = 0
         color = "Navy"
@@ -433,7 +441,7 @@ def get_params(m, outfile, polt, signal_labels):
     elif tag_lookup(dust_tags, outfile):
         print("Plotting Thermal dust" +" "+ signal_labels[polt])
         print("Applying logscale (Rewrite if not)")
-        title = r"$"+ signal_labels[polt]+"$" + r"${\mathrm{d}}$ " 
+        title = r"$"+ signal_labels[polt]+"$" + r"$_{\mathrm{d}}$ " 
         if polt>0:
             vmin = -2
             vmid = 0
@@ -485,7 +493,7 @@ def get_params(m, outfile, polt, signal_labels):
         ticklabels = [tmin,tmid,tmax]
 
         unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
-        title = r"$"+ signal_labels[polt]+"$" + r"${\mathrm{ame}}$"
+        title = r"$"+ signal_labels[polt]+"$" + r"$_{\mathrm{ame}}$"
         logscale=True
         coltype=0
         color="DarkOrange"
