@@ -262,7 +262,7 @@ def get_params(m, map_, polt, signal_labels):
     if "cmb" in map_:
         print("Plotting CMB " + signal_labels[polt])
 
-        title = "$A_{\mathrm{CMB}}$ " + signal_labels[polt]
+        title = r"$"+ signal_labels[polt]+"$" + r"$_{\mathrm{CMB}}$"
 
         if polt>0:
             vmin = -2
@@ -311,7 +311,7 @@ def get_params(m, map_, polt, signal_labels):
 
     elif "synch_c" in map_:
         print("Plotting Synchrotron" +" "+ signal_labels[polt])
-        title = r"$A_{\mathrm{s}}$ "  + signal_labels[polt]
+        title = r"$"+ signal_labels[polt]+"$" + r"${\mathrm{s}}$ "
         print("Applying logscale (Rewrite if not)")
         if polt>0:
             vmin = -1.69
@@ -360,7 +360,7 @@ def get_params(m, map_, polt, signal_labels):
         ticklabels = [tmin,tmid,tmax]
 
         unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
-        title = r"$A_{\mathrm{ff}}$"
+        title = r"$"+ signal_labels[polt]+"$" + r"${\mathrm{ff}}$"
         logscale=True
         coltype = 0
         color = "Navy"
@@ -368,8 +368,7 @@ def get_params(m, map_, polt, signal_labels):
     elif "dust_c" in map_:
         print("Plotting Thermal dust" +" "+ signal_labels[polt])
         print("Applying logscale (Rewrite if not)")
-        title = r"$A_{\mathrm{d}}$ "  + signal_labels[polt]
-
+        title = r"$"+ signal_labels[polt]+"$" + r"${\mathrm{d}}$ " 
         if polt>0:
             vmin = -2
             vmid = 0
@@ -421,7 +420,7 @@ def get_params(m, map_, polt, signal_labels):
         ticklabels = [tmin,tmid,tmax]
 
         unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
-        title = r"$A_{\mathrm{ame}}$"
+        title = r"$"+ signal_labels[polt]+"$" + r"${\mathrm{ame}}$"
         logscale=True
         coltype=0
         color="DarkOrange"
@@ -441,7 +440,7 @@ def get_params(m, map_, polt, signal_labels):
         ticklabels = [tmin,tmid,tmax]
 
         unit = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
-        title = "$A_{\mathrm{CO10}}$"
+        title = r"$"+ signal_labels[polt]+"$" + r"$_{\mathrm{CO10}}$"
         logscale=True
         coltype=1
         color="gray"
@@ -461,7 +460,7 @@ def get_params(m, map_, polt, signal_labels):
         ticklabels = [tmin,tmid,tmax]
 
         unit = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
-        title = "$A_{\mathrm{CO21}}$"
+        title = r"$"+ signal_labels[polt]+"$" + r"$_{\mathrm{CO21}}$"
         logscale=True
         coltype=1
         color="gray"
@@ -480,7 +479,7 @@ def get_params(m, map_, polt, signal_labels):
         ticklabels = [tmin,tmid,tmax]
 
         unit = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
-        title = "$A_{\mathrm{CO32}}$"
+        title = r"$"+ signal_labels[polt]+"$" + r"$_{\mathrm{CO32}}$"
         logscale=True
         coltype=1
         color="gray"
@@ -497,7 +496,7 @@ def get_params(m, map_, polt, signal_labels):
         ticklabels = [tmin, tmax]
 
         unit = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
-        title = "$A_{\mathrm{HCN}}$"
+        title = r"$"+ signal_labels[polt]+"$" + r"$_{\mathrm{HCN}}$"
         logscale=True
         coltype=1
         color="gray"
@@ -522,7 +521,7 @@ def get_params(m, map_, polt, signal_labels):
     elif "dust_Td" in map_:
         print("Plotting Thermal dust Td")
 
-        title = r"$T_d$ "  + signal_labels[polt]
+        title =  r"$"+ signal_labels[polt]+"$" + r"$T_d$ "
 
         vmin = 14
         vmax = 30
@@ -539,7 +538,7 @@ def get_params(m, map_, polt, signal_labels):
     elif "dust_beta" in map_:
         print("Plotting Thermal dust beta")
 
-        title = r"$\beta_d$ " + signal_labels[polt]
+        title =  r"$"+ signal_labels[polt]+"$" + r"$\beta_d$ "
 
         vmin = 1.45
         vmax = 1.55
@@ -555,7 +554,7 @@ def get_params(m, map_, polt, signal_labels):
     elif "synch_beta" in map_:
         print("Plotting Synchrotron beta")
 
-        title = r"$\beta_s$ " + signal_labels[polt]
+        title = r"$"+ signal_labels[polt]+"$" +  r"$\beta_s$ " 
 
         vmin = -3.15
         vmax = -3.12
@@ -597,7 +596,7 @@ def get_params(m, map_, polt, signal_labels):
         else:
             tit = str(re.findall(r'residual_(.*?)_',map_)[0])
 
-        title = r"{} GHz ".format(tit) + signal_labels[polt]
+        title =  r"$"+ signal_labels[polt]+"$" +  r"{} GHz ".format(tit)
 
         vmin = -10
         vmid = 0
@@ -638,7 +637,7 @@ def get_params(m, map_, polt, signal_labels):
         ticks = [vmin, vmax]
         ticklabels = [tmin, tmax]
         unit = ""
-        title = ""
+        title =  r"$"+ signal_labels[polt]+"$" + 
         coltype=2
         from pathlib import Path
         color = Path(__file__).parent / 'parchment1.dat'
@@ -698,263 +697,3 @@ def fmt(x, pos):
         return r'${:.1f}$'.format(x)
     else: 
         return r'${:.2f}$'.format(x)
-
-"""
-def get_cmbcolormap():
-   0 0 255
-   0 2 255
-   0 5 255
-   0 8 255
-   0 10 255
-   0 13 255
-   0 16 255
-   0 18 255
-   0 21 255
-   0 24 255
-   0 26 255
-   0 29 255
-   0 32 255
-   0 34 255
-   0 37 255
-   0 40 255
-   0 42 255
-   0 45 255
-   0 48 255
-   0 50 255
-   0 53 255
-   0 56 255
-   0 58 255
-   0 61 255
-   0 64 255
-   0 66 255
-   0 69 255
-   0 72 255
-   0 74 255
-   0 77 255
-   0 80 255
-   0 82 255
-   0 85 255
-   0 88 255
-   0 90 255
-   0 93 255
-   0 96 255
-   0 98 255
-   0 101 255
-   0 104 255
-   0 106 255
-   0 109 255
-   0 112 255
-   0 114 255
-   0 117 255
-   0 119 255
-   0 122 255
-   0 124 255
-   0 127 255
-   0 129 255
-   0 132 255
-   0 134 255
-   0 137 255
-   0 139 255
-   0 142 255
-   0 144 255
-   0 147 255
-   0 150 255
-   0 152 255
-   0 155 255
-   0 157 255
-   0 160 255
-   0 162 255
-   0 165 255
-   0 167 255
-   0 170 255
-   0 172 255
-   0 175 255
-   0 177 255
-   0 180 255
-   0 182 255
-   0 185 255
-   0 188 255
-   0 190 255
-   0 193 255
-   0 195 255
-   0 198 255
-   0 200 255
-   0 203 255
-   0 205 255
-   0 208 255
-   0 210 255
-   0 213 255
-   0 215 255
-   0 218 255
-   0 221 255
-   6 221 254
-  12 221 253
-  18 222 252
-  24 222 251
-  30 222 250
-  36 223 249
-  42 223 248
-  48 224 247
-  54 224 246
-  60 224 245
-  66 225 245
-  72 225 244
-  78 225 243
-  85 226 242
-  91 226 241
-  97 227 240
- 103 227 239
- 109 227 238
- 115 228 237
- 121 228 236
- 127 229 236
- 133 229 235
- 139 229 234
- 145 230 233
- 151 230 232
- 157 230 231
- 163 231 230
- 170 231 229
- 176 232 228
- 182 232 227
- 188 232 226
- 194 233 226
- 200 233 225
- 206 233 224
- 212 234 223
- 218 234 222
- 224 235 221
- 230 235 220
- 236 235 219
- 242 236 218
- 248 236 217
- 255 237 217
- 255 235 211
- 255 234 206
- 255 233 201
- 255 231 196
- 255 230 191
- 255 229 186
- 255 227 181
- 255 226 176
- 255 225 171
- 255 223 166
- 255 222 161
- 255 221 156
- 255 219 151
- 255 218 146
- 255 217 141
- 255 215 136
- 255 214 131
- 255 213 126
- 255 211 121
- 255 210 116
- 255 209 111
- 255 207 105
- 255 206 100
- 255 205 95
- 255 203 90
- 255 202 85
- 255 201 80
- 255 199 75
- 255 198 70
- 255 197 65
- 255 195 60
- 255 194 55
- 255 193 50
- 255 191 45
- 255 190 40
- 255 189 35
- 255 187 30
- 255 186 25
- 255 185 20
- 255 183 15
- 255 182 10
- 255 181 5
- 255 180 0
- 255 177 0
- 255 175 0
- 255 172 0
- 255 170 0
- 255 167 0
- 255 165 0
- 255 162 0
- 255 160 0
- 255 157 0
- 255 155 0
- 255 152 0
- 255 150 0
- 255 147 0
- 255 145 0
- 255 142 0
- 255 140 0
- 255 137 0
- 255 135 0
- 255 132 0
- 255 130 0
- 255 127 0
- 255 125 0
- 255 122 0
- 255 120 0
- 255 117 0
- 255 115 0
- 255 112 0
- 255 110 0
- 255 107 0
- 255 105 0
- 255 102 0
- 255 100 0
- 255 97 0
- 255 95 0
- 255 92 0
- 255 90 0
- 255 87 0
- 255 85 0
- 255 82 0
- 255 80 0
- 255 77 0
- 255 75 0
- 251 73 0
- 247 71 0
- 244 69 0
- 240 68 0
- 236 66 0
- 233 64 0
- 229 62 0
- 226 61 0
- 222 59 0
- 218 57 0
- 215 55 0
- 211 54 0
- 208 52 0
- 204 50 0
- 200 48 0
- 197 47 0
- 193 45 0
- 190 43 0
- 186 41 0
- 182 40 0
- 179 38 0
- 175 36 0
- 172 34 0
- 168 33 0
- 164 31 0
- 161 29 0
- 157 27 0
- 154 26 0
- 150 24 0
- 146 22 0
- 143 20 0
- 139 19 0
- 136 17 0
- 132 15 0
- 128 13 0
- 125 12 0
- 121 10 0
- 118 8 0
- 114 6 0
- 110 5 0
- 107 3 0
- 103 1 0
- 100 0 0
- """
