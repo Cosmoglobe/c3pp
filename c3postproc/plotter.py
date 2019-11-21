@@ -284,9 +284,7 @@ def get_params(m, map_, polt, signal_labels):
 
         coltype = 2
         from pathlib import Path
-        #sys.exit()
         color = Path(__file__).parent / 'parchment1.dat'
-        print(color)
 
     elif "chisq" in map_:
         
@@ -612,8 +610,8 @@ def get_params(m, map_, polt, signal_labels):
         unit =  r"$\mu\mathrm{K}$"
         coltype=2
 
-        path = os.path.dirname(os.path.abspath(__file__))
-        color = path+"/parchment1.dat"
+        from pathlib import Path
+        color = Path(__file__).parent / 'parchment1.dat'
 
         if "545" in map_:
             vmin = -1e2
@@ -642,8 +640,8 @@ def get_params(m, map_, polt, signal_labels):
         unit = ""
         title = ""
         coltype=2
-        path = os.path.dirname(os.path.abspath(__file__))
-        color = path+"/parchment1.dat"
+        from pathlib import Path
+        color = Path(__file__).parent / 'parchment1.dat'
 
     return title, ticks, ticklabels, unit, coltype, color, logscale
 
