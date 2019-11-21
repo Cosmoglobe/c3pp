@@ -3,59 +3,38 @@ import sys
 import os
 import time
 import healpy as hp
-import numpy as np
 from astropy.io import fits
-import matplotlib.pyplot as plt
-import pandas as pd
+import numpy as np
 
-def stddev(flags):
-    tag = str(flags[0])
-    sig = flags[1]       # T Q or U or (1, 2, 3)
+def h5handler(flags, command):
+    filename = str(flags[0])
+    signal = str(flags[1])
     min = int(flags[2])
     max = int(flags[3])
-    sig = flags[4] 
     outname = flags[-1]
-
-    if str(sig) == "I":
-        sig = 1
-    elif str(sig) == "Q":
-        sig = 2
-    elif str(sig) == "U":
-        sig = 3
-    else:
-        sig = int(sig)
     l = max-min
-    maps = []
-    for i in range(min,max+1):
-        maps.append( hp.read_map(tag+"_c0001_k"+str(i).zfill(6)+".fits", field=sig) )
-    maps = np.array(maps)
+    
+    import h5py     
+    dats = []
+    with h5py.File(filename, 'r') as f:
+        for i in range(min,max+1):
+            s = str(i).zfill(6)
+            dats.append(f[s+"/"+signal][()])
+    dats = np.array(dats)
 
-    outmap = np.std(maps, axis=0)
-    hp.write_map(outname, outmap, overwrite=True)
+    outdata = command(dats, axis=0)
+    if "fits" in outname[-4:]: 
+        hp.write_map(outname, outdata, overwrite=True)
+    else:
+        np.savetxt(outname, outdata)
 
 def mean(flags):
-    tag = str(flags[0])
-    sig = flags[1]       # T Q or U or (1, 2, 3)
-    min = int(flags[2])
-    max = int(flags[3])
-    sig = flags[4] 
-    outname = flags[-1]
-    if str(sig) == "I":
-        sig = 1
-    elif str(sig) == "Q":
-        sig = 2
-    elif str(sig) == "U":
-        sig = 3
-    else:
-        sig = int(sig)
-    l = max-min
-    maps = []
-    for i in range(min,max+1):
-        maps.append( hp.read_map(tag+"_c0001_k"+str(i).zfill(6)+".fits", field=sig) )
-    maps = np.array(maps)
+    h5handler(flags, np.mean)
 
-    outmap = np.mean(maps, axis=0)
-    hp.write_map(outname, outmap, overwrite=True)
+def stddev(flags):
+    h5handler(flags, np.std)
+
+    
 
 def map2pdf(flags, png=False):
     from c3postproc.plotter import Plotter
@@ -70,7 +49,13 @@ def map2png(flags):
 
 def readhdf(flags):
     filename = str(flags[0])
-    store = pd.HDFStore(filename)
-    # Access HDF
-    # Calculate stddev and mean of maps, alms, and sigma_l. Using existing code
-    pd.read_hdf(filename)
+    signal = str(flags[1])
+    type = str(flags[2])
+    sample_min = str(flags[3]).zfill(6)
+    sample_max = str(flags[4]).zfill(6)
+    
+    import h5py     
+    with h5py.File(filename, 'r') as f:
+        data = f[sample+"/"+signal+"/"+type].value
+
+        

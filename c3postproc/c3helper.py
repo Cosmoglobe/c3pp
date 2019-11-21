@@ -1,24 +1,18 @@
-import math
 import sys
 import os
-import time
-import healpy as hp
-import numpy as np
-from astropy.io import fits
-import matplotlib.pyplot as plt
 
 def c3help(op, nsysargs):
     if str(op) == "stddev":
         if nsysargs < 7:
             print("Usage: ")
-            print("c3postproc stddev [input tag: cmb, dust, dust_t etc.] [signal T/Q/U or 1/2/3] [sample range min] [sample range max] [outname]")
-            print("This thing calculates the standard deviation for all sky maps.")
+            print("c3postproc stddev [.h5 filename] [h5 dataset (ex. cmb/sigma_l)] [sample range min] [sample range max] [output name (name.fits/name.dat)]")
+            print("This thing calculates the standard deviation for any .h5 dataset quantity over a given sample range.")
             sys.exit()
     elif str(op) == "mean":
         if nsysargs < 7:
             print("Usage: ")
-            print("c3postproc mean [input tag: cmb, dust, dust_t etc.] [signal T/Q/U or 1/2/3] [sample range min] [sample range max] [outname]")
-            print("This thing calculates the mean for all sky maps.")
+            print("c3postproc mean [.h5 filename] [h5 dataset (ex. cmb/sigma_l)] [sample range min] [sample range max] [output name (name.fits/name.dat)]")
+            print("This thing calculates the mean for any .h5 dataset quantity over a given sample range.")
             sys.exit()
     elif str(op) == "map2pdf":
         if nsysargs < 3:
@@ -40,8 +34,7 @@ def c3help(op, nsysargs):
             print("Most amplitudes will be plotted with a semi-logarithmic scale by default. You will be notified. ")
             print()
             sys.exit()
-    elif str(op) == "readhdf":
-        pass
+
     elif str(op) == "help":
         c3help_general()
     else:

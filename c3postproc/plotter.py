@@ -1,19 +1,13 @@
 import sys
 import os
-import matplotlib
-import matplotlib.pyplot as plt
-import healpy as hp
-import matplotlib.cm as cm
-import numpy as np
-import matplotlib.colors as col
 import re
-from matplotlib import rcParams, rc
+import healpy as hp
+import numpy as np
+import matplotlib.cm as cm
+import matplotlib.pyplot as plt
+import matplotlib.colors as col
 import matplotlib.ticker as ticker
-from pkg_resources import resource_filename
-
-
-def cm2inch(cm):
-    return cm*0.393701
+from matplotlib import rcParams, rc
 
 def Plotter(map_, optn_flags=None, png=False):
     rcParams['backend'] = 'pdf' #
@@ -47,7 +41,6 @@ def Plotter(map_, optn_flags=None, png=False):
 
     rc('text.latex', preamble=r'\usepackage{sfmath}')
 
-    print(map_, optn_flags )
      # Which signal to plot
     pollist = get_pollist(optn_flags)
     signal_labels = ["I", "Q", "U"]
@@ -682,7 +675,6 @@ def get_range(optn_flags):
 def get_key(optn_index, keyword):
     return optn_index[optn_flags.index(keyword) + 1]
 
-
 def fmt(x, pos):
     '''
     Format color bar labels
@@ -697,3 +689,6 @@ def fmt(x, pos):
         return r'${:.1f}$'.format(x)
     else: 
         return r'${:.2f}$'.format(x)
+
+def cm2inch(cm):
+    return cm*0.393701
