@@ -106,7 +106,7 @@ def h5map2fits(flags, save=True):
     outfile =  dataset.replace("/", "_")
     outfile = outfile.replace("_map","")
     if save:
-        hp.write_map(outname, data)
+        hp.write_map(outfile+"_n"+str(nside)+".fits", maps, overwrite=True)
     return maps, nside, lmax, outfile
 
 def alm2fits(flags, save=True):
@@ -115,7 +115,7 @@ def alm2fits(flags, save=True):
     dataset = get_key(flags, h5file) 
 
     with h5py.File(h5file, 'r') as f:
-        maps = f[dataset][()]
+        data = f[dataset][()]
         lmax = f[dataset[:-4]+"_lmax"][()] # Get lmax from h5
     
     if "-lmax" in flags:
@@ -143,13 +143,14 @@ def alm2fits(flags, save=True):
     print("alm length hehe:",hehe)
     print("alm length actual:", alms.shape)
 
-    data = hp.sphtfunc.alm2map(alms, nside, lmax=lmax, fwhm=arcmin2rad(fwhm))
+    maps = hp.sphtfunc.alm2map(alms, nside, lmax=lmax, fwhm=arcmin2rad(fwhm))
 
     outfile =  dataset.replace("/", "_")
     outfile = outfile.replace("_alm","")
     if save:
-        hp.write_map(outname, data)
-    return data, nside, lmax, fwhm, outfile
+        outfile += '_{}arcmin'.format(str(int(fwhm))) if "-fwhm" in flags else None
+        hp.write_map(outfile+"_n"+str(nside)+"_lmax{}".format(lmax) + ".fits", maps, overwrite=True)
+    return maps, nside, lmax, fwhm, outfile
 
 
 

@@ -265,7 +265,11 @@ def Plotter(flags=None):
             filename.append('masked') if "-mask" in flags else None
             filename.append('dark') if "-darkmode" in flags else None
         
-            fn = outfile+"_"+signal_labels[polt]+"_w"+str(int(width))+"_n"+str(int(nside))
+            nside_tag = "_n"+str(int(nside))
+            if nside_tag in outfile:
+                outfilename = outfile.replace(nside_tag, "")
+            fn = outfilename+"_"+signal_labels[polt]+"_w"+str(int(width)) + nside_tag
+
             for i in filename:
                 fn += "_"+i
             fn += filetype
