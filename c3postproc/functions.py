@@ -11,8 +11,6 @@ import numpy as np
 # ACTUAL MODULES HERE #
 #######################
 
-
-
 def h5handler(flags, command):
     filename = str(flags[0])
     signal = str(flags[1])
@@ -97,7 +95,7 @@ def sigma_l2fits(flags):
 def h5map2fits(flags, save=True):
     import h5py
     h5file = str(flags[0])
-    dataset = get_key(flags, h5file) 
+    dataset = str(flags[1])
     with h5py.File(h5file, 'r') as f:
         maps = f[dataset][()]
         lmax = f[dataset[:-4]+"_lmax"][()] # Get lmax from h5
@@ -112,10 +110,11 @@ def h5map2fits(flags, save=True):
 def alm2fits(flags, save=True):
     import h5py
     h5file = str(flags[0])
-    dataset = get_key(flags, h5file) 
+    dataset = str(flags[1])
+    nside = int(flags[2]) # Output nside
 
     with h5py.File(h5file, 'r') as f:
-        data = f[dataset][()]
+        alms = f[dataset][()]
         lmax = f[dataset[:-4]+"_lmax"][()] # Get lmax from h5
     
     if "-lmax" in flags:
@@ -125,7 +124,6 @@ def alm2fits(flags, save=True):
             print("Please chose a value smaller than this")
         else:
             lmax =  lmax_
-        print("Setting lmax to ", lmax)
         mmax = lmax
     else:
         mmax = lmax
@@ -135,20 +133,16 @@ def alm2fits(flags, save=True):
     else:
         fwhm = 0.0
 
-
-    alms = unpack_alms(data,lmax) # Unpack alms
-    nside = int(get_key(flags, dataset)) # Output nside
-    
     hehe = int(mmax * (2 * lmax + 1 - mmax) / 2 + lmax + 1) 
-    print("alm length hehe:",hehe)
-    print("alm length actual:", alms.shape)
-
-    maps = hp.sphtfunc.alm2map(alms, nside, lmax=lmax, fwhm=arcmin2rad(fwhm))
+    print("Setting lmax to ", lmax, "hehe: ", hehe, "datashape: ", alms.shape)
+    
+    alms_unpacked = unpack_alms(alms,lmax) # Unpack alms
+    maps = hp.sphtfunc.alm2map(alms_unpacked, nside, lmax=lmax, mmax= mmax, fwhm=arcmin2rad(fwhm))
 
     outfile =  dataset.replace("/", "_")
     outfile = outfile.replace("_alm","")
     if save:
-        outfile += '_{}arcmin'.format(str(int(fwhm))) if "-fwhm" in flags else None
+        outfile += '_{}arcmin'.format(str(int(fwhm))) if "-fwhm" in flags else ""
         hp.write_map(outfile+"_n"+str(nside)+"_lmax{}".format(lmax) + ".fits", maps, overwrite=True)
     return maps, nside, lmax, fwhm, outfile
 
@@ -161,69 +155,112 @@ def alm2fits(flags, save=True):
 
 
 def unpack_alms(maps,lmax):
+    """
+    Create lm pairs here (same as commander)
+    """
     mind = []
     lm = []
     idx = 0
-
-    for m in range(0,lmax):
+    # lm pairs where m = 0
+    mind.append(idx)
+    for l in range(0, lmax+1):
+        lm.append((l,0))
+        idx += 1
+    # rest of lm pairs
+    for m in range(1,lmax+1):
         mind.append(idx)
-        if m == 0:
-            for l in range(m, lmax):
-                #lm[idx] = (l,m)
-                lm.append((l,m))
-                idx += 1
-        else:
-            for l in range(m,lmax):
-                #lm(idx) = (l,m)
-                lm.append((l,m))
-                idx +=1
-                
-                #lm(idx) = (l,-m)
-                lm.append((l,-m))
-                idx +=1
-    print(len(lm))
+        for l in range(m,lmax+1):
+            lm.append((l,m))              
+            lm.append((l,-m))
+            idx +=2
 
-    alms =[] 
-    pol = 0
-    #for l in range(lmax):
-    #    for m in range(-l,l):
-    
-
-    # 151 leftover when lmax=150! WHAT DOES THAT MEAN?!
-
-    for i in range(len(lm)):
-        l = lm[i][0]
-        m = lm[i][1]
+    """
+    unpack data here per l,m pair
+    """
+    alms =[[],[],[]] 
+    for l, m in lm:
         if m < 0:
             continue
-        idx = lm2i(l,m,mind)
-
         if m == 0:
-            alms.append(complex( maps[pol, idx], 0.0 ))
-        else:  
-            #alms.append( 1/np.sqrt(2)*complex(maps[pol,idx], maps[pol, lm2i(l,-m,mind) ]) )
-            alms.append( complex(maps[pol,idx], maps[pol, idx+1])/np.sqrt(2) )
-    print(len(alms))
-    return np.array(alms, dtype=np.complex128)
+            idx = mind[m] + l 
+            for pol in range(3):
+                alms[pol].append(complex( maps[pol, idx], 0.0 ))
+        else:
+            idx = mind[abs(m)] + 2*(l-abs(m))
+            for pol in range(3):
+                alms[pol].append( complex(maps[pol,idx], maps[pol, idx+1])/np.sqrt(2) )
 
-def lm2i(l,m, mind):
-    if l>150 or abs(m)> l:
-        print("HELLO1")
-        sys.exit()
-    if  mind[abs(m)]==-1:
-        print("HELLO2")
-        sys.exit()
-    if abs(m) > l:
-        print("HELLO3")
-        sys.exit()
 
-    if m == 0:
-        i = mind[m] + l 
-    else: 
-        i = mind[abs(m)] + 2*(l-abs(m))
-        if m<0:
-            i += 1 
-    return i
+    alms_unpacked = np.array(alms, dtype=np.complex128)
+    return alms_unpacked
+
 
 def get_key(flags, keyword):
     return flags[flags.index(keyword) + 1]
+
+def arcmin2rad(arcmin):
+    return arcmin*(2*np.pi)/21600
+
+"""
+
+lm2 = lm
+mind = []
+lm = []
+idx = 0
+for m in range(lmax+1):
+    mind.append(idx)
+    if m == 0:
+        for l in range(m, lmax+1):
+            lm.append((l,m))
+            idx += 1
+    else:
+        for l in range(m,lmax+1):
+            lm.append((l,m))
+            idx +=1
+            
+            lm.append((l,-m))
+            idx +=1
+
+lm = np.zeros((2,22801))
+mind = np.zeros(lmax+1)
+ind = 0
+for m in range(lmax+1):
+    mind[m] = ind
+    if m == 0:
+        for l in range(m, lmax+1):
+            lm[:,ind] = (l,m)
+            ind                           = ind+1
+    else:
+        for l in range(m, lmax+1):
+        lm[:,ind] = (l,m)
+        ind                           = ind+1
+        lm[:,ind] = (l,-m)
+        ind                           = ind+1
+print(lm.shape)
+
+
+  alms1 =[[],[],[]] 
+    for l, m in lm:
+        if m<0:
+            continue
+        idx = lm2i(l, m,mind)
+        if m == 0:
+            for pol in range(3):
+                alms1[pol].append( complex( maps[pol,idx], 0.0 ) )
+        else:
+            idx2 = lm2i(l,-m,mind)
+            for pol in range(3):
+                alms1[pol].append( 1/np.sqrt(2)*complex(maps[pol,idx], maps[pol,idx2]) )
+
+
+
+
+def lm2i(l,m,mind):
+    if m == 0:
+        i = mind[int(m)] + l
+    else:
+        i = mind[int(abs(m))] + 2*(l-abs(m))
+        if (m < 0):
+           i = i+1
+    return int(i)
+"""

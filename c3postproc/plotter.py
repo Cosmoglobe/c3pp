@@ -59,13 +59,16 @@ def Plotter(flags=None):
         outfile = map_.replace(".fits", "")
 
     elif ".h5" in map_[-3:]:
+        from c3postproc.functions import alm2fits
+
+        dataset = get_key(flags, map_)
         if "alm" in dataset[-3:]:
             print("Converting alms to map")
             maps, nside, lmax, fwhm, outfile = alm2fits(flags, save=False)
          
         elif "map" in dataset[-3:]:
             print("Reading map from h5")
-            data, nside, lmax, outfile = h5map2fits(flags, save=False)
+            maps, nside, lmax, outfile = h5map2fits(flags, save=False)
 
 
     print("nside", nside, "total file shape", maps.shape)
@@ -253,7 +256,7 @@ def Plotter(flags=None):
             #### SAVE ####
             ##############
             plt.tight_layout()
-            filetype = ".png" if "-png" in flags else ".pdf"
+            filetype = ".pdf" if "-pdf" in flags else ".png"
             tp = False if "-white_background" in flags else True # Turn on transparency unless told otherwise
 
             ##############
@@ -267,8 +270,8 @@ def Plotter(flags=None):
         
             nside_tag = "_n"+str(int(nside))
             if nside_tag in outfile:
-                outfilename = outfile.replace(nside_tag, "")
-            fn = outfilename+"_"+signal_labels[polt]+"_w"+str(int(width)) + nside_tag
+                outfile = outfile.replace(nside_tag, "")
+            fn = outfile+"_"+signal_labels[polt]+"_w"+str(int(width)) + nside_tag
 
             for i in filename:
                 fn += "_"+i
@@ -733,7 +736,7 @@ def get_sizes(flags):
     if "-large" in flags:
         sizes.append(18.0)
     if len(sizes) == 0:
-        sizes = [8.8, 12.0, 18.0]
+        sizes = [12.0]
     return sizes
 
 def get_range(flags):
@@ -766,6 +769,5 @@ def cm2inch(cm):
 def tag_lookup(tags, outfile):
     return any(e in outfile for e in tags)
 
-def arcmin2rad(arcmin):
-    return arcmin*(2*np.pi)/21600
+
 

@@ -34,10 +34,10 @@ def c3help(op, nsysargs):
             print("-mask FILENAME         ")
             print("-I/-Q/-U/-QU/-IQU (-I default)         ")
             print("-logscale          ")
-            print("-small -medium -large (8.8, 12.0, 18. All by default)          ")
+            print("-small -medium -large (8.8, 12.0, 18. Medium by default)          ")
             print("-white_background          ")
             print("-darkmode          Plots all outlines in white for dark bakgrounds (\"dark\" in filename)")
-            print("-png , pdf is default")
+            print("-pdf , .png by default")
             print()
             print("Plots map as png, autoregognizes type, if not autosets parameters. ")
             print("Most amplitudes will be plotted with a semi-logarithmic scale by default. You will be notified. ")
@@ -56,9 +56,9 @@ def c3help(op, nsysargs):
             print("This tool outputs a h5 map to fits on the form 000001_cmb_amp_n1024.fits")
             sys.exit()
     elif str(op) == "alm2fits":
-        if nsysargs < 5:
+        if nsysargs < 4:
             print("Usage:   ")
-            print("c3pp alm2fits [.h5 filename] [h5 dataset (h5-group path)] [nside] [outfile.fits] ")
+            print("c3pp alm2fits [.h5 filename] [h5 dataset (h5-group path)] [nside] ")
             print("optional:        " )
             print("-lmax xx       chose a lower lmax if you wish  ")
             print("-fwhm xx       fwhm in arcmin for smoothing ")
@@ -79,3 +79,4 @@ def c3help_general():
 
 def operations():
     operations_list = ["stddev", "mean", "plot", "sigma_l2fits", "h5map2fits", "alm2fits"]
+    return operations_list
