@@ -49,6 +49,21 @@ def c3help(op, nsysargs):
             print("c3pp h52fits [.h5 filename] [h5 dataset (optional, default cmb/sigma_l)] [burn-in (sample at which finishes burn-in)] [out file (name.fits)]")
             print("This tool converts the .h5 dataset from Commander3 into .fits dateset suitable for Commander1 BR and GBR estimator analysis (See comm_like_tools for further information about BR and GBR post processing).")
             sys.exit()
+    elif str(op) == "h5map2fits":
+        if nsysargs < 3:
+            print("Usage:   ")
+            print("c3pp h5map2fits [.h5 filename] [h5 dataset (h5-group path)]")
+            print("This tool outputs a h5 map to fits on the form 000001_cmb_amp_n1024.fits")
+            sys.exit()
+    elif str(op) == "alm2fits":
+        if nsysargs < 5:
+            print("Usage:   ")
+            print("c3pp alm2fits [.h5 filename] [h5 dataset (h5-group path)] [nside] [outfile.fits] ")
+            print("optional:        " )
+            print("-lmax xx       chose a lower lmax if you wish  ")
+            print("-fwhm xx       fwhm in arcmin for smoothing ")
+            print("This tool converts the alms stored in the commander3 h5 file to fits, with given nside, lmax and fwhm.")
+            sys.exit()
     elif str(op) == "help":
         c3help_general()
     else:
@@ -63,5 +78,5 @@ def c3help_general():
     sys.exit()
 
 def operations():
-    operations_list = ["stddev", "mean", "plot", "h52fits"]
+    operations_list = ["stddev", "mean", "plot", "h52fits", "h5map2fits", "alm2fits"]
     return operations_list

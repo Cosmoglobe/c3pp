@@ -9,6 +9,8 @@ import matplotlib.colors as col
 import matplotlib.ticker as ticker
 from matplotlib import rcParams, rc
 
+from c3postproc.functions import get_key
+
 def Plotter(flags=None):
     rcParams['backend'] = 'pdf' #
     rcParams['legend.fancybox'] = True
@@ -57,51 +59,14 @@ def Plotter(flags=None):
         outfile = map_.replace(".fits", "")
 
     elif ".h5" in map_[-3:]:
-        import h5py
-        dataset =  get_key(flags, map_) 
-        with h5py.File(map_, 'r') as f:
-            maps = f[dataset][()]
-            lmax = f[dataset[:-4]+"_lmax"][()] # Get lmax from h5
-
         if "alm" in dataset[-3:]:
-            alms = np.array(maps,dtype=np.complex128)
-            # Convert alms to map
             print("Converting alms to map")
-            
-            
-            if "-lmax" in flags:
-                lmax = int(get_key(flags, "-lmax"))
-                print("Setting lmax to ", lmax)
-                mmax = lmax
-            else:
-                # Let alm2map chose
-                # This does NOT work
-                #lmax = None
-                mmax = lmax
-
-            if "-fwhm" in flags:
-                fwhm = float(get_key(flags, "-fwhm"))
-            else:
-                fwhm = 0.0
-
-            if "-lmin" in flags:
-                lmin = int(get_key(flags, "-lmin"))
-            else:
-                lmin = 0
-
-            nside = int(get_key(flags, dataset))
-            
-            # does the +lmin make sense here?
-            hehe = int(mmax * (2 * lmax + 1 - mmax) / 2 + lmax + 1) + lmin
-
-            maps = hp.sphtfunc.alm2map(alms[:,lmin:hehe], nside, lmax=lmax, fwhm=arcmin2rad(fwhm))
-            outfile =  dataset.replace("/", "_")
-            outfile = outfile.replace("_alm","")
+            maps, nside, lmax, fwhm, outfile = alm2fits(flags, save=False)
+         
         elif "map" in dataset[-3:]:
             print("Reading map from h5")
-            nside = hp.npix2nside(maps.shape[-1])
-            outfile =  dataset.replace("/", "_")
-            outfile = outfile.replace("_map","")
+            data, nside, lmax, outfile = h5map2fits(flags, save=False)
+
 
     print("nside", nside, "total file shape", maps.shape)
 
@@ -776,9 +741,6 @@ def get_range(flags):
         max =  r
     return min, max
 
-def get_key(flags, keyword):
-    return flags[flags.index(keyword) + 1]
-
 def fmt(x, pos):
     '''
     Format color bar labels
@@ -802,3 +764,4 @@ def tag_lookup(tags, outfile):
 
 def arcmin2rad(arcmin):
     return arcmin*(2*np.pi)/21600
+
