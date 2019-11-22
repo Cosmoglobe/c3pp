@@ -46,7 +46,7 @@ def plot(flags):
     from c3postproc.plotter import Plotter
     Plotter(flags)
 
-def h52fits(flags, save=True):
+def sigma_l2fits(flags):
     filename = str(flags[0])
     path     = "cmb/sigma_l"
     burnin  = int(flags[-2])

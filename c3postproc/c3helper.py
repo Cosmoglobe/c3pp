@@ -43,10 +43,10 @@ def c3help(op, nsysargs):
             print("Most amplitudes will be plotted with a semi-logarithmic scale by default. You will be notified. ")
             print()
             sys.exit()            
-    elif str(op) == "h52fits":
+    elif str(op) == "sigma_l2fits":
         if nsysargs < 5:
             print("Usage:   ")
-            print("c3pp h52fits [.h5 filename] [h5 dataset (optional, default cmb/sigma_l)] [burn-in (sample at which finishes burn-in)] [out file (name.fits)]")
+            print("c3pp sigma_l2fits [.h5 filename] [h5 dataset (optional, default cmb/sigma_l)] [burn-in (sample at which finishes burn-in)] [out file (name.fits)]")
             print("This tool converts the .h5 dataset from Commander3 into .fits dateset suitable for Commander1 BR and GBR estimator analysis (See comm_like_tools for further information about BR and GBR post processing).")
             sys.exit()
     elif str(op) == "h5map2fits":
@@ -78,5 +78,9 @@ def c3help_general():
     sys.exit()
 
 def operations():
+<<<<<<< HEAD
     operations_list = ["stddev", "mean", "plot", "h52fits", "h5map2fits", "alm2fits"]
+=======
+    operations_list = ["stddev", "mean", "plot", "sigma_l2fits"]
+>>>>>>> a40127652fe1acf2fdf39a4e10dcd40a2fc45304
     return operations_list
