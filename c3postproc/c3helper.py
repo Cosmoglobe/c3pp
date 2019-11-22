@@ -78,9 +78,4 @@ def c3help_general():
     sys.exit()
 
 def operations():
-<<<<<<< HEAD
-    operations_list = ["stddev", "mean", "plot", "h52fits", "h5map2fits", "alm2fits"]
-=======
-    operations_list = ["stddev", "mean", "plot", "sigma_l2fits"]
->>>>>>> a40127652fe1acf2fdf39a4e10dcd40a2fc45304
-    return operations_list
+    operations_list = ["stddev", "mean", "plot", "sigma_l2fits", "h5map2fits", "alm2fits"]
