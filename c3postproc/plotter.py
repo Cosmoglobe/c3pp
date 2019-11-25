@@ -40,24 +40,36 @@ def Plotter(flags=None):
     pollist = get_pollist(flags)
     signal_labels = ["I", "Q", "U"]
 
-    print()
+    print("----------------------------------")
     print("Plotting " + map_)
 
     #######################
     ####   READ MAP   #####
     #######################
-    
+
     if ".fits" in map_[-5:]:
         # Make sure its the right shape for indexing
         # This is a really dumb way of doing it
-        idx = tuple(pollist)
         dats = [0, 0, 0]
-        for i in idx:
-            dats[i] = hp.ma(hp.read_map(map_, field=i))
-            nside = hp.npix2nside(len(dats[i]))
+        map_exists = False
+        for i in pollist:
+            try:
+                dats[i] = hp.ma(hp.read_map(map_, field=i))
+                nside = hp.npix2nside(len(dats[i]))
+                map_exists = True
+            except:
+                print("Signal {} not found in data, skipping".format(signal_labels[i]))
+                continue 
+
+        if map_exists==False:
+            hihi = []
+            [hihi.append(signal_labels[i]) for i in pollist ]
+            print()
+            print("{} does not contain a {} signal. Breaking.".format(map_,hihi))
+            sys.exit()
+        
         maps = np.array(dats)
         outfile = map_.replace(".fits", "")
-
     elif ".h5" in map_[-3:]:
         from c3postproc.functions import alm2fits
 
@@ -65,7 +77,7 @@ def Plotter(flags=None):
         if "alm" in dataset[-3:]:
             print("Converting alms to map")
             maps, nside, lmax, fwhm, outfile = alm2fits(flags, save=False)
-         
+
         elif "map" in dataset[-3:]:
             print("Reading map from h5")
             maps, nside, lmax, outfile = h5map2fits(flags, save=False)
@@ -74,9 +86,14 @@ def Plotter(flags=None):
     print("nside", nside, "total file shape", maps.shape)
 
     for polt in pollist:
-        m = maps[polt] # Select map signal (I,Q,U)
+        try:
+            m = maps[polt] # Select map signal (I,Q,U)
+        except:
+            print("Signal {} not found in data, skipping".format(signal_labels[polt]))
+            continue
+        sys.exit()
         #m= m[hp.ring2nest(nside, range(12*(nside)**2))]
-        
+
         #######################
         #### Auto-param   #####
         #######################
@@ -85,7 +102,7 @@ def Plotter(flags=None):
         vmax = ticks[-1]
         tmin = ticklabels[0]
         tmax = ticklabels[-1]
-        
+
         min, max = get_range(flags)
         if min != None:
             vmin = min
@@ -109,7 +126,7 @@ def Plotter(flags=None):
         ####   logscale   #####
         #######################
         # Some maps turns on logscale automatically
-        if "-logscale" in flags or logscale: 
+        if "-logscale" in flags or logscale:
             m = np.log10(0.5*(m+np.sqrt(4.+m*m)))
             m = np.maximum(np.minimum(m,vmax),vmin)
 
@@ -194,7 +211,7 @@ def Plotter(flags=None):
             if width > 12.:
                 fontsize=8
             elif width == 12.:
-                fontsize=7 
+                fontsize=7
 
             else:
                 fontsize=6
@@ -217,9 +234,9 @@ def Plotter(flags=None):
             if width < 10:
                 ax.set_latitude_grid(45)
                 ax.set_longitude_grid_ends(90)
-            
-        
-            
+
+
+
             ################
             ### COLORBAR ###
             ################
@@ -228,7 +245,7 @@ def Plotter(flags=None):
                 cb = fig.colorbar(image, orientation='horizontal', shrink=.3, pad=0.08, ticks=ticks, format=ticker.FuncFormatter(fmt))
                 if tmax != False or tmin != False: # let function format if not autoset
                     cb.ax.set_xticklabels(ticklabels)
-                cb.ax.xaxis.set_label_text(unit) 
+                cb.ax.xaxis.set_label_text(unit)
                 cb.ax.xaxis.label.set_size(fontsize)
                 cb.ax.minorticks_on()
                 cb.ax.tick_params(which='both', axis='x', direction='in', labelsize=fontsize)
@@ -267,7 +284,7 @@ def Plotter(flags=None):
             filename.append('cb') if "-bar" in flags else None
             filename.append('masked') if "-mask" in flags else None
             filename.append('dark') if "-darkmode" in flags else None
-        
+
             nside_tag = "_n"+str(int(nside))
             if nside_tag in outfile:
                 outfile = outfile.replace(nside_tag, "")
@@ -284,7 +301,7 @@ def Plotter(flags=None):
 def get_params(m, outfile, polt, signal_labels):
     print()
     logscale = False
-    
+
     # Everything listed here will be recognized
     # If tag is found in output file, use template
     cmb_tags = ["cmb"]
@@ -321,7 +338,7 @@ def get_params(m, outfile, polt, signal_labels):
         tmin = str(vmin)
         tmid = str(vmid)
         tmax = str(vmax)
-    
+
         ticks = [vmin, vmid, vmax]
         ticklabels = [tmin,tmid,tmax]
 
@@ -332,7 +349,7 @@ def get_params(m, outfile, polt, signal_labels):
         color = Path(__file__).parent / 'parchment1.dat'
 
     elif tag_lookup(chisq_tags, outfile):
-        
+
         title = r"$\chi^2$ " + signal_labels[polt]
 
         if polt>0:
@@ -347,7 +364,7 @@ def get_params(m, outfile, polt, signal_labels):
 
         ticks = [vmin, vmax]
         ticklabels = [tmin, tmax]
-        
+
         print("Plotting chisq with vmax = " + str(vmax) +" "+ signal_labels[polt])
 
         unit = ""
@@ -361,7 +378,7 @@ def get_params(m, outfile, polt, signal_labels):
         if polt>0:
             vmin = -1.69
             vmax = 1.69
-            tmin = str(-50)        
+            tmin = str(-50)
             tmax = str(50)
             logscale = True
 
@@ -396,7 +413,7 @@ def get_params(m, outfile, polt, signal_labels):
         vmin = 0 #0
         vmid = np.log10(100)
         vmax = np.log10(10000) #1000
-        
+
         tmin = str(0)
         tmid = str(r'$10^2$')
         tmax = str(r'$10^4$')
@@ -413,7 +430,7 @@ def get_params(m, outfile, polt, signal_labels):
     elif tag_lookup(dust_tags, outfile):
         print("Plotting Thermal dust" +" "+ signal_labels[polt])
         print("Applying logscale (Rewrite if not)")
-        title = r"$"+ signal_labels[polt]+"$" + r"$_{\mathrm{d}}$ " 
+        title = r"$"+ signal_labels[polt]+"$" + r"$_{\mathrm{d}}$ "
         if polt>0:
             vmin = -2
             vmid = 0
@@ -452,11 +469,11 @@ def get_params(m, outfile, polt, signal_labels):
     elif tag_lookup(ame_tags, outfile):
         print("Plotting AME")
         print("Applying logscale (Rewrite if not)")
-       
+
         vmin = 0 #0
         vmid = np.log10(100)
         vmax = np.log10(10000) #1000
-        
+
         tmin = str(0)
         tmid = str(r'$10^2$')
         tmax = str(r'$10^4$')
@@ -566,7 +583,7 @@ def get_params(m, outfile, polt, signal_labels):
     elif tag_lookup(dust_T_tags, outfile):
         print("Plotting Thermal dust Td")
 
-        title =  r"$"+ signal_labels[polt]+"$" + r"$T_d$ "
+        title =  r"$"+ signal_labels[polt]+"$ " + r"$T_d$ "
 
         vmin = 14
         vmax = 30
@@ -583,10 +600,10 @@ def get_params(m, outfile, polt, signal_labels):
     elif tag_lookup(dust_beta_tags, outfile):
         print("Plotting Thermal dust beta")
 
-        title =  r"$"+ signal_labels[polt]+"$" + r"$\beta_d$ "
+        title =  r"$"+ signal_labels[polt]+"$ " + r"$\beta_d$ "
 
-        vmin = 1.45
-        vmax = 1.55
+        vmin = 1.3
+        vmax = 1.8
         tmin = str(vmin)
         tmax = str(vmax)
         ticks = [vmin, vmax]
@@ -599,10 +616,10 @@ def get_params(m, outfile, polt, signal_labels):
     elif tag_lookup(synch_beta_tags, outfile):
         print("Plotting Synchrotron beta")
 
-        title = r"$"+ signal_labels[polt]+"$" +  r"$\beta_s$ " 
+        title = r"$"+ signal_labels[polt]+"$ " +  r"$\beta_s$ "
 
-        vmin = -3.15
-        vmax = -3.12
+        vmin = -4.0
+        vmax = -1.5
         tmin = str(vmin)
         tmax = str(vmax)
 
@@ -760,7 +777,7 @@ def fmt(x, pos):
         return r'${:d}$'.format(int(x))
     elif abs(x) > 1e1:
         return r'${:.1f}$'.format(x)
-    else: 
+    else:
         return r'${:.2f}$'.format(x)
 
 def cm2inch(cm):

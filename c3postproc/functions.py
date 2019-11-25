@@ -158,6 +158,7 @@ def unpack_alms(maps,lmax):
     """
     Create lm pairs here (same as commander)
     """
+
     mind = []
     lm = []
     idx = 0
@@ -171,28 +172,43 @@ def unpack_alms(maps,lmax):
         mind.append(idx)
         for l in range(m,lmax+1):
             lm.append((l,m))              
-            lm.append((l,-m))
-            idx +=2
-
+            #lm.append((l,-m))
+            idx +=1
+    #print(lm[:50])
     """
     unpack data here per l,m pair
     """
     alms =[[],[],[]] 
     for l, m in lm:
-        if m < 0:
-            continue
+        #ind = hp.Alm.getidx(lmax, l, m)
+        #if m < 0:
+        #    continue
         if m == 0:
             idx = mind[m] + l 
+            idx = l**2 + l + m
             for pol in range(3):
-                alms[pol].append(complex( maps[pol, idx], 0.0 ))
+                a_lm = complex( maps[pol, idx], 0.0 )
+                alms[pol].append(a_lm)
         else:
             idx = mind[abs(m)] + 2*(l-abs(m))
+            idx = l**2 + l + m
+            idx2 = idx + 1
+
             for pol in range(3):
-                alms[pol].append( complex(maps[pol,idx], maps[pol, idx+1])/np.sqrt(2) )
+                a_lm = complex(maps[pol,idx], maps[pol, idx2])/np.sqrt(2) 
+                alms[pol].append(a_lm)
+                #alms2[pol,ind] = a_lm
 
-
-    alms_unpacked = np.array(alms, dtype=np.complex128)
-    return alms_unpacked
+    alms2 = np.array(alms, dtype=np.complex128)
+    """
+    hehe = int(lmax * (2 * lmax + 1 - lmax) / 2 + lmax + 1) 
+    alms2 = np.zeros((3,hehe), dtype=np.complex128)
+   
+    for j, (l, m) in enumerate(lm):
+        ind = l**2 + l + m
+        alms2[:,j] = alms[:,idx]
+    """
+    return alms2
 
 
 def get_key(flags, keyword):
