@@ -137,9 +137,15 @@ def Plotter(flags=None):
             endcolor = 'white'
             if color == "none" :
                 cmap = col.LinearSegmentedColormap.from_list('own2',[startcolor,endcolor])
-            elif color == "special":
+            elif color == "pdust":
+                col1="deepskyblue"
+                col2="blue"
+                col3="firebrick"
+                col4="darkorange"
                 cmap = col.LinearSegmentedColormap.from_list('own2',[endcolor,col1,col2, startcolor, col3,col4, endcolor])
-            elif color == "special2":
+            elif color == "psynch":
+                col1="darkgoldenrod"
+                col2="darkgreen"
                 cmap = col.LinearSegmentedColormap.from_list('own2',[endcolor,col1, startcolor, col2, endcolor])
             else:
                 cmap = col.LinearSegmentedColormap.from_list('own2',[startcolor,midcolor,endcolor])
@@ -315,6 +321,7 @@ def get_params(m, outfile, polt, signal_labels):
     ff_Te_tags = ["ff_T_e", "ff_Te"]
     ff_EM_tags = ["ff_EM"]
     res_tags = ["residual_", "res_"]
+    ignore_tags = ["radio_"]
 
     if tag_lookup(cmb_tags, outfile):
         print("Plotting CMB " + signal_labels[polt] )
@@ -383,9 +390,7 @@ def get_params(m, outfile, polt, signal_labels):
             ticklabels = [tmin,tmid,tmax]
 
             coltype = 0
-            color = "special2"
-            col1="darkgoldenrod"
-            col2="darkgreen"
+            color = "psynch"
         else:
             vmin = 1
             vmax = np.log10(100)
@@ -393,11 +398,12 @@ def get_params(m, outfile, polt, signal_labels):
             tmax = str(100)
             logscale=True
             coltype =   0
+            color = "green"
 
             ticks = [vmin, vmax]
             ticklabels = [tmin, tmax]
 
-        color = "green"
+
 
         unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
 
@@ -437,11 +443,8 @@ def get_params(m, outfile, polt, signal_labels):
 
             logscale=True
             coltype= 0
-            color = "special"
-            col1="deepskyblue"
-            col2="blue"
-            col3="firebrick"
-            col4="darkorange"
+            color = "pdust"
+
         else:
             vmin = 0
             vmid = 2
@@ -661,7 +664,6 @@ def get_params(m, outfile, polt, signal_labels):
         coltype=1
         color="bone"
 
-
     #################
     # RESIDUAL MAPS #
     #################
@@ -704,7 +706,13 @@ def get_params(m, outfile, polt, signal_labels):
 
         ticks = [vmin, vmid, vmax]
         ticklabels = [tmin,tmid,tmax]
-
+    
+    #################
+    # RESIDUAL MAPS #
+    #################
+    elif tag_lookup(ignore_tags, outfile):
+        print("{} is on the ignore list, under tags {}.  Remove from \"ignore_tags\" in plotter.py. Breaking.".format(outfile, ignore_tags))
+        sys.exit()
     else:
         print("Map not recognized, plotting with min and max values")
         vmax = np.percentile(m,95)
