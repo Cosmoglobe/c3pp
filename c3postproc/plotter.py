@@ -86,12 +86,7 @@ def Plotter(flags=None):
     print("nside", nside, "total file shape", maps.shape)
 
     for polt in pollist:
-        try:
-            m = maps[polt] # Select map signal (I,Q,U)
-        except:
-            print("Signal {} not found in data, skipping".format(signal_labels[polt]))
-            continue
-        sys.exit()
+        m = maps[polt] # Select map signal (I,Q,U)
         #m= m[hp.ring2nest(nside, range(12*(nside)**2))]
 
         #######################
