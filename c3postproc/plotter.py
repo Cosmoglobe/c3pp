@@ -54,7 +54,7 @@ def Plotter(flags=None):
         map_exists = False
         for i in pollist:
             try:
-                dats[i] = hp.ma(hp.read_map(map_, field=i))
+                dats[i] = hp.ma(hp.read_map(map_, field=i,verbose=False))
                 nside = hp.npix2nside(len(dats[i]))
                 map_exists = True
             except:
