@@ -102,9 +102,15 @@ def Plotter(flags=None):
         if min != None:
             vmin = min
             tmin = str(min)
+            ticks[0] = vmin
+            ticklabels[0] = tmin
+
         if max != None:
             vmax = max
-            tmin = str(max)
+            tmax = str(max)
+
+            ticks[-1] = vmax
+            ticklabels[-1] = tmax
 
         ##########################
         #### Plotting Params #####
@@ -321,6 +327,7 @@ def get_params(m, outfile, polt, signal_labels):
     ff_Te_tags = ["ff_T_e", "ff_Te"]
     ff_EM_tags = ["ff_EM"]
     res_tags = ["residual_", "res_"]
+    tod_tags = ["Smap"]
     ignore_tags = ["radio_"]
 
     if tag_lookup(cmb_tags, outfile):
@@ -672,11 +679,11 @@ def get_params(m, outfile, polt, signal_labels):
         print("Plotting residual map" +" "+ signal_labels[polt])
 
         if "res_" in outfile:
-            tit  = str(re.findall(r'res_smooth3idual_(.*?)_',outfile)[0])
+            tit  = str(re.findall(r'res_(.*?)_',outfile)[0])
         else:
             tit = str(re.findall(r'residual_(.*?)_',outfile)[0])
-
-        title =  r"$"+ signal_labels[polt]+"$" +  r"{} GHz ".format(tit)
+    
+        title =   r"{} ".format(tit) + r"  $"+ signal_labels[polt]+"$"
 
         vmin = -10
         vmid = 0
@@ -706,10 +713,36 @@ def get_params(m, outfile, polt, signal_labels):
 
         ticks = [vmin, vmid, vmax]
         ticklabels = [tmin,tmid,tmax]
+    #################
+    # TOD MAPS      #
+    #################
+
+    elif tag_lookup(tod_tags, outfile):
+        
+        print("Plotting Smap map" +" "+ signal_labels[polt])
+        
+        tit  = str(re.findall(r'tod_(.*?)_Smap',outfile)[0])
+        title = r"{} ".format(tit) + r"  $"+ signal_labels[polt]+"$"
+
+        vmin = -0.2
+        vmid = 0
+        vmax = 0.2
+        tmin = str(vmin)
+        tmid = str(vmid)
+        tmax = str(vmax)
+
+        unit =  r"$\mu\mathrm{K}$"
+        coltype=2
+
+        from pathlib import Path
+        color = Path(__file__).parent / 'parchment1.dat'
+
+        ticks = [vmin, vmid, vmax]
+        ticklabels = [tmin,tmid,tmax]
     
-    #################
-    # RESIDUAL MAPS #
-    #################
+    ############################
+    # Not idenified or ignored #
+    ############################
     elif tag_lookup(ignore_tags, outfile):
         print("{} is on the ignore list, under tags {}.  Remove from \"ignore_tags\" in plotter.py. Breaking.".format(outfile, ignore_tags))
         sys.exit()
