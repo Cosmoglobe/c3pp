@@ -31,7 +31,7 @@ def c3help(op, nsysargs):
             print("-lmax xx ,               This is automatically set from the h5 file. Only available for alm inputs.")
             print("-fwhm xx                 FWHM of smoothing to apply to alm binning. Only available for alm inputs.")
             print("-mask FILENAME           Masks input with specified maskfile.")
-            print("-mfill color             Color to fill masked area. for example \"gray\". Transparent by default.')
+            print("-mfill color             Color to fill masked area. for example \"gray\". Transparent by default.")
             print("-I/-Q/-U/-QU/-IQU        Signal to be plotted (-I default)         ")
             print("-logscale                Plots using planck semi-logscale. (Autodetector sometimes uses this.)")
             print("-small -medium -large    Size: 1/3, 1/2 and full page width. 8.8, 12.0, 18. cm (Medium by default)")
