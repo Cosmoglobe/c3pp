@@ -161,9 +161,8 @@ def Plotter(flags=None):
             #cmap = get_cmbcolormap()
             cmap = ListedColormap(np.loadtxt(color)/255.)
 
-        #cmap.set_bad("gray") # color of missing pixels
-        #cmap.set_under("white") # color of background, necessary if you want to use
-        # using directly matplotlib instead of mollview has higher quality output
+
+
 
         ######################
         ####  Projection #####
@@ -186,6 +185,12 @@ def Plotter(flags=None):
             m.mask = np.logical_not(hp.read_map(mask_name))
             grid_mask = m.mask[grid_pix]
             grid_map = np.ma.MaskedArray(m[grid_pix], grid_mask)
+    
+            if "-mfill" in flags:
+                mfill = get_key(flags, "-mfill")
+                cmap.set_bad(mfill) # color of missing pixels
+                #cmap.set_under("white") # color of background, necessary if you want to use
+                # using directly matplotlib instead of mollview has higher quality output
         else:
             grid_map = m[grid_pix]
 
