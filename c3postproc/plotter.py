@@ -98,7 +98,7 @@ def Plotter(flags=None):
         tmin = ticklabels[0]
         tmax = ticklabels[-1]
 
-        min, max = get_range(flags)
+        min, max = get_range(flags,m)
         if min != None:
             vmin = min
             tmin = str(min)
@@ -183,7 +183,7 @@ def Plotter(flags=None):
         if "-mask" in flags:
             masked = True
             mask_name = get_key(flags, "-mask")
-            m.mask = np.logical_not(hp.read_map(mask_name,1))
+            m.mask = np.logical_not(hp.read_map(mask_name))
             grid_mask = m.mask[grid_pix]
             grid_map = np.ma.MaskedArray(m[grid_pix], grid_mask)
         else:
@@ -792,13 +792,18 @@ def get_sizes(flags):
         sizes = [12.0]
     return sizes
 
-def get_range(flags):
+def get_range(flags,m):
     min = float(get_key(flags, "-min")) if "-min" in flags else None
     max = float(get_key(flags, "-max")) if "-max" in flags else None
     if "-range" in flags:
-        r = float(get_key(flags, "-range"))
-        min = -r
-        max =  r
+        r = get_key(flags, "-range")
+        if "auto" in r:
+            max = np.percentile(m,95)
+            min = np.percentile(m,5)
+        else:
+            r = float(r)
+            min = -r
+            max =  r
     return min, max
 
 def fmt(x, pos):
