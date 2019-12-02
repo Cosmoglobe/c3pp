@@ -47,35 +47,40 @@ def plot(flags):
 def sigma_l2fits(flags):
     filename = str(flags[0])
     path     = "cmb/sigma_l"
+    nchains = int(flags[-3])
     burnin  = int(flags[-2])
     outname  = str(flags[-1])
-    if len(flags)==4:
+    if len(flags)==5:
         path = str(flags[1])
 
-    import h5py
-    with h5py.File(filename, 'r') as f:
-        print("Reading HDF5 file: "+filename+" ...")
-        groups = list(f.keys())
-        print()
-        print("Reading "+str(len(groups))+" samples from file.")
+    import h5py 
+    for nc in range(1,nchains+1):
+        with h5py.File(filename, 'r') as f:
+            print("Reading HDF5 file: "+filename+" ...")
+            groups = list(f.keys())
+            print()
+            print("Reading "+str(len(groups))+" samples from file.")
 
-        dset = np.zeros((len(groups)+1,1,len(f[groups[0]+'/'+path]),len(f[groups[0]+'/'+path][0])))
-        nspec = len(f[groups[0]+'/'+path])
-        lmax  = len(f[groups[0]+'/'+path][0])-1
+            if nc == 1 :
+                dset = np.zeros((len(groups)+1,numchains,len(f[groups[0]+'/'+path]),len(f[groups[0]+'/'+path][0])))
+        
+            nspec = len(f[groups[0]+'/'+path])
+            lmax  = len(f[groups[0]+'/'+path][0])-1
 
-        print('Found: \
-        \npath in the HDF5 file : '+path+' \
-        \nnumber of spectra :'+str(nspec)+\
-        '\nlmax: '+str(lmax) )
+            print('Found: \
+            \npath in the HDF5 file : '+path+' \
+            \nnumber of spectra :'+str(nspec)+\
+                  '\nlmax: '+str(lmax) )
 
-        for i in range(len(groups)):
-            for j in range(nspec):
-                dset[i+1,0,j,:] = np.asarray(f[groups[i]+'/'+path][j][:])
+            for i in range(len(groups)):
+                for j in range(nspec):
+                    dset[i+1,nc,j,:] = np.asarray(f[groups[i]+'/'+path][j][:])
 
     ell = np.arange(lmax+1)
-    for i in range(1,len(groups)+1):
-        for j in range(nspec):
-            dset[i,0,j,:] = dset[i,0,j,:]*ell[:]*(ell[:]+1.)/2./np.pi
+    for nc in range(1,nchains+1):
+        for i in range(1,len(groups)+1):
+            for j in range(nspec):
+                dset[i,nc,j,:] = dset[i,nc,j,:]*ell[:]*(ell[:]+1.)/2./np.pi
     dset[0,:,:,:] = len(groups) - burnin
 
     if save:
@@ -86,7 +91,7 @@ def sigma_l2fits(flags):
         h_dict = [{'name':'FUNCNAME','value':'Gibbs sampled power spectra','comment':'Full function name'}, \
                 {'name':'LMAX','value':lmax,'comment':'Maximum multipole moment'}, \
                 {'name':'NUMSAMP','value':len(groups),'comment':'Number of samples'}, \
-                {'name':'NUMCHAIN','value':1,'comment':'Number of independent chains'}, \
+                {'name':'NUMCHAIN','value':nchains,'comment':'Number of independent chains'}, \
                 {'name':'NUMSPEC','value':nspec,'comment':'Number of power spectra'}]
         fits.write(dset[:,:,:,:],header=h_dict,clobber=True)
         fits.close()
