@@ -50,9 +50,9 @@ def c3help(op, nsysargs):
             print()
             sys.exit()            
     elif str(op) == "sigma_l2fits":
-        if nsysargs < 5:
+        if nsysargs < 6:
             print("Usage:   ")
-            print("c3pp sigma_l2fits [.h5 filename] [h5 dataset (optional, default cmb/sigma_l)] [burn-in (sample at which finishes burn-in)] [out file (name.fits)]")
+            print("c3pp sigma_l2fits [.h5 file root (root_XXXXX.h5)] [h5 dataset (optional, default cmb/sigma_l)] [number of chains] [burn-in (sample at which finishes burn-in)] [out file (name.fits)]")
             print("This tool converts the .h5 dataset from Commander3 into .fits dateset suitable for Commander1 BR and GBR estimator analysis (See comm_like_tools for further information about BR and GBR post processing).")
             sys.exit()
     elif str(op) == "h5map2fits":
