@@ -18,17 +18,43 @@ def h5handler(flags, command):
     max = int(flags[3])
     outname = flags[-1]
     l = max-min
-    
+
+    # Check if you want to output a map
+    map=True if "fits" in outname[-4:] else False
+
     import h5py     
     dats = []
     with h5py.File(filename, 'r') as f:
-        for i in range(min,max+1):
-            s = str(i).zfill(6)
-            dats.append(f[s+"/"+signal][()])
+        for sample in range(min,max+1):
+
+            # Get sample number with leading zeros
+            s = str(sample).zfill(6)
+
+            # Get data from hdf
+            data = f[s+"/"+signal]
+
+            # Smooth every sample if calculating std.
+            if "-smooth" in flags and command==np.std and map:
+                print("--- Smoothing sample {} ---".format(sample))
+                fwhm = arcmin2rad(float(get_key(flags, "-smooth")))
+                data = hp.sphtfunc.smoothing(data, fwhm=fwhm)
+
+            # Append sample to list
+            dats.append(data[()])
+            
+    # Convert list to array
     dats = np.array(dats)
 
+    # Calculate std or mean
     outdata = command(dats, axis=0)
-    if "fits" in outname[-4:]: 
+
+    # Smoothing can be done after for np.mean
+    if "-smooth" in flags and command==np.mean and map:
+        fwhm = arcmin2rad(get_key(flags, "-smooth"))        
+        outdata = hp.sphtfunc.smoothing(outdata, fwhm=fwhm)
+
+    # Outputs fits map if output name is .fits
+    if map:
         hp.write_map(outname, outdata, overwrite=True)
     else:
         np.savetxt(outname, outdata)

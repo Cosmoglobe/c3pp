@@ -4,15 +4,21 @@ import os
 def c3help(op, nsysargs):
     if str(op) == "stddev":
         if nsysargs < 7:
+            print()
             print("Usage: ")
-            print("c3pp stddev [.h5 filename] [h5 dataset (ex. cmb/sigma_l)] [sample range min] [sample range max] [output name (name.fits/name.dat)]")
+            print("c3pp stddev [.h5 filename] [h5 dataset (ex. cmb/sigma_l)] [sample range min] [sample range max] (OPTIONAL: [-smooth FWHM]) [output name (name.fits/name.dat)]")
+            print("example: ")
+            print("c3pp stddev chain_c0001.h5 cmb/amp_map 10 20 -smooth 60 cmb_amp_60arcmin.fits")
             print("This thing calculates the standard deviation for any .h5 dataset quantity over a given sample range.")
+            print()
             sys.exit()
     elif str(op) == "mean":
         if nsysargs < 7:
+            print()
             print("Usage: ")
             print("c3pp mean [.h5 filename] [h5 dataset (ex. cmb/sigma_l)] [sample range min] [sample range max] [output name (name.fits/name.dat)]")
             print("This thing calculates the mean for any .h5 dataset quantity over a given sample range.")
+            print()
             sys.exit()
     elif str(op) == "plot":
         if nsysargs < 3:
