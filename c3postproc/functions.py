@@ -4,7 +4,7 @@ import os
 import time
 import healpy as hp
 import numpy as np
-
+import matplotlib.pyplot as plt
 
 
 #######################
@@ -31,16 +31,14 @@ def h5handler(flags, command):
             s = str(sample).zfill(6)
 
             # Get data from hdf
-            data = f[s+"/"+signal]
-
+            data = f[s+"/"+signal][()]
             # Smooth every sample if calculating std.
             if "-smooth" in flags and command==np.std and map:
                 print("--- Smoothing sample {} ---".format(sample))
                 fwhm = arcmin2rad(float(get_key(flags, "-smooth")))
-                data = hp.sphtfunc.smoothing(data, fwhm=fwhm)
-
+                data = hp.sphtfunc.smoothing(data, fwhm=fwhm, pol=False)
             # Append sample to list
-            dats.append(data[()])
+            dats.append(data)
             
     # Convert list to array
     dats = np.array(dats)
@@ -51,7 +49,7 @@ def h5handler(flags, command):
     # Smoothing can be done after for np.mean
     if "-smooth" in flags and command==np.mean and map:
         fwhm = arcmin2rad(get_key(flags, "-smooth"))        
-        outdata = hp.sphtfunc.smoothing(outdata, fwhm=fwhm)
+        outdata = hp.sphtfunc.smoothing(outdata, fwhm=fwhm, pol=True)
 
     # Outputs fits map if output name is .fits
     if map:
