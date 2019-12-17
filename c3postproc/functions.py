@@ -124,6 +124,47 @@ def sigma_l2fits(flags,save=True):
         fits.close()
     return dset
 
+def dlbin2dat(flags):
+    filename = str(flags[0])
+    signal = "cmb/Dl"
+    min = int(flags[1])
+    max = int(flags[2])
+    binfile = flags[3]
+
+    import h5py     
+    dats = []
+    with h5py.File(filename, 'r') as f:
+        for sample in range(min,max+1):
+            # Get sample number with leading zeros
+            s = str(sample).zfill(6)
+
+            # Get data from hdf
+            data = f[s+"/"+signal][()]
+            # Append sample to list
+            dats.append(data)
+    dats = np.array(dats)
+    
+    binned_data = {}
+    possible_signals = ["TT", "EE", "BB", "TE", "EB", "TB"]
+    with open(binfile) as f: 
+        next(f) # Skip first line
+        for line in f.readlines(): 
+            line = line.split() 
+            signal = line[0] 
+            if signal not in binned_data: 
+                binned_data[signal] = [] 
+            signal_id = possible_signals.index(signal) 
+            lmin = int(line[1]) 
+            lmax = int(line[2]) 
+            ellcenter = lmin+(lmax-lmin)/2 
+            # Saves (ellcenter, lmin, lmax, Dl_mean, Dl_stddev) over samples chosen 
+            binned_data[signal].append([ellcenter, lmin, lmax, np.mean(dats[:,signal_id,lmin], axis=0), np.std(dats[:,signal_id,lmin], axis=0)])
+
+    header = '{:22} {:24} {:24} {:24} {:24}'.format('l','lmin','lmax','Dl', 'stddev')
+    for signal in binned_data.keys():
+        np.savetxt("Dl_"+signal+"_binned.dat", binned_data[signal], header=header)
+
+
 def h5map2fits(flags, save=True):
     import h5py
     h5file = str(flags[0])
