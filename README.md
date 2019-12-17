@@ -53,6 +53,9 @@ Exports alms from .h5 to a separate fits file.
 #### sigma_l2fits
 Exports sigma_ls from .h5 to a separate .fits file.
 
+#### dlbin2dat
+Takes Dl signals from an .h5 file and calculates mean and standard deviation per bin given a binfile and outputs to a .dat.
+
 #### h5map2fits
 Exports a .h5 map signal to a separate .fits file.
 
