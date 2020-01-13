@@ -72,7 +72,7 @@ def Plotter(flags=None):
         maps = np.array(dats)
         outfile = map_.replace(".fits", "")
     elif ".h5" in map_[-3:]:
-        from c3postproc.functions import alm2fits
+        from c3postproc.functions import alm2fits, h5map2fits
 
         dataset = get_key(flags, map_)
         if "alm" in dataset[-3:]:
@@ -82,6 +82,14 @@ def Plotter(flags=None):
         elif "map" in dataset[-3:]:
             print("Reading map from h5")
             maps, nside, lmax, outfile = h5map2fits(flags, save=False)
+
+        else:
+            print("Dataset not found. Breaking.")
+            print("Does {}/{} exist?".format(map_,dataset))
+            sys.exit()
+    else:
+        print("Dataset not found. Breaking.")
+        sys.exit()
 
     print("nside", nside, "total file shape", maps.shape)
 
@@ -162,11 +170,11 @@ def Plotter(flags=None):
         elif coltype == 2:
             # cmap = get_cmbcolormap()
             cmap = ListedColormap(np.loadtxt(color) / 255.0)
-        print("lol")
+       
         if "-cmap" in flags:
             color = get_key(flags, "-cmap")
             print("Setting colormap to {}".format(color))
-            if colormap == "planck":
+            if color == "planck":
                 from pathlib import Path
 
                 color = Path(__file__).parent / "parchment1.dat"
