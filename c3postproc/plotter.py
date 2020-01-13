@@ -162,7 +162,7 @@ def Plotter(flags=None):
         elif coltype == 2:
             # cmap = get_cmbcolormap()
             cmap = ListedColormap(np.loadtxt(color) / 255.0)
-
+        print("lol")
         if "-cmap" in flags:
             color = get_key(flags, "-cmap")
             print("Setting colormap to {}".format(color))
