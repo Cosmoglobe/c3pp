@@ -42,6 +42,7 @@ def c3help(op, nsysargs):
             print("-white_background        Sets the background to be white. (Transparent by default [recommended])")
             print("-darkmode                Plots all outlines in white for dark bakgrounds (\"dark\" in filename)")
             print("-pdf                     Saves output as .pdf ().png by default)")
+            print("-cmap                    Choose different color map (string), such as Jet or planck")
             print()
             print("Plots map as png, autoregognizes type, if not autosets parameters. ")
             print("Most amplitudes will be plotted with a semi-logarithmic scale by default. You will be notified. ")

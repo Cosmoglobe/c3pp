@@ -161,6 +161,15 @@ def Plotter(flags=None):
             #cmap = get_cmbcolormap()
             cmap = ListedColormap(np.loadtxt(color)/255.)
 
+        if "-cmap" in flags:
+            color = get_key(flags, "-cmap")
+            if colormap == "planck":
+                from pathlib import Path
+                color = Path(__file__).parent / 'parchment1.dat'
+                cmap = ListedColormap(np.loadtxt(color)/255.)
+            else:
+                cmap = plt.get_cmap(color)
+
 
 
 
