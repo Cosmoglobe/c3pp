@@ -11,32 +11,33 @@ from matplotlib import rcParams, rc
 
 from c3postproc.functions import get_key
 
+
 def Plotter(flags=None):
-    rcParams['backend'] = 'pdf' #
-    rcParams['legend.fancybox'] = True
-    rcParams['lines.linewidth'] = 2
-    rcParams['savefig.dpi'] = 300
-    rcParams['axes.linewidth'] = 1
+    rcParams["backend"] = "pdf"  #
+    rcParams["legend.fancybox"] = True
+    rcParams["lines.linewidth"] = 2
+    rcParams["savefig.dpi"] = 300
+    rcParams["axes.linewidth"] = 1
     # use of Sans Serif also in math mode
     darkmode = False
-    masked   = False
+    masked = False
 
     if "-darkmode" in flags:
         darkmode = True
-        rcParams['text.color']   = 'white'   # axes background color
-        rcParams['axes.facecolor']   = 'white'   # axes background color
-        rcParams['axes.edgecolor' ]  = 'white'   # axes edge color
-        rcParams['axes.labelcolor']   = 'white'
-        rcParams['xtick.color']    = 'white'      # color of the tick labels
-        rcParams['ytick.color']    = 'white'      # color of the tick labels
-        rcParams['grid.color'] =   'white'   # grid color
-        rcParams['legend.facecolor']    = 'inherit'   # legend background color (when 'inherit' uses axes.facecolor)
-        rcParams['legend.edgecolor']= 'white' # legend edge color (when 'inherit' uses axes.edgecolor)
+        rcParams["text.color"] = "white"  # axes background color
+        rcParams["axes.facecolor"] = "white"  # axes background color
+        rcParams["axes.edgecolor"] = "white"  # axes edge color
+        rcParams["axes.labelcolor"] = "white"
+        rcParams["xtick.color"] = "white"  # color of the tick labels
+        rcParams["ytick.color"] = "white"  # color of the tick labels
+        rcParams["grid.color"] = "white"  # grid color
+        rcParams["legend.facecolor"] = "inherit"  # legend background color (when 'inherit' uses axes.facecolor)
+        rcParams["legend.edgecolor"] = "white"  # legend edge color (when 'inherit' uses axes.edgecolor)
 
-    rc('text.latex', preamble=r'\usepackage{sfmath}')
+    rc("text.latex", preamble=r"\usepackage{sfmath}")
 
-     # Which signal to plot
-    map_= flags[0] # Map is always first flag
+    # Which signal to plot
+    map_ = flags[0]  # Map is always first flag
     pollist = get_pollist(flags)
     signal_labels = ["I", "Q", "U"]
 
@@ -54,20 +55,20 @@ def Plotter(flags=None):
         map_exists = False
         for i in pollist:
             try:
-                dats[i] = hp.ma(hp.read_map(map_, field=i,verbose=False))
+                dats[i] = hp.ma(hp.read_map(map_, field=i, verbose=False))
                 nside = hp.npix2nside(len(dats[i]))
                 map_exists = True
             except:
                 print("Signal {} not found in data, skipping".format(signal_labels[i]))
-                continue 
+                continue
 
-        if map_exists==False:
+        if map_exists == False:
             hihi = []
-            [hihi.append(signal_labels[i]) for i in pollist ]
+            [hihi.append(signal_labels[i]) for i in pollist]
             print()
-            print("{} does not contain a {} signal. Breaking.".format(map_,hihi))
+            print("{} does not contain a {} signal. Breaking.".format(map_, hihi))
             sys.exit()
-        
+
         maps = np.array(dats)
         outfile = map_.replace(".fits", "")
     elif ".h5" in map_[-3:]:
@@ -82,12 +83,11 @@ def Plotter(flags=None):
             print("Reading map from h5")
             maps, nside, lmax, outfile = h5map2fits(flags, save=False)
 
-
     print("nside", nside, "total file shape", maps.shape)
 
     for polt in pollist:
-        m = maps[polt] # Select map signal (I,Q,U)
-        #m= m[hp.ring2nest(nside, range(12*(nside)**2))]
+        m = maps[polt]  # Select map signal (I,Q,U)
+        # m= m[hp.ring2nest(nside, range(12*(nside)**2))]
 
         #######################
         #### Auto-param   #####
@@ -98,7 +98,7 @@ def Plotter(flags=None):
         tmin = ticklabels[0]
         tmax = ticklabels[-1]
 
-        min, max = get_range(flags,m)
+        min, max = get_range(flags, m)
         if min != None:
             vmin = min
             tmin = str(min)
@@ -115,21 +115,21 @@ def Plotter(flags=None):
         ##########################
         #### Plotting Params #####
         ##########################
-        unit       = unit
-        title      = title        # Short name upper right
-        colorbar   = 1 if "-bar" in flags else 0           # Colorbar on
+        unit = unit
+        title = title  # Short name upper right
+        colorbar = 1 if "-bar" in flags else 0  # Colorbar on
 
         # Image size -  ratio is always 1/2
         xsize = 2000
-        ysize = int(xsize/2.)
+        ysize = int(xsize / 2.0)
 
         #######################
         ####   logscale   #####
         #######################
         # Some maps turns on logscale automatically
         if "-logscale" in flags or logscale:
-            m = np.log10(0.5*(m+np.sqrt(4.+m*m)))
-            m = np.maximum(np.minimum(m,vmax),vmin)
+            m = np.log10(0.5 * (m + np.sqrt(4.0 + m * m)))
+            m = np.maximum(np.minimum(m, vmax), vmin)
 
         ######################
         #### COLOR SETUP #####
@@ -138,40 +138,41 @@ def Plotter(flags=None):
         from matplotlib.colors import ListedColormap
 
         if coltype == 0:
-            startcolor = 'black'
+            startcolor = "black"
             midcolor = color
-            endcolor = 'white'
-            if color == "none" :
-                cmap = col.LinearSegmentedColormap.from_list('own2',[startcolor,endcolor])
+            endcolor = "white"
+            if color == "none":
+                cmap = col.LinearSegmentedColormap.from_list("own2", [startcolor, endcolor])
             elif color == "pdust":
-                col1="deepskyblue"
-                col2="blue"
-                col3="firebrick"
-                col4="darkorange"
-                cmap = col.LinearSegmentedColormap.from_list('own2',[endcolor,col1,col2, startcolor, col3,col4, endcolor])
+                col1 = "deepskyblue"
+                col2 = "blue"
+                col3 = "firebrick"
+                col4 = "darkorange"
+                cmap = col.LinearSegmentedColormap.from_list(
+                    "own2", [endcolor, col1, col2, startcolor, col3, col4, endcolor]
+                )
             elif color == "psynch":
-                col1="darkgoldenrod"
-                col2="darkgreen"
-                cmap = col.LinearSegmentedColormap.from_list('own2',[endcolor,col1, startcolor, col2, endcolor])
+                col1 = "darkgoldenrod"
+                col2 = "darkgreen"
+                cmap = col.LinearSegmentedColormap.from_list("own2", [endcolor, col1, startcolor, col2, endcolor])
             else:
-                cmap = col.LinearSegmentedColormap.from_list('own2',[startcolor,midcolor,endcolor])
+                cmap = col.LinearSegmentedColormap.from_list("own2", [startcolor, midcolor, endcolor])
         elif coltype == 1:
             cmap = plt.get_cmap(color)
         elif coltype == 2:
-            #cmap = get_cmbcolormap()
-            cmap = ListedColormap(np.loadtxt(color)/255.)
+            # cmap = get_cmbcolormap()
+            cmap = ListedColormap(np.loadtxt(color) / 255.0)
 
         if "-cmap" in flags:
             color = get_key(flags, "-cmap")
+            print("Setting colormap to {}".format(color))
             if colormap == "planck":
                 from pathlib import Path
-                color = Path(__file__).parent / 'parchment1.dat'
-                cmap = ListedColormap(np.loadtxt(color)/255.)
+
+                color = Path(__file__).parent / "parchment1.dat"
+                cmap = ListedColormap(np.loadtxt(color) / 255.0)
             else:
                 cmap = plt.get_cmap(color)
-
-
-
 
         ######################
         ####  Projection #####
@@ -194,59 +195,57 @@ def Plotter(flags=None):
             m.mask = np.logical_not(hp.read_map(mask_name))
             grid_mask = m.mask[grid_pix]
             grid_map = np.ma.MaskedArray(m[grid_pix], grid_mask)
-    
+
             if "-mfill" in flags:
                 mfill = get_key(flags, "-mfill")
-                cmap.set_bad(mfill) # color of missing pixels
-                #cmap.set_under("white") # color of background, necessary if you want to use
+                cmap.set_bad(mfill)  # color of missing pixels
+                # cmap.set_under("white") # color of background, necessary if you want to use
                 # using directly matplotlib instead of mollview has higher quality output
         else:
             grid_map = m[grid_pix]
-
 
         ######################
         #### Formatting ######
         ######################
         from matplotlib.projections.geo import GeoAxes
+
         class ThetaFormatterShiftPi(GeoAxes.ThetaFormatter):
             """Shifts labelling by pi
             Shifts labelling from -180,180 to 0-360"""
+
             def __call__(self, x, pos=None):
                 if x != 0:
                     x *= -1
                 if x < 0:
-                    x += 2*np.pi
+                    x += 2 * np.pi
                 return GeoAxes.ThetaFormatter.__call__(self, x, pos)
-
-
 
         sizes = get_sizes(flags)
         for width in sizes:
             print("Plotting size " + str(width))
-            height = width/2.
-            height *=  1.275 if colorbar else 1
+            height = width / 2.0
+            height *= 1.275 if colorbar else 1
 
             ################
             ##### font #####
             ################
-            if width > 12.:
-                fontsize=8
-            elif width == 12.:
-                fontsize=7
+            if width > 12.0:
+                fontsize = 8
+            elif width == 12.0:
+                fontsize = 7
 
             else:
-                fontsize=6
-
-
+                fontsize = 6
 
             fig = plt.figure(figsize=(cm2inch(width), cm2inch(height)))
 
-            ax = fig.add_subplot(111,projection='mollweide')
-
+            ax = fig.add_subplot(111, projection="mollweide")
 
             # rasterized makes the map bitmap while the labels remain vectorial
             # flip longitude to the astro convention
-            image = plt.pcolormesh(longitude[::-1], latitude, grid_map, vmin=vmin, vmax=vmax, rasterized=True, cmap=cmap)
+            image = plt.pcolormesh(
+                longitude[::-1], latitude, grid_map, vmin=vmin, vmax=vmax, rasterized=True, cmap=cmap
+            )
 
             # graticule
             ax.set_longitude_grid(60)
@@ -256,26 +255,26 @@ def Plotter(flags=None):
                 ax.set_latitude_grid(45)
                 ax.set_longitude_grid_ends(90)
 
-
-
             ################
             ### COLORBAR ###
             ################
             if colorbar == 1:
                 # colorbar
-                cb = fig.colorbar(image, orientation='horizontal', shrink=.3, pad=0.08, ticks=ticks, format=ticker.FuncFormatter(fmt))
-                if tmax != False or tmin != False: # let function format if not autoset
+                cb = fig.colorbar(
+                    image, orientation="horizontal", shrink=0.3, pad=0.08, ticks=ticks, format=ticker.FuncFormatter(fmt)
+                )
+                if tmax != False or tmin != False:  # let function format if not autoset
                     cb.ax.set_xticklabels(ticklabels)
                 cb.ax.xaxis.set_label_text(unit)
                 cb.ax.xaxis.label.set_size(fontsize)
                 cb.ax.minorticks_on()
-                cb.ax.tick_params(which='both', axis='x', direction='in', labelsize=fontsize)
-                cb.ax.xaxis.labelpad = 4 #-11
+                cb.ax.tick_params(which="both", axis="x", direction="in", labelsize=fontsize)
+                cb.ax.xaxis.labelpad = 4  # -11
                 # workaround for issue with viewers, see colorbar docstring
                 cb.solids.set_edgecolor("face")
 
-                #ax.tick_params(axis='x', labelsize=10)
-            #ax.tick_params(axis='y', labelsize=10)
+                # ax.tick_params(axis='x', labelsize=10)
+            # ax.tick_params(axis='y', labelsize=10)
 
             # remove longitude tick labels
             ax.xaxis.set_ticklabels([])
@@ -288,34 +287,34 @@ def Plotter(flags=None):
             #############
             ## TITLE ####
             #############
-            plt.text(6.,  1.3, r"%s" % title, ha='center', va='center', fontsize=fontsize)
+            plt.text(6.0, 1.3, r"%s" % title, ha="center", va="center", fontsize=fontsize)
 
             ##############
             #### SAVE ####
             ##############
             plt.tight_layout()
             filetype = ".pdf" if "-pdf" in flags else ".png"
-            tp = False if "-white_background" in flags else True # Turn on transparency unless told otherwise
+            tp = False if "-white_background" in flags else True  # Turn on transparency unless told otherwise
 
             ##############
             ## filename ##
             ##############
             filename = []
-            filename.append('{}arcmin'.format(str(int(fwhm)))) if "-fwhm" in flags else None
-            filename.append('cb') if "-bar" in flags else None
-            filename.append('masked') if "-mask" in flags else None
-            filename.append('dark') if "-darkmode" in flags else None
+            filename.append("{}arcmin".format(str(int(fwhm)))) if "-fwhm" in flags else None
+            filename.append("cb") if "-bar" in flags else None
+            filename.append("masked") if "-mask" in flags else None
+            filename.append("dark") if "-darkmode" in flags else None
 
-            nside_tag = "_n"+str(int(nside))
+            nside_tag = "_n" + str(int(nside))
             if nside_tag in outfile:
                 outfile = outfile.replace(nside_tag, "")
-            fn = outfile+"_"+signal_labels[polt]+"_w"+str(int(width)) + nside_tag
+            fn = outfile + "_" + signal_labels[polt] + "_w" + str(int(width)) + nside_tag
 
             for i in filename:
-                fn += "_"+i
+                fn += "_" + i
             fn += filetype
 
-            plt.savefig(fn, bbox_inches='tight',  pad_inches=0.02, transparent=tp)
+            plt.savefig(fn, bbox_inches="tight", pad_inches=0.02, transparent=tp)
             plt.close()
 
 
@@ -328,13 +327,13 @@ def get_params(m, outfile, polt, signal_labels):
     cmb_tags = ["cmb"]
     chisq_tags = ["chisq"]
     synch_tags = ["synch_c", "synch_amp"]
-    dust_tags  = ["dust_c", "dust_amp"]
-    ame_tags   = ["ame_c", "ame_amp", "ame1_c", "ame1_amp"]
-    ff_tags    = ["ff_c", "ff_amp"]
-    co10_tags    = ["co10", "co-100"]
-    co21_tags    = ["co21", "co-217"]
-    co32_tags    = ["co32", "co-353"]
-    hcn_tags    = ["hcn"]
+    dust_tags = ["dust_c", "dust_amp"]
+    ame_tags = ["ame_c", "ame_amp", "ame1_c", "ame1_amp"]
+    ff_tags = ["ff_c", "ff_amp"]
+    co10_tags = ["co10", "co-100"]
+    co21_tags = ["co21", "co-217"]
+    co32_tags = ["co32", "co-353"]
+    hcn_tags = ["hcn"]
     dust_T_tags = ["dust_T", "dust_Td"]
     dust_beta_tags = ["dust_beta"]
     synch_beta_tags = ["synch_beta"]
@@ -345,11 +344,11 @@ def get_params(m, outfile, polt, signal_labels):
     ignore_tags = ["radio_"]
 
     if tag_lookup(cmb_tags, outfile):
-        print("Plotting CMB " + signal_labels[polt] )
+        print("Plotting CMB " + signal_labels[polt])
 
-        title = r"$"+ signal_labels[polt]+"$" + r"$_{\mathrm{CMB}}$"
+        title = r"$" + signal_labels[polt] + "$" + r"$_{\mathrm{CMB}}$"
 
-        if polt>0:
+        if polt > 0:
             vmin = -2
             vmid = 0
             vmax = 2
@@ -363,19 +362,20 @@ def get_params(m, outfile, polt, signal_labels):
         tmax = str(vmax)
 
         ticks = [vmin, vmid, vmax]
-        ticklabels = [tmin,tmid,tmax]
+        ticklabels = [tmin, tmid, tmax]
 
         unit = r"$\mu\mathrm{K}_{\mathrm{CMB}}$"
 
         coltype = 2
         from pathlib import Path
-        color = Path(__file__).parent / 'parchment1.dat'
+
+        color = Path(__file__).parent / "parchment1.dat"
 
     elif tag_lookup(chisq_tags, outfile):
 
         title = r"$\chi^2$ " + signal_labels[polt]
 
-        if polt>0:
+        if polt > 0:
             vmin = 0
             vmax = 32
         else:
@@ -388,17 +388,17 @@ def get_params(m, outfile, polt, signal_labels):
         ticks = [vmin, vmax]
         ticklabels = [tmin, tmax]
 
-        print("Plotting chisq with vmax = " + str(vmax) +" "+ signal_labels[polt])
+        print("Plotting chisq with vmax = " + str(vmax) + " " + signal_labels[polt])
 
         unit = ""
         coltype = 0
         color = "none"
 
     elif tag_lookup(synch_tags, outfile):
-        print("Plotting Synchrotron" +" "+ signal_labels[polt])
-        title = r"$"+ signal_labels[polt]+"$" + r"$_{\mathrm{s}}$ "
+        print("Plotting Synchrotron" + " " + signal_labels[polt])
+        title = r"$" + signal_labels[polt] + "$" + r"$_{\mathrm{s}}$ "
         print("Applying logscale (Rewrite if not)")
-        if polt>0:
+        if polt > 0:
             vmin = -1.69
             vmax = 1.69
             tmin = str(-50)
@@ -408,7 +408,7 @@ def get_params(m, outfile, polt, signal_labels):
             vmid = 0
             tmid = "0"
             ticks = [vmin, vmid, vmax]
-            ticklabels = [tmin,tmid,tmax]
+            ticklabels = [tmin, tmid, tmax]
 
             coltype = 0
             color = "psynch"
@@ -417,14 +417,12 @@ def get_params(m, outfile, polt, signal_labels):
             vmax = np.log10(100)
             tmin = str(10)
             tmax = str(100)
-            logscale=True
-            coltype =   0
+            logscale = True
+            coltype = 0
             color = "green"
 
             ticks = [vmin, vmax]
             ticklabels = [tmin, tmax]
-
-
 
         unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
 
@@ -432,28 +430,28 @@ def get_params(m, outfile, polt, signal_labels):
         print("Plotting freefree")
         print("Applying logscale (Rewrite if not)")
 
-        vmin = 0 #0
+        vmin = 0  # 0
         vmid = np.log10(100)
-        vmax = np.log10(10000) #1000
+        vmax = np.log10(10000)  # 1000
 
         tmin = str(0)
-        tmid = str(r'$10^2$')
-        tmax = str(r'$10^4$')
+        tmid = str(r"$10^2$")
+        tmax = str(r"$10^4$")
 
         ticks = [vmin, vmid, vmax]
-        ticklabels = [tmin,tmid,tmax]
+        ticklabels = [tmin, tmid, tmax]
 
         unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
-        title = r"$"+ signal_labels[polt]+"$" + r"$_{\mathrm{ff}}$"
-        logscale=True
+        title = r"$" + signal_labels[polt] + "$" + r"$_{\mathrm{ff}}$"
+        logscale = True
         coltype = 0
         color = "Navy"
 
     elif tag_lookup(dust_tags, outfile):
-        print("Plotting Thermal dust" +" "+ signal_labels[polt])
+        print("Plotting Thermal dust" + " " + signal_labels[polt])
         print("Applying logscale (Rewrite if not)")
-        title = r"$"+ signal_labels[polt]+"$" + r"$_{\mathrm{d}}$ "
-        if polt>0:
+        title = r"$" + signal_labels[polt] + "$" + r"$_{\mathrm{d}}$ "
+        if polt > 0:
             vmin = -2
             vmid = 0
             vmax = 2
@@ -462,26 +460,25 @@ def get_params(m, outfile, polt, signal_labels):
             tmid = 0
             tmax = str(100)
 
-            logscale=True
-            coltype= 0
+            logscale = True
+            coltype = 0
             color = "pdust"
 
         else:
             vmin = 0
             vmid = 2
-            vmax = 4 #1000
+            vmax = 4  # 1000
 
             tmin = str(0)
             tmid = str(r"$10^2$")
             tmax = str(r"$10^4$")
 
-            logscale=True
-            coltype= 1
+            logscale = True
+            coltype = 1
             color = "gist_heat"
 
-
         ticks = [vmin, vmid, vmax]
-        ticklabels = [tmin,tmid,tmax]
+        ticklabels = [tmin, tmid, tmax]
 
         unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
 
@@ -489,22 +486,22 @@ def get_params(m, outfile, polt, signal_labels):
         print("Plotting AME")
         print("Applying logscale (Rewrite if not)")
 
-        vmin = 0 #0
+        vmin = 0  # 0
         vmid = np.log10(100)
-        vmax = np.log10(10000) #1000
+        vmax = np.log10(10000)  # 1000
 
         tmin = str(0)
-        tmid = str(r'$10^2$')
-        tmax = str(r'$10^4$')
+        tmid = str(r"$10^2$")
+        tmax = str(r"$10^4$")
 
         ticks = [vmin, vmid, vmax]
-        ticklabels = [tmin,tmid,tmax]
+        ticklabels = [tmin, tmid, tmax]
 
         unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
-        title = r"$"+ signal_labels[polt]+"$" + r"$_{\mathrm{ame}}$"
-        logscale=True
-        coltype=0
-        color="DarkOrange"
+        title = r"$" + signal_labels[polt] + "$" + r"$_{\mathrm{ame}}$"
+        logscale = True
+        coltype = 0
+        color = "DarkOrange"
 
     elif tag_lookup(co10_tags, outfile):
         print("Plotting CO10")
@@ -518,14 +515,13 @@ def get_params(m, outfile, polt, signal_labels):
         tmax = str(100)
 
         ticks = [vmin, vmid, vmax]
-        ticklabels = [tmin,tmid,tmax]
+        ticklabels = [tmin, tmid, tmax]
 
         unit = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
-        title = r"$"+ signal_labels[polt]+"$" + r"$_{\mathrm{CO10}}$"
-        logscale=True
-        coltype=1
-        color="gray"
-
+        title = r"$" + signal_labels[polt] + "$" + r"$_{\mathrm{CO10}}$"
+        logscale = True
+        coltype = 1
+        color = "gray"
 
     elif tag_lookup(co21_tags, outfile):
         print("Plotting CO21")
@@ -538,32 +534,32 @@ def get_params(m, outfile, polt, signal_labels):
         tmax = str(100)
 
         ticks = [vmin, vmid, vmax]
-        ticklabels = [tmin,tmid,tmax]
+        ticklabels = [tmin, tmid, tmax]
 
         unit = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
-        title = r"$"+ signal_labels[polt]+"$" + r"$_{\mathrm{CO21}}$"
-        logscale=True
-        coltype=1
-        color="gray"
+        title = r"$" + signal_labels[polt] + "$" + r"$_{\mathrm{CO21}}$"
+        logscale = True
+        coltype = 1
+        color = "gray"
 
     elif tag_lookup(co32_tags, outfile):
         print("Plotting 32")
         print("Applying logscale (Rewrite if not)")
         vmin = 0
         vmid = 1
-        vmax = 2 #0.5
+        vmax = 2  # 0.5
         tmin = str(0)
         tmid = str(10)
         tmax = str(100)
 
         ticks = [vmin, vmid, vmax]
-        ticklabels = [tmin,tmid,tmax]
+        ticklabels = [tmin, tmid, tmax]
 
         unit = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
-        title = r"$"+ signal_labels[polt]+"$" + r"$_{\mathrm{CO32}}$"
-        logscale=True
-        coltype=1
-        color="gray"
+        title = r"$" + signal_labels[polt] + "$" + r"$_{\mathrm{CO32}}$"
+        logscale = True
+        coltype = 1
+        color = "gray"
 
     elif tag_lookup(hcn_tags, outfile):
         print("Plotting HCN")
@@ -577,10 +573,10 @@ def get_params(m, outfile, polt, signal_labels):
         ticklabels = [tmin, tmax]
 
         unit = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
-        title = r"$"+ signal_labels[polt]+"$" + r"$_{\mathrm{HCN}}$"
-        logscale=True
-        coltype=1
-        color="gray"
+        title = r"$" + signal_labels[polt] + "$" + r"$_{\mathrm{HCN}}$"
+        logscale = True
+        coltype = 1
+        color = "gray"
 
     elif tag_lookup(ame_tags, outfile):
         print("Plotting AME nu_p")
@@ -595,14 +591,14 @@ def get_params(m, outfile, polt, signal_labels):
 
         unit = "GHz"
         title = r"$\nu_{ame}$"
-        coltype=1
-        color="bone"
+        coltype = 1
+        color = "bone"
 
     # SPECTRAL PARAMETER MAPS
     elif tag_lookup(dust_T_tags, outfile):
         print("Plotting Thermal dust Td")
 
-        title =  r"$"+ signal_labels[polt]+"$ " + r"$T_d$ "
+        title = r"$" + signal_labels[polt] + "$ " + r"$T_d$ "
 
         vmin = 14
         vmax = 30
@@ -613,13 +609,13 @@ def get_params(m, outfile, polt, signal_labels):
         ticklabels = [tmin, tmax]
 
         unit = r"$\mathrm{K}$"
-        coltype=1
-        color="bone"
+        coltype = 1
+        color = "bone"
 
     elif tag_lookup(dust_beta_tags, outfile):
         print("Plotting Thermal dust beta")
 
-        title =  r"$"+ signal_labels[polt]+"$ " + r"$\beta_d$ "
+        title = r"$" + signal_labels[polt] + "$ " + r"$\beta_d$ "
 
         vmin = 1.3
         vmax = 1.8
@@ -629,13 +625,13 @@ def get_params(m, outfile, polt, signal_labels):
         ticklabels = [tmin, tmax]
 
         unit = ""
-        coltype=1
-        color="bone"
+        coltype = 1
+        color = "bone"
 
     elif tag_lookup(synch_beta_tags, outfile):
         print("Plotting Synchrotron beta")
 
-        title = r"$"+ signal_labels[polt]+"$ " +  r"$\beta_s$ "
+        title = r"$" + signal_labels[polt] + "$ " + r"$\beta_s$ "
 
         vmin = -4.0
         vmax = -1.5
@@ -646,8 +642,8 @@ def get_params(m, outfile, polt, signal_labels):
         ticklabels = [tmin, tmax]
 
         unit = ""
-        coltype=1
-        color="bone"
+        coltype = 1
+        color = "bone"
 
     elif tag_lookup(ff_Te_tags, outfile):
         print("Plotting freefree T_e")
@@ -662,8 +658,8 @@ def get_params(m, outfile, polt, signal_labels):
 
         unit = r"$\mathrm{K}$"
         title = r"$T_{e}$"
-        coltype=1
-        color="bone"
+        coltype = 1
+        color = "bone"
 
     elif tag_lookup(ff_EM_tags, outfile):
         print("Plotting freefree EM MIN AND MAX VALUES UPDATE!")
@@ -673,8 +669,8 @@ def get_params(m, outfile, polt, signal_labels):
         tmin = str(vmin)
         tmax = str(vmax)
 
-        vmax = np.percentile(m,95)
-        vmin = np.percentile(m,5)
+        vmax = np.percentile(m, 95)
+        vmin = np.percentile(m, 5)
         tmin = False
         tmax = False
         ticks = [vmin, vmax]
@@ -682,22 +678,22 @@ def get_params(m, outfile, polt, signal_labels):
 
         unit = r"$\mathrm{K}$"
         title = r"$T_{e}$"
-        coltype=1
-        color="bone"
+        coltype = 1
+        color = "bone"
 
     #################
     # RESIDUAL MAPS #
     #################
 
     elif tag_lookup(res_tags, outfile):
-        print("Plotting residual map" +" "+ signal_labels[polt])
+        print("Plotting residual map" + " " + signal_labels[polt])
 
         if "res_" in outfile:
-            tit  = str(re.findall(r'res_(.*?)_',outfile)[0])
+            tit = str(re.findall(r"res_(.*?)_", outfile)[0])
         else:
-            tit = str(re.findall(r'residual_(.*?)_',outfile)[0])
-    
-        title =   r"{} ".format(tit) + r"  $"+ signal_labels[polt]+"$"
+            tit = str(re.findall(r"residual_(.*?)_", outfile)[0])
+
+        title = r"{} ".format(tit) + r"  $" + signal_labels[polt] + "$"
 
         vmin = -10
         vmid = 0
@@ -706,11 +702,12 @@ def get_params(m, outfile, polt, signal_labels):
         tmid = str(vmid)
         tmax = str(vmax)
 
-        unit =  r"$\mu\mathrm{K}$"
-        coltype=2
+        unit = r"$\mu\mathrm{K}$"
+        coltype = 2
 
         from pathlib import Path
-        color = Path(__file__).parent / 'parchment1.dat'
+
+        color = Path(__file__).parent / "parchment1.dat"
 
         if "545" in outfile:
             vmin = -1e2
@@ -719,24 +716,24 @@ def get_params(m, outfile, polt, signal_labels):
             tmax = str(vmax)
             unit = r"$\mathrm{MJy/sr}$"
         elif "857" in outfile:
-            vmin = -0.05 #-1e4
-            vmax = 0.05 #1e4
+            vmin = -0.05  # -1e4
+            vmax = 0.05  # 1e4
             tmin = str(vmin)
             tmax = str(vmax)
             unit = r"$\mathrm{MJy/sr}$"
 
         ticks = [vmin, vmid, vmax]
-        ticklabels = [tmin,tmid,tmax]
+        ticklabels = [tmin, tmid, tmax]
     #################
     # TOD MAPS      #
     #################
 
     elif tag_lookup(tod_tags, outfile):
-        
-        print("Plotting Smap map" +" "+ signal_labels[polt])
-        
-        tit  = str(re.findall(r'tod_(.*?)_Smap',outfile)[0])
-        title = r"{} ".format(tit) + r"  $"+ signal_labels[polt]+"$"
+
+        print("Plotting Smap map" + " " + signal_labels[polt])
+
+        tit = str(re.findall(r"tod_(.*?)_Smap", outfile)[0])
+        title = r"{} ".format(tit) + r"  $" + signal_labels[polt] + "$"
 
         vmin = -0.2
         vmid = 0
@@ -745,36 +742,43 @@ def get_params(m, outfile, polt, signal_labels):
         tmid = str(vmid)
         tmax = str(vmax)
 
-        unit =  r"$\mu\mathrm{K}$"
-        coltype=2
+        unit = r"$\mu\mathrm{K}$"
+        coltype = 2
 
         from pathlib import Path
-        color = Path(__file__).parent / 'parchment1.dat'
+
+        color = Path(__file__).parent / "parchment1.dat"
 
         ticks = [vmin, vmid, vmax]
-        ticklabels = [tmin,tmid,tmax]
-    
+        ticklabels = [tmin, tmid, tmax]
+
     ############################
     # Not idenified or ignored #
     ############################
     elif tag_lookup(ignore_tags, outfile):
-        print("{} is on the ignore list, under tags {}.  Remove from \"ignore_tags\" in plotter.py. Breaking.".format(outfile, ignore_tags))
+        print(
+            '{} is on the ignore list, under tags {}.  Remove from "ignore_tags" in plotter.py. Breaking.'.format(
+                outfile, ignore_tags
+            )
+        )
         sys.exit()
     else:
         print("Map not recognized, plotting with min and max values")
-        vmax = np.percentile(m,95)
-        vmin = np.percentile(m,5)
+        vmax = np.percentile(m, 95)
+        vmin = np.percentile(m, 5)
         tmin = False
         tmax = False
         ticks = [vmin, vmax]
         ticklabels = [tmin, tmax]
         unit = ""
-        title =  r"$"+ signal_labels[polt]+"$"
-        coltype=2
+        title = r"$" + signal_labels[polt] + "$"
+        coltype = 2
         from pathlib import Path
-        color = Path(__file__).parent / 'parchment1.dat'
+
+        color = Path(__file__).parent / "parchment1.dat"
 
     return title, ticks, ticklabels, unit, coltype, color, logscale
+
 
 def get_pollist(flags):
     pollist = []
@@ -794,6 +798,7 @@ def get_pollist(flags):
         pollist = [0]
     return pollist
 
+
 def get_sizes(flags):
     sizes = []
     if "-small" in flags:
@@ -806,40 +811,41 @@ def get_sizes(flags):
         sizes = [12.0]
     return sizes
 
-def get_range(flags,m):
+
+def get_range(flags, m):
     min = float(get_key(flags, "-min")) if "-min" in flags else None
     max = float(get_key(flags, "-max")) if "-max" in flags else None
     if "-range" in flags:
         r = get_key(flags, "-range")
         if "auto" in r:
-            max = np.percentile(m,95)
-            min = np.percentile(m,5)
+            max = np.percentile(m, 95)
+            min = np.percentile(m, 5)
         else:
             r = float(r)
             min = -r
-            max =  r
+            max = r
     return min, max
 
+
 def fmt(x, pos):
-    '''
+    """
     Format color bar labels
-    '''
+    """
     if abs(x) > 1e4:
-        a, b = '{:.2e}'.format(x).split('e')
+        a, b = "{:.2e}".format(x).split("e")
         b = int(b)
-        return r'${} \cdot 10^{{{}}}$'.format(a, b)
+        return r"${} \cdot 10^{{{}}}$".format(a, b)
     elif abs(x) > 1e2:
-        return r'${:d}$'.format(int(x))
+        return r"${:d}$".format(int(x))
     elif abs(x) > 1e1:
-        return r'${:.1f}$'.format(x)
+        return r"${:.1f}$".format(x)
     else:
-        return r'${:.2f}$'.format(x)
+        return r"${:.2f}$".format(x)
+
 
 def cm2inch(cm):
-    return cm*0.393701
+    return cm * 0.393701
+
 
 def tag_lookup(tags, outfile):
     return any(e in outfile for e in tags)
-
-
-

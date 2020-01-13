@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
 scripts = [os.path.join("bin", script) for script in os.listdir("bin")]
 
 setuptools.setup(
-    name="c3pp", # Replace with your own username
+    name="c3pp",  # Replace with your own username
     version="0.5.0",
     author="Trygve Leithe Svalheim",
     author_email="trygvels@astro.uio.no",
@@ -23,5 +23,5 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.6',
+    python_requires=">=3.6",
 )

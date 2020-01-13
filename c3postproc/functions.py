@@ -11,35 +11,37 @@ import matplotlib.pyplot as plt
 # ACTUAL MODULES HERE #
 #######################
 
+
 def h5handler(flags, command):
     filename = str(flags[0])
     signal = str(flags[1])
     min = int(flags[2])
     max = int(flags[3])
     outname = flags[-1]
-    l = max-min
+    l = max - min
 
     # Check if you want to output a map
-    map=True if "fits" in outname[-4:] else False
+    map = True if "fits" in outname[-4:] else False
 
-    import h5py     
+    import h5py
+
     dats = []
-    with h5py.File(filename, 'r') as f:
-        for sample in range(min,max+1):
+    with h5py.File(filename, "r") as f:
+        for sample in range(min, max + 1):
 
             # Get sample number with leading zeros
             s = str(sample).zfill(6)
 
             # Get data from hdf
-            data = f[s+"/"+signal][()]
+            data = f[s + "/" + signal][()]
             # Smooth every sample if calculating std.
-            if "-smooth" in flags and command==np.std and map:
+            if "-smooth" in flags and command == np.std and map:
                 print("--- Smoothing sample {} ---".format(sample))
                 fwhm = arcmin2rad(float(get_key(flags, "-smooth")))
                 data = hp.sphtfunc.smoothing(data, fwhm=fwhm, pol=False)
             # Append sample to list
             dats.append(data)
-            
+
     # Convert list to array
     dats = np.array(dats)
 
@@ -47,8 +49,8 @@ def h5handler(flags, command):
     outdata = command(dats, axis=0)
 
     # Smoothing can be done after for np.mean
-    if "-smooth" in flags and command==np.mean and map:
-        fwhm = arcmin2rad(get_key(flags, "-smooth"))        
+    if "-smooth" in flags and command == np.mean and map:
+        fwhm = arcmin2rad(get_key(flags, "-smooth"))
         outdata = hp.sphtfunc.smoothing(outdata, fwhm=fwhm, pol=True)
 
     # Outputs fits map if output name is .fits
@@ -57,8 +59,10 @@ def h5handler(flags, command):
     else:
         np.savetxt(outname, outdata)
 
+
 def mean(flags):
     h5handler(flags, np.mean)
+
 
 def stddev(flags):
     h5handler(flags, np.std)
@@ -66,63 +70,76 @@ def stddev(flags):
 
 def plot(flags):
     from c3postproc.plotter import Plotter
+
     Plotter(flags)
 
-def sigma_l2fits(flags,save=True):
+
+def sigma_l2fits(flags, save=True):
     filename = str(flags[0])
-    path     = "cmb/sigma_l"
+    path = "cmb/sigma_l"
     nchains = int(flags[-3])
-    burnin  = int(flags[-2])
-    outname  = str(flags[-1])
-    if len(flags)==5:
+    burnin = int(flags[-2])
+    outname = str(flags[-1])
+    if len(flags) == 5:
         path = str(flags[1])
 
-    import h5py 
-    for nc in range(1,nchains+1):
-        with h5py.File(filename+'_c'+str(nc).zfill(4)+'.h5', 'r') as f:
-            print("Reading HDF5 file: "+filename+" ...")
+    import h5py
+
+    for nc in range(1, nchains + 1):
+        with h5py.File(filename + "_c" + str(nc).zfill(4) + ".h5", "r") as f:
+            print("Reading HDF5 file: " + filename + " ...")
             groups = list(f.keys())
             print()
-            print("Reading "+str(len(groups))+" samples from file.")
+            print("Reading " + str(len(groups)) + " samples from file.")
 
-            if nc == 1 :
-                dset = np.zeros((len(groups)+1,1,len(f[groups[0]+'/'+path]),len(f[groups[0]+'/'+path][0])))
-                nspec = len(f[groups[0]+'/'+path])
-                lmax  = len(f[groups[0]+'/'+path][0])-1
+            if nc == 1:
+                dset = np.zeros((len(groups) + 1, 1, len(f[groups[0] + "/" + path]), len(f[groups[0] + "/" + path][0])))
+                nspec = len(f[groups[0] + "/" + path])
+                lmax = len(f[groups[0] + "/" + path][0]) - 1
                 nsamples = len(groups)
             else:
-                dset = np.append(dset,np.zeros((nsamples+1,1,nspec,lmax+1)),axis=1)
+                dset = np.append(dset, np.zeros((nsamples + 1, 1, nspec, lmax + 1)), axis=1)
             print(np.shape(dset))
 
-            print('Found: \
-            \npath in the HDF5 file : '+path+' \
-            \nnumber of spectra :'+str(nspec)+\
-                  '\nlmax: '+str(lmax) )
+            print(
+                "Found: \
+            \npath in the HDF5 file : "
+                + path
+                + " \
+            \nnumber of spectra :"
+                + str(nspec)
+                + "\nlmax: "
+                + str(lmax)
+            )
 
             for i in range(nsamples):
                 for j in range(nspec):
-                    dset[i+1,nc-1,j,:] = np.asarray(f[groups[i]+'/'+path][j][:])
+                    dset[i + 1, nc - 1, j, :] = np.asarray(f[groups[i] + "/" + path][j][:])
 
-    ell = np.arange(lmax+1)
-    for nc in range(1,nchains+1):
-        for i in range(1,nsamples+1):
+    ell = np.arange(lmax + 1)
+    for nc in range(1, nchains + 1):
+        for i in range(1, nsamples + 1):
             for j in range(nspec):
-                dset[i,nc-1,j,:] = dset[i,nc-1,j,:]*ell[:]*(ell[:]+1.)/2./np.pi
-    dset[0,:,:,:] = nsamples - burnin
+                dset[i, nc - 1, j, :] = dset[i, nc - 1, j, :] * ell[:] * (ell[:] + 1.0) / 2.0 / np.pi
+    dset[0, :, :, :] = nsamples - burnin
 
     if save:
         import fitsio
-        print("Dumping fits file: "+outname+" ...")
-        dset = np.asarray(dset, dtype='f4')
-        fits = fitsio.FITS(outname,mode='rw',clobber=True, verbose=True)
-        h_dict = [{'name':'FUNCNAME','value':'Gibbs sampled power spectra','comment':'Full function name'}, \
-                {'name':'LMAX','value':lmax,'comment':'Maximum multipole moment'}, \
-                {'name':'NUMSAMP','value':nsamples,'comment':'Number of samples'}, \
-                {'name':'NUMCHAIN','value':nchains,'comment':'Number of independent chains'}, \
-                {'name':'NUMSPEC','value':nspec,'comment':'Number of power spectra'}]
-        fits.write(dset[:,:,:,:],header=h_dict,clobber=True)
+
+        print("Dumping fits file: " + outname + " ...")
+        dset = np.asarray(dset, dtype="f4")
+        fits = fitsio.FITS(outname, mode="rw", clobber=True, verbose=True)
+        h_dict = [
+            {"name": "FUNCNAME", "value": "Gibbs sampled power spectra", "comment": "Full function name"},
+            {"name": "LMAX", "value": lmax, "comment": "Maximum multipole moment"},
+            {"name": "NUMSAMP", "value": nsamples, "comment": "Number of samples"},
+            {"name": "NUMCHAIN", "value": nchains, "comment": "Number of independent chains"},
+            {"name": "NUMSPEC", "value": nspec, "comment": "Number of power spectra"},
+        ]
+        fits.write(dset[:, :, :, :], header=h_dict, clobber=True)
         fits.close()
     return dset
+
 
 def dlbin2dat(flags):
     filename = str(flags[0])
@@ -131,72 +148,84 @@ def dlbin2dat(flags):
     max = int(flags[2])
     binfile = flags[3]
 
-    import h5py     
+    import h5py
+
     dats = []
-    with h5py.File(filename, 'r') as f:
-        for sample in range(min,max+1):
+    with h5py.File(filename, "r") as f:
+        for sample in range(min, max + 1):
             # Get sample number with leading zeros
             s = str(sample).zfill(6)
 
             # Get data from hdf
-            data = f[s+"/"+signal][()]
+            data = f[s + "/" + signal][()]
             # Append sample to list
             dats.append(data)
     dats = np.array(dats)
-    
+
     binned_data = {}
     possible_signals = ["TT", "EE", "BB", "TE", "EB", "TB"]
-    with open(binfile) as f: 
-        next(f) # Skip first line
-        for line in f.readlines(): 
-            line = line.split() 
-            signal = line[0] 
-            if signal not in binned_data: 
-                binned_data[signal] = [] 
-            signal_id = possible_signals.index(signal) 
-            lmin = int(line[1]) 
-            lmax = int(line[2]) 
-            ellcenter = lmin+(lmax-lmin)/2 
-            # Saves (ellcenter, lmin, lmax, Dl_mean, Dl_stddev) over samples chosen 
-            binned_data[signal].append([ellcenter, lmin, lmax, np.mean(dats[:,signal_id,lmin], axis=0), np.std(dats[:,signal_id,lmin], axis=0)])
+    with open(binfile) as f:
+        next(f)  # Skip first line
+        for line in f.readlines():
+            line = line.split()
+            signal = line[0]
+            if signal not in binned_data:
+                binned_data[signal] = []
+            signal_id = possible_signals.index(signal)
+            lmin = int(line[1])
+            lmax = int(line[2])
+            ellcenter = lmin + (lmax - lmin) / 2
+            # Saves (ellcenter, lmin, lmax, Dl_mean, Dl_stddev) over samples chosen
+            binned_data[signal].append(
+                [
+                    ellcenter,
+                    lmin,
+                    lmax,
+                    np.mean(dats[:, signal_id, lmin], axis=0),
+                    np.std(dats[:, signal_id, lmin], axis=0),
+                ]
+            )
 
-    header = '{:22} {:24} {:24} {:24} {:24}'.format('l','lmin','lmax','Dl', 'stddev')
+    header = "{:22} {:24} {:24} {:24} {:24}".format("l", "lmin", "lmax", "Dl", "stddev")
     for signal in binned_data.keys():
-        np.savetxt("Dl_"+signal+"_binned.dat", binned_data[signal], header=header)
+        np.savetxt("Dl_" + signal + "_binned.dat", binned_data[signal], header=header)
 
 
 def h5map2fits(flags, save=True):
     import h5py
+
     h5file = str(flags[0])
     dataset = str(flags[1])
-    with h5py.File(h5file, 'r') as f:
+    with h5py.File(h5file, "r") as f:
         maps = f[dataset][()]
-        lmax = f[dataset[:-4]+"_lmax"][()] # Get lmax from h5
+        lmax = f[dataset[:-4] + "_lmax"][()]  # Get lmax from h5
 
     nside = hp.npix2nside(maps.shape[-1])
-    outfile =  dataset.replace("/", "_")
-    outfile = outfile.replace("_map","")
+    outfile = dataset.replace("/", "_")
+    outfile = outfile.replace("_map", "")
     if save:
-        hp.write_map(outfile+"_n"+str(nside)+".fits", maps, overwrite=True)
+        hp.write_map(outfile + "_n" + str(nside) + ".fits", maps, overwrite=True)
     return maps, nside, lmax, outfile
+
 
 def alm2fits(flags, save=True):
     import h5py
+
     h5file = str(flags[0])
     dataset = str(flags[1])
-    nside = int(flags[2]) # Output nside
+    nside = int(flags[2])  # Output nside
 
-    with h5py.File(h5file, 'r') as f:
+    with h5py.File(h5file, "r") as f:
         alms = f[dataset][()]
-        lmax = f[dataset[:-4]+"_lmax"][()] # Get lmax from h5
-    
+        lmax = f[dataset[:-4] + "_lmax"][()]  # Get lmax from h5
+
     if "-lmax" in flags:
         lmax_ = int(get_key(flags, "-lmax"))
         if lmax_ > lmax:
             print("lmax larger than data allows: ", lmax)
             print("Please chose a value smaller than this")
         else:
-            lmax =  lmax_
+            lmax = lmax_
         mmax = lmax
     else:
         mmax = lmax
@@ -206,19 +235,18 @@ def alm2fits(flags, save=True):
     else:
         fwhm = 0.0
 
-    hehe = int(mmax * (2 * lmax + 1 - mmax) / 2 + lmax + 1) 
+    hehe = int(mmax * (2 * lmax + 1 - mmax) / 2 + lmax + 1)
     print("Setting lmax to ", lmax, "hehe: ", hehe, "datashape: ", alms.shape)
-    
-    alms_unpacked = unpack_alms(alms,lmax) # Unpack alms
-    maps = hp.sphtfunc.alm2map(alms_unpacked, nside, lmax=lmax, mmax= mmax, fwhm=arcmin2rad(fwhm))
 
-    outfile =  dataset.replace("/", "_")
-    outfile = outfile.replace("_alm","")
+    alms_unpacked = unpack_alms(alms, lmax)  # Unpack alms
+    maps = hp.sphtfunc.alm2map(alms_unpacked, nside, lmax=lmax, mmax=mmax, fwhm=arcmin2rad(fwhm))
+
+    outfile = dataset.replace("/", "_")
+    outfile = outfile.replace("_alm", "")
     if save:
-        outfile += '_{}arcmin'.format(str(int(fwhm))) if "-fwhm" in flags else ""
-        hp.write_map(outfile+"_n"+str(nside)+"_lmax{}".format(lmax) + ".fits", maps, overwrite=True)
+        outfile += "_{}arcmin".format(str(int(fwhm))) if "-fwhm" in flags else ""
+        hp.write_map(outfile + "_n" + str(nside) + "_lmax{}".format(lmax) + ".fits", maps, overwrite=True)
     return maps, nside, lmax, fwhm, outfile
-
 
 
 #######################
@@ -226,8 +254,7 @@ def alm2fits(flags, save=True):
 #######################
 
 
-
-def unpack_alms(maps,lmax):
+def unpack_alms(maps, lmax):
     """
     Create lm pairs here (same as commander)
     """
@@ -237,40 +264,40 @@ def unpack_alms(maps,lmax):
     idx = 0
     # lm pairs where m = 0
     mind.append(idx)
-    for l in range(0, lmax+1):
-        lm.append((l,0))
+    for l in range(0, lmax + 1):
+        lm.append((l, 0))
         idx += 1
     # rest of lm pairs
-    for m in range(1,lmax+1):
+    for m in range(1, lmax + 1):
         mind.append(idx)
-        for l in range(m,lmax+1):
-            lm.append((l,m))              
-            #lm.append((l,-m))
-            idx +=1
-    #print(lm[:50])
+        for l in range(m, lmax + 1):
+            lm.append((l, m))
+            # lm.append((l,-m))
+            idx += 1
+    # print(lm[:50])
     """
     unpack data here per l,m pair
     """
-    alms =[[],[],[]] 
+    alms = [[], [], []]
     for l, m in lm:
-        #ind = hp.Alm.getidx(lmax, l, m)
-        #if m < 0:
+        # ind = hp.Alm.getidx(lmax, l, m)
+        # if m < 0:
         #    continue
         if m == 0:
-            idx = mind[m] + l 
-            idx = l**2 + l + m
+            idx = mind[m] + l
+            idx = l ** 2 + l + m
             for pol in range(3):
-                a_lm = complex( maps[pol, idx], 0.0 )
+                a_lm = complex(maps[pol, idx], 0.0)
                 alms[pol].append(a_lm)
         else:
-            idx = mind[abs(m)] + 2*(l-abs(m))
-            idx = l**2 + l + m
+            idx = mind[abs(m)] + 2 * (l - abs(m))
+            idx = l ** 2 + l + m
             idx2 = idx + 1
 
             for pol in range(3):
-                a_lm = complex(maps[pol,idx], maps[pol, idx2])/np.sqrt(2) 
+                a_lm = complex(maps[pol, idx], maps[pol, idx2]) / np.sqrt(2)
                 alms[pol].append(a_lm)
-                #alms2[pol,ind] = a_lm
+                # alms2[pol,ind] = a_lm
 
     alms2 = np.array(alms, dtype=np.complex128)
     """
@@ -287,8 +314,10 @@ def unpack_alms(maps,lmax):
 def get_key(flags, keyword):
     return flags[flags.index(keyword) + 1]
 
+
 def arcmin2rad(arcmin):
-    return arcmin*(2*np.pi)/21600
+    return arcmin * (2 * np.pi) / 21600
+
 
 """
 
