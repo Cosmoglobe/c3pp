@@ -8,13 +8,13 @@ scripts = [os.path.join("bin", script) for script in os.listdir("bin")]
 
 setuptools.setup(
     name="c3pp",  # Replace with your own username
-    version="0.9.0",
+    version="0.9.1",
     author="Trygve Leithe Svalheim",
     author_email="trygvels@astro.uio.no",
     description="A commander3 postprocessing tool",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/trygvels/c3postproc",
+    url="https://github.com/trygvels/c3pp",
     packages=setuptools.find_packages(),
     include_package_data=True,
     scripts=scripts,

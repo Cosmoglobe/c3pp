@@ -123,19 +123,67 @@ def Plotter(flags=None):
         ##########################
         #### Plotting Params #####
         ##########################
-        unit = unit
-        title = title  # Short name upper right
-        colorbar = 1 if "-bar" in flags else 0  # Colorbar on
+        # !!!!!!!!!!!!!!!!!!!!!!!!!
+        # PROBLEM!!!!!!!!!!!!!!!!!!
+        # THIS DOES NOT TAKE SPACES
+        # !!!!!!!!!!!!!!!!!!!!!!!!!
+
+        # Upper right title        
+        if "-title" in flags:
+            title = r"$" + get_key(flags,"-title") + "$"
+        else:
+            title = title
+
+        # Unit under colorbar
+        if "-unit" in flags:
+            unit = r"$" + get_key(flags,"-unit") + "$"
+        else:
+            unit = unit
+
+        colorbar = True if "-bar" in flags else False  # Colorbar on
 
         # Image size -  ratio is always 1/2
         xsize = 2000
         ysize = int(xsize / 2.0)
 
+        ########################
+        #### remove dipole #####
+        ########################
+        if "-remove_dipole" in flags:
+            print("Removing dipole")
+
+            # Mask map for dipole estimation
+            mask_name = get_key(flags, "-remove_dipole")
+            mask = np.logical_not(hp.read_map(mask_name))
+            m_masked = m.copy()
+            m_masked[np.where(mask)] = hp.UNSEEN
+
+            # Fit dipole to masked map
+            mono, dip = hp.fit_dipole(m_masked)
+            print("Dipole vector: {}".format(dip))
+            print("Dipole amplitude: {}".format(np.sqrt(np.sum(dip**2))))
+
+            # Create dipole template
+            ray = range(hp.nside2npix(nside))
+            vecs = hp.pix2vec(nside,ray)
+            dipole = np.dot(dip,vecs)
+
+            # Subtract dipole map from data
+            m = m - dipole
+
+
         #######################
         ####   logscale   #####
         #######################
         # Some maps turns on logscale automatically
-        if "-logscale" in flags or logscale:
+        # -logscale command overwrites this
+        if "-logscale" in flags:
+            if get_key(flags, "-logscale") == "off":
+                logscale = False
+            elif get_key(flags, "-logscale") == "on":
+                logscale = True
+        
+        if logscale:
             m = np.log10(0.5 * (m + np.sqrt(4.0 + m * m)))
             m = np.maximum(np.minimum(m, vmax), vmin)
 
@@ -182,9 +230,9 @@ def Plotter(flags=None):
             else:
                 cmap = plt.get_cmap(color)
 
-        ######################
-        ####  Projection #####
-        ######################
+        #######################
+        ####  Projection? #####
+        #######################
         theta = np.linspace(np.pi, 0, ysize)
         phi = np.linspace(-np.pi, np.pi, xsize)
         longitude = np.radians(np.linspace(-180, 180, xsize))
@@ -202,7 +250,7 @@ def Plotter(flags=None):
             mask_name = get_key(flags, "-mask")
             m.mask = np.logical_not(hp.read_map(mask_name))
             grid_mask = m.mask[grid_pix]
-            grid_map = np.ma.MaskedArray(m[grid_pix], grid_mask)
+            grid_map = hp.ma.MaskedArray(m[grid_pix], grid_mask)
 
             if "-mfill" in flags:
                 mfill = get_key(flags, "-mfill")
@@ -266,7 +314,7 @@ def Plotter(flags=None):
             ################
             ### COLORBAR ###
             ################
-            if colorbar == 1:
+            if colorbar:
                 # colorbar
                 cb = fig.colorbar(
                     image, orientation="horizontal", shrink=0.3, pad=0.08, ticks=ticks, format=ticker.FuncFormatter(fmt)

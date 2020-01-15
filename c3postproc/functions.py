@@ -234,11 +234,12 @@ def alm2fits(flags, save=True):
         fwhm = float(get_key(flags, "-fwhm"))
     else:
         fwhm = 0.0
-
+ 
     hehe = int(mmax * (2 * lmax + 1 - mmax) / 2 + lmax + 1)
-    print("Setting lmax to ", lmax, "hehe: ", hehe, "datashape: ", alms.shape)
+    print("Setting lmax to ", lmax, "Unpacked target size: ", hehe, "datashape: ", alms.shape)
 
     alms_unpacked = unpack_alms(alms, lmax)  # Unpack alms
+    print("Making map from alms")
     maps = hp.sphtfunc.alm2map(alms_unpacked, nside, lmax=lmax, mmax=mmax, fwhm=arcmin2rad(fwhm))
 
     outfile = dataset.replace("/", "_")
@@ -255,59 +256,24 @@ def alm2fits(flags, save=True):
 
 
 def unpack_alms(maps, lmax):
-    """
-    Create lm pairs here (same as commander)
-    """
-
-    mind = []
-    lm = []
-    idx = 0
-    # lm pairs where m = 0
-    mind.append(idx)
-    for l in range(0, lmax + 1):
-        lm.append((l, 0))
-        idx += 1
-    # rest of lm pairs
-    for m in range(1, lmax + 1):
-        mind.append(idx)
-        for l in range(m, lmax + 1):
-            lm.append((l, m))
-            # lm.append((l,-m))
-            idx += 1
-    # print(lm[:50])
-    """
-    unpack data here per l,m pair
-    """
+    print("Unpacking alms")
     alms = [[], [], []]
-    for l, m in lm:
-        # ind = hp.Alm.getidx(lmax, l, m)
-        # if m < 0:
-        #    continue
-        if m == 0:
-            idx = mind[m] + l
-            idx = l ** 2 + l + m
-            for pol in range(3):
-                a_lm = complex(maps[pol, idx], 0.0)
-                alms[pol].append(a_lm)
-        else:
-            idx = mind[abs(m)] + 2 * (l - abs(m))
-            idx = l ** 2 + l + m
-            idx2 = idx + 1
+    for sig in range(3):
+        for l in range(lmax+1):
+            j_real = l**2 + l
+            alm = complex(maps[sig, j_real], 0.0) 
+            alms[sig].append(alm)
 
-            for pol in range(3):
-                a_lm = complex(maps[pol, idx], maps[pol, idx2]) / np.sqrt(2)
-                alms[pol].append(a_lm)
-                # alms2[pol,ind] = a_lm
+        for m in range(1, lmax + 1):
+            for l in range(m, lmax + 1):
+                j_real = l**2 + l + m
+                j_comp = l**2 + l - m
+
+                alm = complex(maps[sig, j_real], maps[sig, j_comp])/np.sqrt(2.0)
+
+                alms[sig].append(alm)
 
     alms2 = np.array(alms, dtype=np.complex128)
-    """
-    hehe = int(lmax * (2 * lmax + 1 - lmax) / 2 + lmax + 1) 
-    alms2 = np.zeros((3,hehe), dtype=np.complex128)
-   
-    for j, (l, m) in enumerate(lm):
-        ind = l**2 + l + m
-        alms2[:,j] = alms[:,idx]
-    """
     return alms2
 
 
@@ -318,67 +284,3 @@ def get_key(flags, keyword):
 def arcmin2rad(arcmin):
     return arcmin * (2 * np.pi) / 21600
 
-
-"""
-
-lm2 = lm
-mind = []
-lm = []
-idx = 0
-for m in range(lmax+1):
-    mind.append(idx)
-    if m == 0:
-        for l in range(m, lmax+1):
-            lm.append((l,m))
-            idx += 1
-    else:
-        for l in range(m,lmax+1):
-            lm.append((l,m))
-            idx +=1
-            
-            lm.append((l,-m))
-            idx +=1
-
-lm = np.zeros((2,22801))
-mind = np.zeros(lmax+1)
-ind = 0
-for m in range(lmax+1):
-    mind[m] = ind
-    if m == 0:
-        for l in range(m, lmax+1):
-            lm[:,ind] = (l,m)
-            ind                           = ind+1
-    else:
-        for l in range(m, lmax+1):
-        lm[:,ind] = (l,m)
-        ind                           = ind+1
-        lm[:,ind] = (l,-m)
-        ind                           = ind+1
-print(lm.shape)
-
-
-  alms1 =[[],[],[]] 
-    for l, m in lm:
-        if m<0:
-            continue
-        idx = lm2i(l, m,mind)
-        if m == 0:
-            for pol in range(3):
-                alms1[pol].append( complex( maps[pol,idx], 0.0 ) )
-        else:
-            idx2 = lm2i(l,-m,mind)
-            for pol in range(3):
-                alms1[pol].append( 1/np.sqrt(2)*complex(maps[pol,idx], maps[pol,idx2]) )
-
-
-
-
-def lm2i(l,m,mind):
-    if m == 0:
-        i = mind[int(m)] + l
-    else:
-        i = mind[int(abs(m))] + 2*(l-abs(m))
-        if (m < 0):
-           i = i+1
-    return int(i)
-"""
