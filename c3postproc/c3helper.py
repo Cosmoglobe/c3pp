@@ -44,6 +44,7 @@ def c3help(op, nsysargs):
             print("-mask FILENAME           Masks input with specified maskfile.")
             print('-mfill color             Color to fill masked area. for example "gray". Transparent by default.')
             print("-I/-Q/-U/-QU/-IQU        Signal to be plotted (-I default)         ")
+            print("-remove_dipole           Fits a dipole to the map and removes it.")
             print("-logscale on/off         Plots using planck semi-logscale. (Autodetector sometimes uses this.)")
             print("-small -medium -large    Size: 1/3, 1/2 and full page width. 8.8, 12.0, 18. cm (Medium by default)")
             print("-white_background        Sets the background to be white. (Transparent by default [recommended])")
