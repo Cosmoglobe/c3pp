@@ -12,18 +12,38 @@ from matplotlib import rcParams, rc
 from c3postproc.functions import get_key
 
 
-def Plotter(flags=None):
+def Plotter(
+    input,
+    dataset,
+    nside,
+    min,
+    max,
+    range,
+    colorbar,
+    lmax,
+    fwhm,
+    mask,
+    mfill,
+    sig,
+    remove_dipole,
+    logscale,
+    size,
+    white_background,
+    darkmode,
+    pdf,
+    cmap,
+    title,
+    unit,
+):
     rcParams["backend"] = "pdf"
     rcParams["legend.fancybox"] = True
     rcParams["lines.linewidth"] = 2
     rcParams["savefig.dpi"] = 300
     rcParams["axes.linewidth"] = 1
     # use of Sans Serif also in math mode
-    darkmode = False
     masked = False
 
-    if "-darkmode" in flags:
-        darkmode = True
+    if darkmode:
         rcParams["text.color"] = "white"  # axes background color
         rcParams["axes.facecolor"] = "white"  # axes background color
         rcParams["axes.edgecolor"] = "white"  # axes edge color
@@ -37,25 +57,25 @@ def Plotter(flags=None):
     rc("text.latex", preamble=r"\usepackage{sfmath}")
 
     # Which signal to plot
-    map_ = flags[0]  # Map is always first flag
-    pollist = get_pollist(flags)
+    map_ = input  # Map is always first flag
+    pollist = get_pollist(sig)
     signal_labels = ["I", "Q", "U"]
 
     print("----------------------------------")
-    print("Plotting " + map_)
+    print("Plotting " + input)
 
     #######################
     ####   READ MAP   #####
     #######################
 
-    if ".fits" in map_[-5:]:
+    if input.endswith(".fits"):
         # Make sure its the right shape for indexing
         # This is a really dumb way of doing it
         dats = [0, 0, 0]
         map_exists = False
         for i in pollist:
             try:
-                dats[i] = hp.ma(hp.read_map(map_, field=i, verbose=False))
+                dats[i] = hp.ma(hp.read_map(input, field=i, verbose=False))
                 nside = hp.npix2nside(len(dats[i]))
                 map_exists = True
             except:
@@ -66,26 +86,26 @@ def Plotter(flags=None):
             hihi = []
             [hihi.append(signal_labels[i]) for i in pollist]
             print()
-            print("{} does not contain a {} signal. Breaking.".format(map_, hihi))
+            print("{} does not contain a {} signal. Breaking.".format(input, hihi))
             sys.exit()
 
         maps = np.array(dats)
-        outfile = map_.replace(".fits", "")
-    elif ".h5" in map_[-3:]:
+        outfile = input.replace(".fits", "")
+        
+    elif input.endswith(".h5"):
         from c3postproc.functions import alm2fits, h5map2fits
 
-        dataset = get_key(flags, map_)
-        if "alm" in dataset[-3:]:
+        if dataset.endswith("alm"):
             print("Converting alms to map")
-            maps, nside, lmax, fwhm, outfile = alm2fits(flags, save=False)
+            maps, nside, lmax, fwhm, outfile = alm2fits(input, dataset, nside, lmax, fwhm, save=False)
 
-        elif "map" in dataset[-3:]:
+        elif dataset.endswith("map"):
             print("Reading map from h5")
-            maps, nside, lmax, outfile = h5map2fits(flags, save=False)
+            maps, nside, lmax, outfile = h5map2fits(input, dataset, save=False)
 
         else:
             print("Dataset not found. Breaking.")
-            print("Does {}/{} exist?".format(map_,dataset))
+            print("Does {}/{} exist?".format(input, dataset))
             sys.exit()
     else:
         print("Dataset not found. Breaking.")
@@ -95,7 +115,6 @@ def Plotter(flags=None):
 
     for polt in pollist:
         m = maps[polt]  # Select map signal (I,Q,U)
-        # m= m[hp.ring2nest(nside, range(12*(nside)**2))]
 
         #######################
         #### Auto-param   #####
@@ -106,14 +125,25 @@ def Plotter(flags=None):
         tmin = ticklabels[0]
         tmax = ticklabels[-1]
 
-        min, max = get_range(flags, m)
-        if min != None:
+        # If range has been specified, set.
+        if range:
+            if range == "auto":
+                max = np.percentile(m, 95)
+                min = np.percentile(m, 5)
+            else:
+                range = float(range)
+                min = -range
+                max = range
+
+        # If min and max have been specified, set.
+        if min:
             vmin = min
             tmin = str(min)
+
             ticks[0] = vmin
             ticklabels[0] = tmin
 
-        if max != None:
+        if max:
             vmax = max
             tmax = str(max)
 
@@ -128,19 +158,19 @@ def Plotter(flags=None):
         # THIS DOES NOT TAKE SPACES
         # !!!!!!!!!!!!!!!!!!!!!!!!!
 
-        # Upper right title        
-        if "-title" in flags:
-            title = r"$" + get_key(flags,"-title") + "$"
+        # Upper right title
+        if title:
+            # If input from command-line, format.
+            title = r"$" + title + "$"
         else:
             title = title
 
         # Unit under colorbar
-        if "-unit" in flags:
-            unit = r"$" + get_key(flags,"-unit") + "$"
+        if unit:
+            # If input from command-line, format.
+            unit = r"$" + unit + "$"
         else:
             unit = unit
-
-        colorbar = True if "-bar" in flags else False  # Colorbar on
 
         # Image size -  ratio is always 1/2
         xsize = 2000
@@ -149,41 +179,33 @@ def Plotter(flags=None):
         ########################
         #### remove dipole #####
         ########################
-        if "-remove_dipole" in flags:
+        if remove_dipole:
             print("Removing dipole")
-
+            dip_mask_name = remove_dipole
             # Mask map for dipole estimation
-            mask_name = get_key(flags, "-remove_dipole")
-            mask = np.logical_not(hp.read_map(mask_name))
+            dip_mask_name = np.logical_not(hp.read_map(dip_mask_name))
             m_masked = m.copy()
             m_masked[np.where(mask)] = hp.UNSEEN
 
             # Fit dipole to masked map
             mono, dip = hp.fit_dipole(m_masked)
             print("Dipole vector: {}".format(dip))
-            print("Dipole amplitude: {}".format(np.sqrt(np.sum(dip**2))))
+            print("Dipole amplitude: {}".format(np.sqrt(np.sum(dip ** 2))))
 
             # Create dipole template
             ray = range(hp.nside2npix(nside))
-            vecs = hp.pix2vec(nside,ray)
-            dipole = np.dot(dip,vecs)
+            vecs = hp.pix2vec(nside, ray)
+            dipole = np.dot(dip, vecs)
 
             # Subtract dipole map from data
             m = m - dipole
-
 
         #######################
         ####   logscale   #####
         #######################
         # Some maps turns on logscale automatically
         # -logscale command overwrites this
-        if "-logscale" in flags:
-            if get_key(flags, "-logscale") == "off":
-                logscale = False
-            elif get_key(flags, "-logscale") == "on":
-                logscale = True
-        
-        if logscale:
+        if logscale:  # TODO, make sure this is overwritten by command line
             m = np.log10(0.5 * (m + np.sqrt(4.0 + m * m)))
             m = np.maximum(np.minimum(m, vmax), vmin)
 
@@ -217,10 +239,10 @@ def Plotter(flags=None):
             cmap = plt.get_cmap(color)
         elif coltype == 2:
             cmap = ListedColormap(np.loadtxt(color) / 255.0)
-       
+
         # Chose colormap manually
-        if "-cmap" in flags:
-            color = get_key(flags, "-cmap")
+        if cmap:
+            color = cmap
             print("Setting colormap to {}".format(color))
             if color == "planck":
                 from pathlib import Path
@@ -245,15 +267,14 @@ def Plotter(flags=None):
         ######################
         ######## Mask ########
         ######################
-        if "-mask" in flags:
+        if mask:
+            # TODO, does this work?
             masked = True
-            mask_name = get_key(flags, "-mask")
-            m.mask = np.logical_not(hp.read_map(mask_name))
+            m.mask = np.logical_not(hp.read_map(mask))
             grid_mask = m.mask[grid_pix]
             grid_map = hp.ma.MaskedArray(m[grid_pix], grid_mask)
 
-            if "-mfill" in flags:
-                mfill = get_key(flags, "-mfill")
+            if mfill:
                 cmap.set_bad(mfill)  # color of missing pixels
                 # cmap.set_under("white") # color of background, necessary if you want to use
                 # using directly matplotlib instead of mollview has higher quality output
@@ -276,7 +297,7 @@ def Plotter(flags=None):
                     x += 2 * np.pi
                 return GeoAxes.ThetaFormatter.__call__(self, x, pos)
 
-        sizes = get_sizes(flags)
+        sizes = get_sizes(size)
         for width in sizes:
             print("Plotting size " + str(width))
             height = width / 2.0
@@ -348,17 +369,17 @@ def Plotter(flags=None):
             #### SAVE ####
             ##############
             plt.tight_layout()
-            filetype = ".pdf" if "-pdf" in flags else ".png"
-            tp = False if "-white_background" in flags else True  # Turn on transparency unless told otherwise
+            filetype = ".pdf" if pdf else ".png"
+            tp = False if white_background else True  # Turn on transparency unless told otherwise
 
             ##############
             ## filename ##
             ##############
             filename = []
-            filename.append("{}arcmin".format(str(int(fwhm)))) if "-fwhm" in flags else None
-            filename.append("cb") if "-bar" in flags else None
-            filename.append("masked") if "-mask" in flags else None
-            filename.append("dark") if "-darkmode" in flags else None
+            filename.append("{}arcmin".format(str(int(fwhm)))) if fwhm > 0 else None
+            filename.append("cb") if colorbar else None
+            filename.append("masked") if masked else None
+            filename.append("dark") if darkmode else None
 
             nside_tag = "_n" + str(int(nside))
             if nside_tag in outfile:
@@ -835,50 +856,30 @@ def get_params(m, outfile, polt, signal_labels):
     return title, ticks, ticklabels, unit, coltype, color, logscale
 
 
-def get_pollist(flags):
+def get_pollist(sig):
     pollist = []
-    if "-I" in flags:
+    if "I" in sig:
         pollist.append(0)
-    if "-Q" in flags:
+    if "Q" in sig:
         pollist.append(1)
-    if "-U" in flags:
+    if "U" in sig:
         pollist.append(2)
-    if "-QU" in flags:
-        pollist.extend((1, 2))
-    if "-IU" in flags:
-        pollist.extend((0, 2))
-    if "-IQU" in flags:
-        pollist.extend((0, 1, 2))
-    if len(pollist) == 0:
-        pollist = [0]
     return pollist
 
 
-def get_sizes(flags):
+def get_sizes(size):
     sizes = []
-    if "-small" in flags:
+    if "s" in size:
         sizes.append(8.8)
-    if "-medium" in flags:
+    if "m" in size:
         sizes.append(12.0)
-    if "-large" in flags:
+    if "l" in size:
         sizes.append(18.0)
-    if len(sizes) == 0:
-        sizes = [12.0]
     return sizes
 
 
-def get_range(flags, m):
-    min = float(get_key(flags, "-min")) if "-min" in flags else None
-    max = float(get_key(flags, "-max")) if "-max" in flags else None
-    if "-range" in flags:
-        r = get_key(flags, "-range")
-        if "auto" in r:
-            max = np.percentile(m, 95)
-            min = np.percentile(m, 5)
-        else:
-            r = float(r)
-            min = -r
-            max = r
+def get_range(min, max, range, m):
+
     return min, max
 
 

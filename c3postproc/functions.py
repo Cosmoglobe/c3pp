@@ -5,7 +5,8 @@ import time
 import healpy as hp
 import numpy as np
 import matplotlib.pyplot as plt
-
+import numba
+import time
 
 #######################
 # ACTUAL MODULES HERE #
@@ -115,7 +116,7 @@ def sigma_l2fits(flags, save=True):
             for i in range(nsamples):
                 for j in range(nspec):
                     dset[i + 1, nc - 1, j, :] = np.asarray(f[groups[i] + "/" + path][j][:])
-
+    # Optimize with jit?
     ell = np.arange(lmax + 1)
     for nc in range(1, nchains + 1):
         for i in range(1, nsamples + 1):
@@ -235,10 +236,10 @@ def alm2fits(flags, save=True):
     else:
         fwhm = 0.0
  
-    hehe = int(mmax * (2 * lmax + 1 - mmax) / 2 + lmax + 1)
-    print("Setting lmax to ", lmax, "Unpacked target size: ", hehe, "datashape: ", alms.shape)
-
+    start_time = time.time()
     alms_unpacked = unpack_alms(alms, lmax)  # Unpack alms
+    print("Unpacking time {}".format(time.time() - start_time))
+
     print("Making map from alms")
     maps = hp.sphtfunc.alm2map(alms_unpacked, nside, lmax=lmax, mmax=mmax, fwhm=arcmin2rad(fwhm))
 
@@ -254,27 +255,32 @@ def alm2fits(flags, save=True):
 # HELPFUL TOOLS BELOW #
 #######################
 
-
+@numba.njit(cache=True, fastmath=True) # Speeding up by a lot!
 def unpack_alms(maps, lmax):
     print("Unpacking alms")
-    alms = [[], [], []]
+    mmax = lmax
+    # hehe is length of target alms
+    hehe = int(mmax * (2 * lmax + 1 - mmax) / 2 + lmax + 1)
+    alms = np.zeros((maps.shape[0],hehe), dtype=np.complex128)
+
+    # Unpack alms as output by commander
     for sig in range(3):
+        i = 0
         for l in range(lmax+1):
             j_real = l**2 + l
-            alm = complex(maps[sig, j_real], 0.0) 
-            alms[sig].append(alm)
+            alms[sig, i] = complex(maps[sig, j_real], 0.0) 
+            i += 1
+
 
         for m in range(1, lmax + 1):
             for l in range(m, lmax + 1):
                 j_real = l**2 + l + m
                 j_comp = l**2 + l - m
 
-                alm = complex(maps[sig, j_real], maps[sig, j_comp])/np.sqrt(2.0)
-
-                alms[sig].append(alm)
-
-    alms2 = np.array(alms, dtype=np.complex128)
-    return alms2
+                alms[sig, i] = complex(maps[sig, j_real], maps[sig, j_comp])/np.sqrt(2.0)
+    
+                i += 1
+    return alms
 
 
 def get_key(flags, keyword):
