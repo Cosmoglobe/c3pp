@@ -1,3 +1,5 @@
+import time
+totaltime = time.time()
 import sys
 import os
 import re
@@ -8,11 +10,13 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as col
 import matplotlib.ticker as ticker
 from matplotlib import rcParams, rc
+print("Importtime:", (time.time() - totaltime))
 
 def Plotter(
     input,
     dataset,
     nside,
+    auto,
     min,
     max,
     rng,
@@ -31,7 +35,10 @@ def Plotter(
     cmap,
     title,
     unit,
+    verbose,
 ):
+
+
     rcParams["backend"] = "pdf"
     rcParams["legend.fancybox"] = True
     rcParams["lines.linewidth"] = 2
@@ -54,16 +61,15 @@ def Plotter(
     rc("text.latex", preamble=r"\usepackage{sfmath}")
 
     # Which signal to plot
-    map_ = input  # Map is always first flag
     pollist = get_pollist(sig)
     signal_labels = ["I", "Q", "U"]
-
     print("----------------------------------")
     print("Plotting " + input)
 
     #######################
     ####   READ MAP   #####
     #######################
+    starttime = time.time()
 
     if input.endswith(".fits"):
         # Make sure its the right shape for indexing
@@ -108,6 +114,7 @@ def Plotter(
         print("Dataset not found. Breaking.")
         sys.exit()
 
+    print("Map reading: ", (time.time() - starttime)) if verbose else None
     print("nside", nside, "total file shape", maps.shape)
 
     for polt in pollist:
@@ -116,11 +123,23 @@ def Plotter(
         #######################
         #### Auto-param   #####
         #######################
-        ttl, ticks, ticklabels, unt, coltype, color, logscale = get_params(m, outfile, polt, signal_labels)
-        vmin = ticks[0]
-        vmax = ticks[-1]
-        tmin = ticklabels[0]
-        tmax = ticklabels[-1]
+        # ttl, unt and cmb are temporary variables for title, unit and colormap
+        if auto:
+            ttl, ticks, ticklabels, unt, cmp, lgscale = get_params(m, outfile, polt, signal_labels)
+
+            vmin = ticks[0]
+            vmax = ticks[-1]
+            tmin = ticklabels[0]
+            tmax = ticklabels[-1]
+        else:
+            ttl = ""
+            unt = ""
+            rng = "auto"
+            ticks = [False, False]
+            ticklabels = [False, False]
+            cmp = "planck"
+            lgscale = False
+
 
         # If range has been specified, set.
         if rng:
@@ -147,6 +166,7 @@ def Plotter(
             ticks[-1] = vmax
             ticklabels[-1] = tmax
 
+
         ##########################
         #### Plotting Params #####
         ##########################
@@ -159,7 +179,6 @@ def Plotter(
         if not unit:
             unit = unt
         
-
         # Image size -  ratio is always 1/2
         xsize = 2000
         ysize = int(xsize / 2.0)
@@ -168,14 +187,13 @@ def Plotter(
         #### remove dipole #####
         ########################
         if remove_dipole:
-
+            starttime = time.time()
             print("Removing dipole")
             dip_mask_name = remove_dipole
             # Mask map for dipole estimation
-            dip_mask_name = np.logical_not(hp.read_map(dip_mask_name))
-            m_masked = m.copy()
-            m_masked[np.where(mask)] = hp.UNSEEN
-
+            m_masked = hp.ma(m)
+            m_masked.mask = np.logical_not(hp.read_map(dip_mask_name))
+            
             # Fit dipole to masked map
             mono, dip = hp.fit_dipole(m_masked)
             print("Dipole vector: {}".format(dip))
@@ -189,58 +207,37 @@ def Plotter(
 
             # Subtract dipole map from data
             m = m - dipole
-
+            print("Dipole removal : ", (time.time() - starttime)) if verbose else None
         #######################
         ####   logscale   #####
         #######################
         # Some maps turns on logscale automatically
         # -logscale command overwrites this
-        if logscale:  # TODO, make sure this is overwritten by command line
+        if logscale == None:
+            logscale = lgscale
+
+        if logscale:
+            starttime = time.time()
+
             m = np.log10(0.5 * (m + np.sqrt(4.0 + m * m)))
             m = np.maximum(np.minimum(m, vmax), vmin)
 
+            print("Logscale", (time.time() - starttime)) if verbose else None
         ######################
         #### COLOR SETUP #####
         ######################
-
-        from matplotlib.colors import ListedColormap
-
-        if coltype == 0:
-            startcolor = "black"
-            midcolor = color
-            endcolor = "white"
-            if color == "none":
-                cmap = col.LinearSegmentedColormap.from_list("own2", [startcolor, endcolor])
-            elif color == "pdust":
-                col1 = "deepskyblue"
-                col2 = "blue"
-                col3 = "firebrick"
-                col4 = "darkorange"
-                cmap = col.LinearSegmentedColormap.from_list(
-                    "own2", [endcolor, col1, col2, startcolor, col3, col4, endcolor]
-                )
-            elif color == "psynch":
-                col1 = "darkgoldenrod"
-                col2 = "darkgreen"
-                cmap = col.LinearSegmentedColormap.from_list("own2", [endcolor, col1, startcolor, col2, endcolor])
-            else:
-                cmap = col.LinearSegmentedColormap.from_list("own2", [startcolor, midcolor, endcolor])
-        elif coltype == 1:
-            cmap = plt.get_cmap(color)
-        elif coltype == 2:
-            cmap = ListedColormap(np.loadtxt(color) / 255.0)
-
         # Chose colormap manually
         if cmap:
-            color = cmap
-            print("Setting colormap to {}".format(color))
-            if color == "planck":
+            print("Setting colormap to {}".format(cmap))
+            if cmap == "planck":
                 from pathlib import Path
 
-                color = Path(__file__).parent / "parchment1.dat"
-                cmap = ListedColormap(np.loadtxt(color) / 255.0)
+                cmap = Path(__file__).parent / "parchment1.dat"
+                cmap = col.ListedColormap(np.loadtxt(cmap) / 255.0)
             else:
-                cmap = plt.get_cmap(color)
+                cmap = plt.get_cmap(cmap)
+        else:
+            cmap = cmp
 
         #######################
         ####  Projection? #####
@@ -258,12 +255,17 @@ def Plotter(
         ######## Mask ########
         ######################
         if mask:
-            # TODO, does this work?
+            print("Masking using {}".format(mask))
             masked = True
-            m.mask = np.logical_not(hp.read_map(mask))
-            grid_mask = m.mask[grid_pix]
-            grid_map = hp.ma.MaskedArray(m[grid_pix], grid_mask)
 
+            # Apply mask
+            hp.ma(m)
+            m.mask = np.logical_not(hp.read_map(mask))
+ 
+            # Don't know what this does, from paperplots by Zonca.
+            grid_mask = m.mask[grid_pix]
+            grid_map = np.ma.MaskedArray(m[grid_pix], grid_mask)
+            
             if mfill:
                 cmap.set_bad(mfill)  # color of missing pixels
                 # cmap.set_under("white") # color of background, necessary if you want to use
@@ -293,7 +295,6 @@ def Plotter(
             height = width / 2.0
 
             # Make sure text doesnt change with colorbar
-            # TODO, this is only implemented for medium maps
             height *= 1.275 if colorbar else 1
 
             ################
@@ -315,7 +316,6 @@ def Plotter(
             image = plt.pcolormesh(
                 longitude[::-1], latitude, grid_map, vmin=vmin, vmax=vmax, rasterized=True, cmap=cmap
             )
-
             # graticule
             ax.set_longitude_grid(60)
             ax.xaxis.set_major_formatter(ThetaFormatterShiftPi(60))
@@ -332,8 +332,10 @@ def Plotter(
                 cb = fig.colorbar(
                     image, orientation="horizontal", shrink=0.3, pad=0.08, ticks=ticks, format=ticker.FuncFormatter(fmt)
                 )
-                if tmax != False or tmin != False:  # let function format if not autoset
-                    cb.ax.set_xticklabels(ticklabels)
+                # Format tick labels if autosetting
+                if auto:
+                    if tmax or tmin:
+                        cb.ax.set_xticklabels(ticklabels)
                 cb.ax.xaxis.set_label_text(unit)
                 cb.ax.xaxis.label.set_size(fontsize)
                 cb.ax.minorticks_on()
@@ -365,6 +367,7 @@ def Plotter(
             ##############
             ## filename ##
             ##############
+            starttime = time.time()
             filename = []
             filename.append("{}arcmin".format(str(int(fwhm)))) if fwhm > 0 else None
             filename.append("cb") if colorbar else None
@@ -382,7 +385,8 @@ def Plotter(
 
             plt.savefig(fn, bbox_inches="tight", pad_inches=0.02, transparent=tp)
             plt.close()
-
+            print("Outputting", (time.time() - starttime)) if verbose else None
+            print("Totaltime:", (time.time() - totaltime)) if verbose else None
 
 def get_params(m, outfile, polt, signal_labels):
     print()
@@ -433,10 +437,10 @@ def get_params(m, outfile, polt, signal_labels):
 
         unit = r"$\mu\mathrm{K}_{\mathrm{CMB}}$"
 
-        coltype = 2
         from pathlib import Path
 
         color = Path(__file__).parent / "parchment1.dat"
+        cmap = col.ListedColormap(np.loadtxt(color) / 255.0)
 
     elif tag_lookup(chisq_tags, outfile):
         title = r"$\chi^2$ " + signal_labels[polt]
@@ -458,8 +462,8 @@ def get_params(m, outfile, polt, signal_labels):
         print("Plotting chisq with vmax = " + str(vmax) + " " + signal_labels[polt])
 
         unit = ""
-        coltype = 0
-        color = "none"
+        cmap = col.LinearSegmentedColormap.from_list("own2", ["black", "white"])
+
 
     elif tag_lookup(synch_tags, outfile):
         print("----------------------------------")
@@ -467,8 +471,8 @@ def get_params(m, outfile, polt, signal_labels):
         title = r"$" + signal_labels[polt] + "$" + r"$_{\mathrm{s}}$ "
         print("Applying logscale (Rewrite if not)")
         if polt > 0:
-            vmin = -1.69
-            vmax = 1.69
+            vmin = -np.log10(50)
+            vmax = np.log10(50)
             tmin = str(-50)
             tmax = str(50)
             logscale = True
@@ -478,16 +482,16 @@ def get_params(m, outfile, polt, signal_labels):
             ticks = [vmin, vmid, vmax]
             ticklabels = [tmin, tmid, tmax]
 
-            coltype = 0
-            color = "psynch"
+            col1 = "darkgoldenrod"
+            col2 = "darkgreen"
+            cmap = col.LinearSegmentedColormap.from_list("own2", [endcolor, col1, startcolor, col2, endcolor])
         else:
             vmin = 1
             vmax = np.log10(100)
             tmin = str(10)
             tmax = str(100)
             logscale = True
-            coltype = 0
-            color = "green"
+            cmap = col.LinearSegmentedColormap.from_list("own2", ["black", "green", "white"])
 
             ticks = [vmin, vmax]
             ticklabels = [tmin, tmax]
@@ -513,8 +517,8 @@ def get_params(m, outfile, polt, signal_labels):
         unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
         title = r"$" + signal_labels[polt] + "$" + r"$_{\mathrm{ff}}$"
         logscale = True
-        coltype = 0
-        color = "Navy"
+        cmap = col.LinearSegmentedColormap.from_list("own2", ["black", "Navy", "white"])
+
 
     elif tag_lookup(dust_tags, outfile):
         print("----------------------------------")
@@ -522,30 +526,35 @@ def get_params(m, outfile, polt, signal_labels):
         print("Applying logscale (Rewrite if not)")
         title = r"$" + signal_labels[polt] + "$" + r"$_{\mathrm{d}}$ "
         if polt > 0:
-            vmin = -2
+            vmin = -np.log10(100)
             vmid = 0
-            vmax = 2
+            vmax = np.log10(100)
 
             tmin = str(-100)
             tmid = 0
             tmax = str(100)
 
             logscale = True
-            coltype = 0
-            color = "pdust"
+
+            col1 = "deepskyblue"
+            col2 = "blue"
+            col3 = "firebrick"
+            col4 = "darkorange"
+            cmap = col.LinearSegmentedColormap.from_list(
+                "own2", [endcolor, col1, col2, startcolor, col3, col4, endcolor]
+            )
 
         else:
             vmin = 0
-            vmid = 2
-            vmax = 4  # 1000
+            vmid = np.log10(100)
+            vmax = np.log10(10000)
 
             tmin = str(0)
             tmid = str(r"$10^2$")
             tmax = str(r"$10^4$")
 
             logscale = True
-            coltype = 1
-            color = "gist_heat"
+            cmap = plt.get_cmap("gist_heat")
 
         ticks = [vmin, vmid, vmax]
         ticklabels = [tmin, tmid, tmax]
@@ -571,16 +580,15 @@ def get_params(m, outfile, polt, signal_labels):
         unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
         title = r"$" + signal_labels[polt] + "$" + r"$_{\mathrm{ame}}$"
         logscale = True
-        coltype = 0
-        color = "DarkOrange"
+        cmap = col.LinearSegmentedColormap.from_list("own2", ["black", "DarkOrange", "white"])
 
     elif tag_lookup(co10_tags, outfile):
         print("----------------------------------")
         print("Plotting CO10")
         print("Applying logscale (Rewrite if not)")
         vmin = 0
-        vmid = 1
-        vmax = 2
+        vmid = np.log10(10)
+        vmax = np.log10(100)
 
         tmin = str(0)
         tmid = str(10)
@@ -592,8 +600,7 @@ def get_params(m, outfile, polt, signal_labels):
         unit = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
         title = r"$" + signal_labels[polt] + "$" + r"$_{\mathrm{CO10}}$"
         logscale = True
-        coltype = 1
-        color = "gray"
+        cmap = plt.get_cmap("gray")
 
     elif tag_lookup(co21_tags, outfile):
         print("----------------------------------")
@@ -612,8 +619,7 @@ def get_params(m, outfile, polt, signal_labels):
         unit = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
         title = r"$" + signal_labels[polt] + "$" + r"$_{\mathrm{CO21}}$"
         logscale = True
-        coltype = 1
-        color = "gray"
+        cmap = plt.get_cmap("gray")
 
     elif tag_lookup(co32_tags, outfile):
         print("----------------------------------")
@@ -632,8 +638,7 @@ def get_params(m, outfile, polt, signal_labels):
         unit = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
         title = r"$" + signal_labels[polt] + "$" + r"$_{\mathrm{CO32}}$"
         logscale = True
-        coltype = 1
-        color = "gray"
+        cmap = plt.get_cmap("gray")
 
     elif tag_lookup(hcn_tags, outfile):
         print("----------------------------------")
@@ -650,8 +655,7 @@ def get_params(m, outfile, polt, signal_labels):
         unit = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
         title = r"$" + signal_labels[polt] + "$" + r"$_{\mathrm{HCN}}$"
         logscale = True
-        coltype = 1
-        color = "gray"
+        cmap = plt.get_cmap("gray")
 
     elif tag_lookup(ame_tags, outfile):
         print("----------------------------------")
@@ -667,8 +671,8 @@ def get_params(m, outfile, polt, signal_labels):
 
         unit = "GHz"
         title = r"$\nu_{ame}$"
-        coltype = 1
-        color = "bone"
+        cmap = plt.get_cmap("bone")
+        
 
     # SPECTRAL PARAMETER MAPS
     elif tag_lookup(dust_T_tags, outfile):
@@ -686,8 +690,8 @@ def get_params(m, outfile, polt, signal_labels):
         ticklabels = [tmin, tmax]
 
         unit = r"$\mathrm{K}$"
-        coltype = 1
-        color = "bone"
+        cmap = plt.get_cmap("bone")
+
 
     elif tag_lookup(dust_beta_tags, outfile):
         print("----------------------------------")
@@ -703,8 +707,8 @@ def get_params(m, outfile, polt, signal_labels):
         ticklabels = [tmin, tmax]
 
         unit = ""
-        coltype = 1
-        color = "bone"
+        cmap = plt.get_cmap("bone")
+
 
     elif tag_lookup(synch_beta_tags, outfile):
         print("----------------------------------")
@@ -721,8 +725,8 @@ def get_params(m, outfile, polt, signal_labels):
         ticklabels = [tmin, tmax]
 
         unit = ""
-        coltype = 1
-        color = "bone"
+        cmap = plt.get_cmap("bone")
+
 
     elif tag_lookup(ff_Te_tags, outfile):
         print("----------------------------------")
@@ -738,8 +742,8 @@ def get_params(m, outfile, polt, signal_labels):
 
         unit = r"$\mathrm{K}$"
         title = r"$T_{e}$"
-        coltype = 1
-        color = "bone"
+        cmap = plt.get_cmap("bone")
+
 
     elif tag_lookup(ff_EM_tags, outfile):
         print("----------------------------------")
@@ -759,8 +763,8 @@ def get_params(m, outfile, polt, signal_labels):
 
         unit = r"$\mathrm{K}$"
         title = r"$T_{e}$"
-        coltype = 1
-        color = "bone"
+        cmap = plt.get_cmap("bone")
+
 
     #################
     # RESIDUAL MAPS #
@@ -785,7 +789,7 @@ def get_params(m, outfile, polt, signal_labels):
         tmax = str(vmax)
 
         unit = r"$\mu\mathrm{K}$"
-        coltype = 2
+        cmap = col.ListedColormap(np.loadtxt(color) / 255.0)
 
         from pathlib import Path
 
@@ -825,7 +829,7 @@ def get_params(m, outfile, polt, signal_labels):
         tmax = str(vmax)
 
         unit = r"$\mu\mathrm{K}$"
-        coltype = 2
+        cmap = col.ListedColormap(np.loadtxt(color) / 255.0)
 
         from pathlib import Path
 
@@ -855,12 +859,12 @@ def get_params(m, outfile, polt, signal_labels):
         ticklabels = [tmin, tmax]
         unit = ""
         title = r"$" + signal_labels[polt] + "$"
-        coltype = 2
+
         from pathlib import Path
-
         color = Path(__file__).parent / "parchment1.dat"
+        cmap = col.ListedColormap(np.loadtxt(color) / 255.0)
 
-    return title, ticks, ticklabels, unit, coltype, color, logscale
+    return title, ticks, ticklabels, unit, cmap, logscale
 
 
 def get_pollist(sig):
@@ -908,3 +912,6 @@ def cm2inch(cm):
 
 def tag_lookup(tags, outfile):
     return any(e in outfile for e in tags)
+
+
+
