@@ -9,16 +9,13 @@ import matplotlib.colors as col
 import matplotlib.ticker as ticker
 from matplotlib import rcParams, rc
 
-from c3postproc.functions import get_key
-
-
 def Plotter(
     input,
     dataset,
     nside,
     min,
     max,
-    range,
+    rng,
     colorbar,
     lmax,
     fwhm,
@@ -93,11 +90,11 @@ def Plotter(
         outfile = input.replace(".fits", "")
         
     elif input.endswith(".h5"):
-        from c3postproc.functions import alm2fits, h5map2fits
+        from c3postproc.commands import alm2fits_tool, h5map2fits
 
         if dataset.endswith("alm"):
             print("Converting alms to map")
-            maps, nside, lmax, fwhm, outfile = alm2fits(input, dataset, nside, lmax, fwhm, save=False)
+            maps, nside, lmax, fwhm, outfile = alm2fits_tool(input, dataset, nside, lmax, fwhm, save=False)
 
         elif dataset.endswith("map"):
             print("Reading map from h5")
@@ -119,21 +116,21 @@ def Plotter(
         #######################
         #### Auto-param   #####
         #######################
-        title, ticks, ticklabels, unit, coltype, color, logscale = get_params(m, outfile, polt, signal_labels)
+        ttl, ticks, ticklabels, unt, coltype, color, logscale = get_params(m, outfile, polt, signal_labels)
         vmin = ticks[0]
         vmax = ticks[-1]
         tmin = ticklabels[0]
         tmax = ticklabels[-1]
 
         # If range has been specified, set.
-        if range:
-            if range == "auto":
+        if rng:
+            if rng == "auto":
                 max = np.percentile(m, 95)
                 min = np.percentile(m, 5)
             else:
-                range = float(range)
-                min = -range
-                max = range
+                rng = float(rng)
+                min = -rng
+                max = rng
 
         # If min and max have been specified, set.
         if min:
@@ -153,24 +150,15 @@ def Plotter(
         ##########################
         #### Plotting Params #####
         ##########################
-        # !!!!!!!!!!!!!!!!!!!!!!!!!
-        # PROBLEM!!!!!!!!!!!!!!!!!!
-        # THIS DOES NOT TAKE SPACES
-        # !!!!!!!!!!!!!!!!!!!!!!!!!
-
+       
         # Upper right title
-        if title:
-            # If input from command-line, format.
-            title = r"$" + title + "$"
-        else:
-            title = title
+        if not title:
+            title = ttl
 
         # Unit under colorbar
-        if unit:
-            # If input from command-line, format.
-            unit = r"$" + unit + "$"
-        else:
-            unit = unit
+        if not unit:
+            unit = unt
+        
 
         # Image size -  ratio is always 1/2
         xsize = 2000
@@ -180,6 +168,7 @@ def Plotter(
         #### remove dipole #####
         ########################
         if remove_dipole:
+
             print("Removing dipole")
             dip_mask_name = remove_dipole
             # Mask map for dipole estimation
@@ -193,6 +182,7 @@ def Plotter(
             print("Dipole amplitude: {}".format(np.sqrt(np.sum(dip ** 2))))
 
             # Create dipole template
+            nside = int(nside)
             ray = range(hp.nside2npix(nside))
             vecs = hp.pix2vec(nside, ray)
             dipole = np.dot(dip, vecs)
@@ -420,6 +410,7 @@ def get_params(m, outfile, polt, signal_labels):
     ignore_tags = ["radio_"]
 
     if tag_lookup(cmb_tags, outfile):
+        print("----------------------------------")
         print("Plotting CMB " + signal_labels[polt])
 
         title = r"$" + signal_labels[polt] + "$" + r"$_{\mathrm{CMB}}$"
@@ -448,7 +439,6 @@ def get_params(m, outfile, polt, signal_labels):
         color = Path(__file__).parent / "parchment1.dat"
 
     elif tag_lookup(chisq_tags, outfile):
-
         title = r"$\chi^2$ " + signal_labels[polt]
 
         if polt > 0:
@@ -464,6 +454,7 @@ def get_params(m, outfile, polt, signal_labels):
         ticks = [vmin, vmax]
         ticklabels = [tmin, tmax]
 
+        print("----------------------------------")
         print("Plotting chisq with vmax = " + str(vmax) + " " + signal_labels[polt])
 
         unit = ""
@@ -471,6 +462,7 @@ def get_params(m, outfile, polt, signal_labels):
         color = "none"
 
     elif tag_lookup(synch_tags, outfile):
+        print("----------------------------------")
         print("Plotting Synchrotron" + " " + signal_labels[polt])
         title = r"$" + signal_labels[polt] + "$" + r"$_{\mathrm{s}}$ "
         print("Applying logscale (Rewrite if not)")
@@ -503,6 +495,7 @@ def get_params(m, outfile, polt, signal_labels):
         unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
 
     elif tag_lookup(ff_tags, outfile):
+        print("----------------------------------")
         print("Plotting freefree")
         print("Applying logscale (Rewrite if not)")
 
@@ -524,6 +517,7 @@ def get_params(m, outfile, polt, signal_labels):
         color = "Navy"
 
     elif tag_lookup(dust_tags, outfile):
+        print("----------------------------------")
         print("Plotting Thermal dust" + " " + signal_labels[polt])
         print("Applying logscale (Rewrite if not)")
         title = r"$" + signal_labels[polt] + "$" + r"$_{\mathrm{d}}$ "
@@ -559,6 +553,7 @@ def get_params(m, outfile, polt, signal_labels):
         unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
 
     elif tag_lookup(ame_tags, outfile):
+        print("----------------------------------")
         print("Plotting AME")
         print("Applying logscale (Rewrite if not)")
 
@@ -580,6 +575,7 @@ def get_params(m, outfile, polt, signal_labels):
         color = "DarkOrange"
 
     elif tag_lookup(co10_tags, outfile):
+        print("----------------------------------")
         print("Plotting CO10")
         print("Applying logscale (Rewrite if not)")
         vmin = 0
@@ -600,6 +596,7 @@ def get_params(m, outfile, polt, signal_labels):
         color = "gray"
 
     elif tag_lookup(co21_tags, outfile):
+        print("----------------------------------")
         print("Plotting CO21")
         print("Applying logscale (Rewrite if not)")
         vmin = 0
@@ -619,6 +616,7 @@ def get_params(m, outfile, polt, signal_labels):
         color = "gray"
 
     elif tag_lookup(co32_tags, outfile):
+        print("----------------------------------")
         print("Plotting 32")
         print("Applying logscale (Rewrite if not)")
         vmin = 0
@@ -638,6 +636,7 @@ def get_params(m, outfile, polt, signal_labels):
         color = "gray"
 
     elif tag_lookup(hcn_tags, outfile):
+        print("----------------------------------")
         print("Plotting HCN")
         print("Applying logscale (Rewrite if not)")
         vmin = -14
@@ -655,6 +654,7 @@ def get_params(m, outfile, polt, signal_labels):
         color = "gray"
 
     elif tag_lookup(ame_tags, outfile):
+        print("----------------------------------")
         print("Plotting AME nu_p")
 
         vmin = 17
@@ -672,6 +672,7 @@ def get_params(m, outfile, polt, signal_labels):
 
     # SPECTRAL PARAMETER MAPS
     elif tag_lookup(dust_T_tags, outfile):
+        print("----------------------------------")
         print("Plotting Thermal dust Td")
 
         title = r"$" + signal_labels[polt] + "$ " + r"$T_d$ "
@@ -689,6 +690,7 @@ def get_params(m, outfile, polt, signal_labels):
         color = "bone"
 
     elif tag_lookup(dust_beta_tags, outfile):
+        print("----------------------------------")
         print("Plotting Thermal dust beta")
 
         title = r"$" + signal_labels[polt] + "$ " + r"$\beta_d$ "
@@ -705,6 +707,7 @@ def get_params(m, outfile, polt, signal_labels):
         color = "bone"
 
     elif tag_lookup(synch_beta_tags, outfile):
+        print("----------------------------------")
         print("Plotting Synchrotron beta")
 
         title = r"$" + signal_labels[polt] + "$ " + r"$\beta_s$ "
@@ -722,6 +725,7 @@ def get_params(m, outfile, polt, signal_labels):
         color = "bone"
 
     elif tag_lookup(ff_Te_tags, outfile):
+        print("----------------------------------")
         print("Plotting freefree T_e")
 
         vmin = 5000
@@ -738,6 +742,7 @@ def get_params(m, outfile, polt, signal_labels):
         color = "bone"
 
     elif tag_lookup(ff_EM_tags, outfile):
+        print("----------------------------------")
         print("Plotting freefree EM MIN AND MAX VALUES UPDATE!")
 
         vmin = 5000
@@ -762,6 +767,7 @@ def get_params(m, outfile, polt, signal_labels):
     #################
 
     elif tag_lookup(res_tags, outfile):
+        print("----------------------------------")
         print("Plotting residual map" + " " + signal_labels[polt])
 
         if "res_" in outfile:
@@ -805,7 +811,7 @@ def get_params(m, outfile, polt, signal_labels):
     #################
 
     elif tag_lookup(tod_tags, outfile):
-
+        print("----------------------------------")
         print("Plotting Smap map" + " " + signal_labels[polt])
 
         tit = str(re.findall(r"tod_(.*?)_Smap", outfile)[0])
@@ -839,6 +845,7 @@ def get_params(m, outfile, polt, signal_labels):
         )
         sys.exit()
     else:
+        print("----------------------------------")
         print("Map not recognized, plotting with min and max values")
         vmax = np.percentile(m, 95)
         vmin = np.percentile(m, 5)
@@ -877,10 +884,6 @@ def get_sizes(size):
         sizes.append(18.0)
     return sizes
 
-
-def get_range(min, max, range, m):
-
-    return min, max
 
 
 def fmt(x, pos):
