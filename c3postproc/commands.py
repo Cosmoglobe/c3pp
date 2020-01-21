@@ -83,8 +83,8 @@ def stddev(input, dataset, min, max, smooth, output):
 @commands.command()
 @click.argument('input',  type=click.STRING)
 @click.option('-auto', is_flag=True, help='Automatically sets all plotting parameters.')
-@click.option('-min', default=None, type=click.FLOAT, help='Min value of colorbar, overrides autodetector.')
-@click.option('-max', default=None, type=click.FLOAT,  help='Max value of colorbar, overrides autodetector.')
+@click.option('-min', default=False, help='Min value of colorbar, overrides autodetector.')
+@click.option('-max', default=False,  help='Max value of colorbar, overrides autodetector.')
 @click.option('-range','rng', default=None, type=click.STRING, help='Color range. "-range auto" sets to 95 percentile of data.') # str until changed to float
 @click.option('-colorbar', is_flag=True, help='Adds colorbar ("cb" in filename)')
 @click.option('-lmax', default=None, type=click.FLOAT, help='This is automatically set from the h5 file. Only available for alm inputs.')
@@ -95,7 +95,7 @@ def stddev(input, dataset, min, max, smooth, output):
 @click.option('-remove_dipole', default=None, type=click.STRING, help='Fits a dipole to the map and removes it.')
 @click.option('-log/-no-log', 'logscale', default=None, help='Plots using planck semi-logscale. (Autodetector sometimes uses this.)')
 @click.option('-size',  default="m", type=click.STRING, help='Size: 1/3, 1/2 and full page width. 8.8, 12.0, 18. cm (s, m or l [small, medium or large], m by default)')
-@click.option('-transparent/-white_background', 'white_background', default=False, help='Sets the background to be white. (Transparent by default [recommended])')
+@click.option('-white_background', is_flag=True, help='Sets the background to be white. (Transparent by default [recommended])')
 @click.option('-darkmode',is_flag=True, help='Plots all outlines in white for dark bakgrounds ("dark" in filename)')
 @click.option('-pdf', is_flag=True,  help='Saves output as .pdf ().png by default)')
 @click.option('-cmap', default="planck", type=click.STRING,  help='Choose different color map (string), such as Jet or planck')
@@ -104,10 +104,11 @@ def stddev(input, dataset, min, max, smooth, output):
 @click.option('-verbose', is_flag=True, help='Verbose mode')
 def plot(input, auto, min, max, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, unit, verbose):
     """
+    \b
     Plots map from .fits.
 
-    Uses 95 percentile values for min and max by default!
-    RECCOMENDED: Use -auto to autodetect map type and set parameters.
+    Uses 95 percentile values for min and max by default!\n
+    RECCOMENDED: Use -auto to autodetect map type and set parameters.\n
     Some autodetected maps use logscale, you will be warned.
     """
     dataset = None
@@ -121,8 +122,8 @@ def plot(input, auto, min, max, rng, colorbar, lmax, fwhm, mask, mfill, sig, rem
 @click.argument('dataset', type=click.STRING)
 @click.argument('nside',  type=click.INT)
 @click.option('-auto', is_flag=True, help='Automatically sets all plotting parameters.')
-@click.option('-min', default=None, type=click.FLOAT, help='Min value of colorbar, overrides autodetector.')
-@click.option('-max', default=None, type=click.FLOAT,  help='Max value of colorbar, overrides autodetector.')
+@click.option('-min', default=False, help='Min value of colorbar, overrides autodetector.')
+@click.option('-max', default=False,  help='Max value of colorbar, overrides autodetector.')
 @click.option('-range','rng', default=None, type=click.STRING, help='Color range. "-range auto" sets to 95 percentile of data.') # str until changed to float
 @click.option('-colorbar', is_flag=True, help='Adds colorbar ("cb" in filename)')
 @click.option('-lmax', default=None, type=click.FLOAT, help='This is automatically set from the h5 file. Only available for alm inputs.')
@@ -133,7 +134,7 @@ def plot(input, auto, min, max, rng, colorbar, lmax, fwhm, mask, mfill, sig, rem
 @click.option('-remove_dipole', default=None, type=click.STRING, help='Fits a dipole to the map and removes it.')
 @click.option('-log/-no-log', 'logscale', default=None, help='Plots using planck semi-logscale. (Autodetector sometimes uses this.)')
 @click.option('-size',  default="m", type=click.STRING, help='Size: 1/3, 1/2 and full page width. 8.8, 12.0, 18. cm (s, m or l [small, medium or large], m by default)')
-@click.option('-transparent/-white_background', 'white_background', default=False, help='Sets the background to be white. (Transparent by default [recommended])')
+@click.option('-white_background', is_flag=True, help='Sets the background to be white. (Transparent by default [recommended])')
 @click.option('-darkmode', is_flag=True, help='Plots all outlines in white for dark bakgrounds ("dark" in filename)')
 @click.option('-pdf', is_flag=True,  help='Saves output as .pdf ().png by default)')
 @click.option('-cmap', default="planck", type=click.STRING,  help='Choose different color map (string), such as Jet or planck')
@@ -142,13 +143,14 @@ def plot(input, auto, min, max, rng, colorbar, lmax, fwhm, mask, mfill, sig, rem
 @click.option('-verbose', is_flag=True, help='Verbose mode')
 def ploth5(input, dataset, nside, auto, min, max, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, unit, verbose):
     """
-    Plots map or alms from h5 file.
+    \b
+    Plots map or alms from h5 file.\n
 
-    c3pp ploth5 [.h5] [000004/cmb/amp_map] [nside]
-    c3pp ploth5 [.h5] [000004/cmb/amp_alm] [nside] (Optional FWHM smoothing and LMAX for alm data).
+    c3pp ploth5 [.h5] [000004/cmb/amp_map] [nside]\n
+    c3pp ploth5 [.h5] [000004/cmb/amp_alm] [nside] (Optional FWHM smoothing and LMAX for alm data).\n
 
-    Uses 95 percentile values for min and max by default!
-    RECCOMENDED: Use -auto to autodetect map type and set parameters.
+    Uses 95 percentile values for min and max by default!\n
+    RECCOMENDED: Use -auto to autodetect map type and set parameters.\n
     Some autodetected maps use logscale, you will be warned.
 
     """
@@ -166,7 +168,8 @@ def ploth5(input, dataset, nside, auto, min, max, rng, colorbar, lmax, fwhm, mas
 @click.argument('outname', type=click.File('wb'))
 def sigma_l2fits(filename, nchains, burnin, path, outname, save=True):
     """
-    Converts c3-h5 dataset to fits suitable for c1 BR and GBR estimator analysis.
+    \b
+    Converts c3-h5 dataset to fits suitable for c1 BR and GBR estimator analysis.\n
 
     See comm_like_tools for further information about BR and GBR post processing
     """

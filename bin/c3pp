@@ -5,11 +5,15 @@ from c3postproc.commands import *
 
 from c3postproc.commands import commands
 
-@click.group()
+CONTEXT_SETTINGS = dict(
+    max_content_width=100
+)
+
+@click.group(context_settings=CONTEXT_SETTINGS)
 def cli():
     pass
 
-cli = click.CommandCollection(sources=[commands])
+cli = click.CommandCollection(sources=[commands], context_settings=CONTEXT_SETTINGS)
 
 if __name__ == '__main__':
     cli()

@@ -126,11 +126,6 @@ def Plotter(
         # ttl, unt and cmb are temporary variables for title, unit and colormap
         if auto:
             ttl, ticks, ticklabels, unt, cmp, lgscale = get_params(m, outfile, polt, signal_labels)
-
-            vmin = ticks[0]
-            vmax = ticks[-1]
-            tmin = ticklabels[0]
-            tmax = ticklabels[-1]
         else:
             ttl = ""
             unt = ""
@@ -141,32 +136,36 @@ def Plotter(
             lgscale = False
 
 
+
         # If range has been specified, set.
         if rng:
             if rng == "auto":
-                max = np.percentile(m, 95)
-                min = np.percentile(m, 5)
+                mx = np.percentile(m, 95)
+                mn = np.percentile(m, 5)
+                print("Autocalculating limits, min {}, max {}".format(mn,mx))
+                print("Manual limints, min {}, max {}".format(min, max))
+                if min is False:
+                    min = mn
+                if max is False:
+                    max = mx
+                print("Limits after test, min {}, max {}".format(min, max))
             else:
                 rng = float(rng)
                 min = -rng
                 max = rng
 
         # If min and max have been specified, set.
-        if min:
-            vmin = min
-            tmin = str(min)
+        if min is not False:
+            ticks[0] = float(min)
+            ticklabels[0] = str(min)
 
-            ticks[0] = vmin
-            ticklabels[0] = tmin
+        if max is not False:
+            ticks[-1] = float(max)
+            ticklabels[-1] = str(max)
 
-        if max:
-            vmax = max
-            tmax = str(max)
-
-            ticks[-1] = vmax
-            ticklabels[-1] = tmax
-
-
+        print("max, max {}".format(ticks))
+        print("tmax, tmin {}".format(ticklabels)) 
+        
         ##########################
         #### Plotting Params #####
         ##########################
@@ -220,7 +219,7 @@ def Plotter(
             starttime = time.time()
 
             m = np.log10(0.5 * (m + np.sqrt(4.0 + m * m)))
-            m = np.maximum(np.minimum(m, vmax), vmin)
+            m = np.maximum(np.minimum(m, ticks[-1]), ticks[0])
 
             print("Logscale", (time.time() - starttime)) if verbose else None
         ######################
@@ -314,7 +313,7 @@ def Plotter(
             # rasterized makes the map bitmap while the labels remain vectorial
             # flip longitude to the astro convention
             image = plt.pcolormesh(
-                longitude[::-1], latitude, grid_map, vmin=vmin, vmax=vmax, rasterized=True, cmap=cmap
+                longitude[::-1], latitude, grid_map, vmin=ticks[0], vmax=ticks[-1], rasterized=True, cmap=cmap
             )
             # graticule
             ax.set_longitude_grid(60)
@@ -333,9 +332,8 @@ def Plotter(
                     image, orientation="horizontal", shrink=0.3, pad=0.08, ticks=ticks, format=ticker.FuncFormatter(fmt)
                 )
                 # Format tick labels if autosetting
-                if auto:
-                    if tmax or tmin:
-                        cb.ax.set_xticklabels(ticklabels)
+                #if auto:
+                #    cb.ax.set_xticklabels(ticklabels)
                 cb.ax.xaxis.set_label_text(unit)
                 cb.ax.xaxis.label.set_size(fontsize)
                 cb.ax.minorticks_on()
