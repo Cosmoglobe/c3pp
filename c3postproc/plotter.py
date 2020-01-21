@@ -900,6 +900,8 @@ def fmt(x, pos):
         return r"${:d}$".format(int(x))
     elif abs(x) > 1e1:
         return r"${:.1f}$".format(x)
+    elif abs(x) == 0.0:
+        return r"${:.1f}$".format(x)
     else:
         return r"${:.2f}$".format(x)
 
