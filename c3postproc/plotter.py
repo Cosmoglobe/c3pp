@@ -19,6 +19,7 @@ def Plotter(
     auto,
     min,
     max,
+    minmax,
     rng,
     colorbar,
     lmax,
@@ -120,68 +121,6 @@ def Plotter(
     for polt in pollist:
         m = maps[polt]  # Select map signal (I,Q,U)
 
-        #######################
-        #### Auto-param   #####
-        #######################
-        # ttl, unt and cmb are temporary variables for title, unit and colormap
-        if auto:
-            ttl, ticks, ticklabels, unt, cmp, lgscale = get_params(m, outfile, polt, signal_labels)
-        else:
-            ttl = ""
-            unt = ""
-            rng = "auto"
-            ticks = [False, False]
-            ticklabels = [False, False]
-            cmp = "planck"
-            lgscale = False
-
-
-
-        # If range has been specified, set.
-        if rng:
-            if rng == "auto":
-                mx = np.percentile(m, 95)
-                mn = np.percentile(m, 5)
-                print("Autocalculating limits, min {}, max {}".format(mn,mx))
-                print("Manual limints, min {}, max {}".format(min, max))
-                if min is False:
-                    min = mn
-                if max is False:
-                    max = mx
-                print("Limits after test, min {}, max {}".format(min, max))
-            else:
-                rng = float(rng)
-                min = -rng
-                max = rng
-
-        # If min and max have been specified, set.
-        if min is not False:
-            ticks[0] = float(min)
-            ticklabels[0] = str(min)
-
-        if max is not False:
-            ticks[-1] = float(max)
-            ticklabels[-1] = str(max)
-
-        print("max, max {}".format(ticks))
-        print("tmax, tmin {}".format(ticklabels)) 
-        
-        ##########################
-        #### Plotting Params #####
-        ##########################
-       
-        # Upper right title
-        if not title:
-            title = ttl
-
-        # Unit under colorbar
-        if not unit:
-            unit = unt
-        
-        # Image size -  ratio is always 1/2
-        xsize = 2000
-        ysize = int(xsize / 2.0)
-
         ########################
         #### remove dipole #####
         ########################
@@ -207,6 +146,70 @@ def Plotter(
             # Subtract dipole map from data
             m = m - dipole
             print("Dipole removal : ", (time.time() - starttime)) if verbose else None
+
+        #######################
+        #### Auto-param   #####
+        #######################
+        # ttl, unt and cmb are temporary variables for title, unit and colormap
+        if auto:
+            ttl, ticks, ticklabels, unt, cmp, lgscale = get_params(m, outfile, polt, signal_labels)
+        else:
+            ttl = ""
+            unt = ""
+            rng = "auto"
+            ticks = [False, False]
+            ticklabels = [False, False]
+            cmp = "planck"
+            lgscale = False
+
+
+
+        # If range has been specified, set.
+        if rng:
+            if rng == "auto":
+                if minmax:
+                    mn = np.min(m)
+                    mx = np.max(m)
+                else:
+                    mx = np.percentile(m, 97.5)
+                    mn = np.percentile(m, 2.5)
+                print("Autocalculating limits, min {}, max {}".format(mn,mx))
+                print("Manual limints, min {}, max {}".format(min, max))
+                if min is False:
+                    min = mn
+                if max is False:
+                    max = mx
+                print("Limits after test, min {}, max {}".format(min, max))
+            else:
+                rng = float(rng)
+                min = -rng
+                max = rng
+
+        # If min and max have been specified, set.
+        if min is not False:
+            ticks[0] = float(min)
+            ticklabels[0] = str(min)
+
+        if max is not False:
+            ticks[-1] = float(max)
+            ticklabels[-1] = str(max)
+
+        ##########################
+        #### Plotting Params #####
+        ##########################
+       
+        # Upper right title
+        if not title:
+            title = ttl
+
+        # Unit under colorbar
+        if not unit:
+            unit = unt
+        
+        # Image size -  ratio is always 1/2
+        xsize = 2000
+        ysize = int(xsize / 2.0)
+
         #######################
         ####   logscale   #####
         #######################
@@ -752,8 +755,8 @@ def get_params(m, outfile, polt, signal_labels):
         tmin = str(vmin)
         tmax = str(vmax)
 
-        vmax = np.percentile(m, 95)
-        vmin = np.percentile(m, 5)
+        vmax = np.percentile(m, 97.5)
+        vmin = np.percentile(m, 2.5)
         tmin = False
         tmax = False
         ticks = [vmin, vmax]
@@ -808,9 +811,10 @@ def get_params(m, outfile, polt, signal_labels):
 
         ticks = [vmin, vmid, vmax]
         ticklabels = [tmin, tmid, tmax]
-    #################
-    # TOD MAPS      #
-    #################
+
+    ############
+    # TOD MAPS #
+    ############
 
     elif tag_lookup(tod_tags, outfile):
         print("----------------------------------")
@@ -849,8 +853,8 @@ def get_params(m, outfile, polt, signal_labels):
     else:
         print("----------------------------------")
         print("Map not recognized, plotting with min and max values")
-        vmax = np.percentile(m, 95)
-        vmin = np.percentile(m, 5)
+        vmax = np.percentile(m, 97.5)
+        vmin = np.percentile(m, 2.5)
         tmin = False
         tmax = False
         ticks = [vmin, vmax]

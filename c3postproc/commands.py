@@ -85,7 +85,8 @@ def stddev(input, dataset, min, max, smooth, output):
 @click.option('-auto', is_flag=True, help='Automatically sets all plotting parameters.')
 @click.option('-min', default=False, help='Min value of colorbar, overrides autodetector.')
 @click.option('-max', default=False,  help='Max value of colorbar, overrides autodetector.')
-@click.option('-range','rng', default=None, type=click.STRING, help='Color range. "-range auto" sets to 95 percentile of data.') # str until changed to float
+@click.option('-minmax', is_flag=True,  help='Toggle min max values to be min and max of data (As opposed to 97.5 percentile).')
+@click.option('-range','rng', default=None, type=click.STRING, help='Color range. "-range auto" sets to 97.5 percentile of data.') # str until changed to float
 @click.option('-colorbar', is_flag=True, help='Adds colorbar ("cb" in filename)')
 @click.option('-lmax', default=None, type=click.FLOAT, help='This is automatically set from the h5 file. Only available for alm inputs.')
 @click.option('-fwhm', default=0.0, type=click.FLOAT, help='FWHM of smoothing to apply to alm binning. Only available for alm inputs.')
@@ -102,12 +103,12 @@ def stddev(input, dataset, min, max, smooth, output):
 @click.option('-title', default=None, type=click.STRING, help='Set title (Upper right), has LaTeX functionality. Ex. $A_{s}$.')
 @click.option('-unit', default=None, type=click.STRING, help='Set unit (Under color bar), has LaTeX functionality. Ex. $\mu$')
 @click.option('-verbose', is_flag=True, help='Verbose mode')
-def plot(input, auto, min, max, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, unit, verbose):
+def plot(input, auto, min, max, minmax, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, unit, verbose):
     """
     \b
     Plots map from .fits.
 
-    Uses 95 percentile values for min and max by default!\n
+    Uses 97.5 percentile values for min and max by default!\n
     RECCOMENDED: Use -auto to autodetect map type and set parameters.\n
     Some autodetected maps use logscale, you will be warned.
     """
@@ -115,7 +116,7 @@ def plot(input, auto, min, max, rng, colorbar, lmax, fwhm, mask, mfill, sig, rem
     nside = None
 
     from c3postproc.plotter import Plotter
-    Plotter(input, dataset, nside, auto, min, max, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, unit, verbose)
+    Plotter(input, dataset, nside, auto, min, max, minmax, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, unit, verbose)
 
 @commands.command()
 @click.argument('input', nargs=1, type=click.STRING)
@@ -124,7 +125,8 @@ def plot(input, auto, min, max, rng, colorbar, lmax, fwhm, mask, mfill, sig, rem
 @click.option('-auto', is_flag=True, help='Automatically sets all plotting parameters.')
 @click.option('-min', default=False, help='Min value of colorbar, overrides autodetector.')
 @click.option('-max', default=False,  help='Max value of colorbar, overrides autodetector.')
-@click.option('-range','rng', default=None, type=click.STRING, help='Color range. "-range auto" sets to 95 percentile of data.') # str until changed to float
+@click.option('-minmax', is_flag=True,  help='Toggle min max values to be min and max of data (As opposed to 97.5 percentile).')
+@click.option('-range','rng', default=None, type=click.STRING, help='Color range. "-range auto" sets to 97.5 percentile of data.') # str until changed to float
 @click.option('-colorbar', is_flag=True, help='Adds colorbar ("cb" in filename)')
 @click.option('-lmax', default=None, type=click.FLOAT, help='This is automatically set from the h5 file. Only available for alm inputs.')
 @click.option('-fwhm', default=0.0, type=click.FLOAT, help='FWHM of smoothing to apply to alm binning. Only available for alm inputs.')
@@ -141,7 +143,7 @@ def plot(input, auto, min, max, rng, colorbar, lmax, fwhm, mask, mfill, sig, rem
 @click.option('-title', default=None, type=click.STRING, help='Set title (Upper right), has LaTeX functionality. Ex. $A_{s}$.')
 @click.option('-unit', default=None, type=click.STRING, help='Set unit (Under color bar), has LaTeX functionality. Ex. $\mu$')
 @click.option('-verbose', is_flag=True, help='Verbose mode')
-def ploth5(input, dataset, nside, auto, min, max, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, unit, verbose):
+def ploth5(input, dataset, nside, auto, min, max, minmax, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, unit, verbose):
     """
     \b
     Plots map or alms from h5 file.\n
@@ -149,7 +151,7 @@ def ploth5(input, dataset, nside, auto, min, max, rng, colorbar, lmax, fwhm, mas
     c3pp ploth5 [.h5] [000004/cmb/amp_map] [nside]\n
     c3pp ploth5 [.h5] [000004/cmb/amp_alm] [nside] (Optional FWHM smoothing and LMAX for alm data).\n
 
-    Uses 95 percentile values for min and max by default!\n
+    Uses 97.5 percentile values for min and max by default!\n
     RECCOMENDED: Use -auto to autodetect map type and set parameters.\n
     Some autodetected maps use logscale, you will be warned.
 
@@ -157,7 +159,7 @@ def ploth5(input, dataset, nside, auto, min, max, rng, colorbar, lmax, fwhm, mas
 
     from c3postproc.plotter import Plotter
 
-    Plotter(input, dataset, nside,auto,min, max, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, unit, verbose)
+    Plotter(input, dataset, nside, auto, min, max, minmax, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, unit, verbose)
 
 
 @commands.command()
