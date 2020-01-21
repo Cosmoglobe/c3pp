@@ -82,6 +82,7 @@ def stddev(input, dataset, min, max, smooth, output):
 
 @commands.command()
 @click.argument('input',  type=click.STRING)
+@click.option('-nside', type=click.INT, help='nside for optional ud_grade.')
 @click.option('-auto', is_flag=True, help='Automatically sets all plotting parameters.')
 @click.option('-min', default=False, help='Min value of colorbar, overrides autodetector.')
 @click.option('-max', default=False,  help='Max value of colorbar, overrides autodetector.')
@@ -103,7 +104,7 @@ def stddev(input, dataset, min, max, smooth, output):
 @click.option('-title', default=None, type=click.STRING, help='Set title (Upper right), has LaTeX functionality. Ex. $A_{s}$.')
 @click.option('-unit', default=None, type=click.STRING, help='Set unit (Under color bar), has LaTeX functionality. Ex. $\mu$')
 @click.option('-verbose', is_flag=True, help='Verbose mode')
-def plot(input, auto, min, max, minmax, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, unit, verbose):
+def plot(input, nside, auto, min, max, minmax, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, unit, verbose):
     """
     \b
     Plots map from .fits.
@@ -113,7 +114,6 @@ def plot(input, auto, min, max, minmax, rng, colorbar, lmax, fwhm, mask, mfill, 
     Some autodetected maps use logscale, you will be warned.
     """
     dataset = None
-    nside = None
 
     from c3postproc.plotter import Plotter
     Plotter(input, dataset, nside, auto, min, max, minmax, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, unit, verbose)

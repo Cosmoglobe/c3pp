@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as col
 import matplotlib.ticker as ticker
 from matplotlib import rcParams, rc
+
+from c3postproc.tools import arcmin2rad
 print("Importtime:", (time.time() - totaltime))
 
 def Plotter(
@@ -80,7 +82,7 @@ def Plotter(
         for i in pollist:
             try:
                 dats[i] = hp.ma(hp.read_map(input, field=i, verbose=False))
-                nside = hp.npix2nside(len(dats[i]))
+                nsid = hp.npix2nside(len(dats[i]))
                 map_exists = True
             except:
                 print("Signal {} not found in data, skipping".format(signal_labels[i]))
@@ -101,11 +103,11 @@ def Plotter(
 
         if dataset.endswith("alm"):
             print("Converting alms to map")
-            maps, nside, lmax, fwhm, outfile = alm2fits_tool(input, dataset, nside, lmax, fwhm, save=False)
+            maps, nsid, lmax, fwhm, outfile = alm2fits_tool(input, dataset, nside, lmax, fwhm, save=False)
 
         elif dataset.endswith("map"):
             print("Reading map from h5")
-            maps, nside, lmax, outfile = h5map2fits(input, dataset, save=False)
+            maps, nsid, lmax, outfile = h5map2fits(input, dataset, save=False)
 
         else:
             print("Dataset not found. Breaking.")
@@ -116,10 +118,27 @@ def Plotter(
         sys.exit()
 
     print("Map reading: ", (time.time() - starttime)) if verbose else None
-    print("nside", nside, "total file shape", maps.shape)
+    print("nside", nsid, "total file shape", maps.shape)
 
+    # Iterate through I, Q and U
     for polt in pollist:
-        m = maps[polt]  # Select map signal (I,Q,U)
+        m = maps[polt]
+
+        ############    
+        #  SMOOTH  #
+        ############
+        if fwhm > 0 and input.endswith(".fits"):
+            print("Smoothing fits map to {} degrees fwhm".format(fwhm))
+            m = hp.smoothing(m, fwhm=arcmin2rad(fwhm), lmax=lmax)
+
+        ############
+        # UD_GRADE #
+        ############
+        if nside is not None and input.endswith(".fits"):
+            print("UDgrading map from {} to {}".format(nsid, nside))
+            m = hp.ud_grade(m, nside)
+        else:
+            nside = nsid
 
         ########################
         #### remove dipole #####
@@ -146,6 +165,7 @@ def Plotter(
             # Subtract dipole map from data
             m = m - dipole
             print("Dipole removal : ", (time.time() - starttime)) if verbose else None
+
 
         #######################
         #### Auto-param   #####
