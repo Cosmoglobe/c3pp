@@ -173,13 +173,13 @@ def Plotter(
                 else:
                     mx = np.percentile(m, 97.5)
                     mn = np.percentile(m, 2.5)
-                print("Autocalculating limits, min {}, max {}".format(mn,mx))
-                print("Manual limints, min {}, max {}".format(min, max))
+                #print("Autocalculating limits, min {}, max {}".format(mn,mx))
+                #print("Manual limints, min {}, max {}".format(min, max))
                 if min is False:
                     min = mn
                 if max is False:
                     max = mx
-                print("Limits after test, min {}, max {}".format(min, max))
+                #print("Limits after test, min {}, max {}".format(min, max))
             else:
                 rng = float(rng)
                 min = -rng
