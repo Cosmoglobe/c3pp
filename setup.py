@@ -28,6 +28,7 @@ setuptools.setup(
         'click',
         'numpy',
         'matplotlib',
+        'numba',
     ],
     python_requires=">=3.6",
 )

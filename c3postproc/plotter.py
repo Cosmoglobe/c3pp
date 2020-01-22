@@ -1,4 +1,5 @@
 import time
+
 totaltime = time.time()
 import sys
 import os
@@ -12,7 +13,9 @@ import matplotlib.ticker as ticker
 from matplotlib import rcParams, rc
 
 from c3postproc.tools import arcmin2rad
+
 print("Importtime:", (time.time() - totaltime))
+
 
 def Plotter(
     input,
@@ -40,7 +43,6 @@ def Plotter(
     unit,
     verbose,
 ):
-
 
     rcParams["backend"] = "pdf"
     rcParams["legend.fancybox"] = True
@@ -97,9 +99,10 @@ def Plotter(
 
         maps = np.array(dats)
         outfile = input.replace(".fits", "")
-        
+
     elif input.endswith(".h5"):
-        from c3postproc.commands import alm2fits_tool, h5map2fits
+        from c3postproc.commands import h5map2fits
+        from c3postproc.tools import alm2fits_tool
 
         if dataset.endswith("alm"):
             print("Converting alms to map")
@@ -124,7 +127,7 @@ def Plotter(
     for polt in pollist:
         m = maps[polt]
 
-        ############    
+        ############
         #  SMOOTH  #
         ############
         if fwhm > 0 and input.endswith(".fits"):
@@ -150,7 +153,7 @@ def Plotter(
             # Mask map for dipole estimation
             m_masked = hp.ma(m)
             m_masked.mask = np.logical_not(hp.read_map(dip_mask_name))
-            
+
             # Fit dipole to masked map
             mono, dip = hp.fit_dipole(m_masked)
             print("Dipole vector: {}".format(dip))
@@ -165,7 +168,6 @@ def Plotter(
             # Subtract dipole map from data
             m = m - dipole
             print("Dipole removal : ", (time.time() - starttime)) if verbose else None
-
 
         #######################
         #### Auto-param   #####
@@ -182,8 +184,6 @@ def Plotter(
             cmp = "planck"
             lgscale = False
 
-
-
         # If range has been specified, set.
         if rng:
             if rng == "auto":
@@ -193,13 +193,13 @@ def Plotter(
                 else:
                     mx = np.percentile(m, 97.5)
                     mn = np.percentile(m, 2.5)
-                #print("Autocalculating limits, min {}, max {}".format(mn,mx))
-                #print("Manual limints, min {}, max {}".format(min, max))
+                # print("Autocalculating limits, min {}, max {}".format(mn,mx))
+                # print("Manual limints, min {}, max {}".format(min, max))
                 if min is False:
                     min = mn
                 if max is False:
                     max = mx
-                #print("Limits after test, min {}, max {}".format(min, max))
+                # print("Limits after test, min {}, max {}".format(min, max))
             else:
                 rng = float(rng)
                 min = -rng
@@ -217,7 +217,7 @@ def Plotter(
         ##########################
         #### Plotting Params #####
         ##########################
-       
+
         # Upper right title
         if not title:
             title = ttl
@@ -225,7 +225,7 @@ def Plotter(
         # Unit under colorbar
         if not unit:
             unit = unt
-        
+
         # Image size -  ratio is always 1/2
         xsize = 2000
         ysize = int(xsize / 2.0)
@@ -283,11 +283,11 @@ def Plotter(
             # Apply mask
             hp.ma(m)
             m.mask = np.logical_not(hp.read_map(mask))
- 
+
             # Don't know what this does, from paperplots by Zonca.
             grid_mask = m.mask[grid_pix]
             grid_map = np.ma.MaskedArray(m[grid_pix], grid_mask)
-            
+
             if mfill:
                 cmap.set_bad(mfill)  # color of missing pixels
                 # cmap.set_under("white") # color of background, necessary if you want to use
@@ -355,7 +355,7 @@ def Plotter(
                     image, orientation="horizontal", shrink=0.3, pad=0.08, ticks=ticks, format=ticker.FuncFormatter(fmt)
                 )
                 # Format tick labels if autosetting
-                #if auto:
+                # if auto:
                 #    cb.ax.set_xticklabels(ticklabels)
                 cb.ax.xaxis.set_label_text(unit)
                 cb.ax.xaxis.label.set_size(fontsize)
@@ -408,6 +408,7 @@ def Plotter(
             plt.close()
             print("Outputting", (time.time() - starttime)) if verbose else None
             print("Totaltime:", (time.time() - totaltime)) if verbose else None
+
 
 def get_params(m, outfile, polt, signal_labels):
     print()
@@ -485,7 +486,6 @@ def get_params(m, outfile, polt, signal_labels):
         unit = ""
         cmap = col.LinearSegmentedColormap.from_list("own2", ["black", "white"])
 
-
     elif tag_lookup(synch_tags, outfile):
         print("----------------------------------")
         print("Plotting Synchrotron" + " " + signal_labels[polt])
@@ -539,7 +539,6 @@ def get_params(m, outfile, polt, signal_labels):
         title = r"$" + signal_labels[polt] + "$" + r"$_{\mathrm{ff}}$"
         logscale = True
         cmap = col.LinearSegmentedColormap.from_list("own2", ["black", "Navy", "white"])
-
 
     elif tag_lookup(dust_tags, outfile):
         print("----------------------------------")
@@ -693,7 +692,6 @@ def get_params(m, outfile, polt, signal_labels):
         unit = "GHz"
         title = r"$\nu_{ame}$"
         cmap = plt.get_cmap("bone")
-        
 
     # SPECTRAL PARAMETER MAPS
     elif tag_lookup(dust_T_tags, outfile):
@@ -713,7 +711,6 @@ def get_params(m, outfile, polt, signal_labels):
         unit = r"$\mathrm{K}$"
         cmap = plt.get_cmap("bone")
 
-
     elif tag_lookup(dust_beta_tags, outfile):
         print("----------------------------------")
         print("Plotting Thermal dust beta")
@@ -729,7 +726,6 @@ def get_params(m, outfile, polt, signal_labels):
 
         unit = ""
         cmap = plt.get_cmap("bone")
-
 
     elif tag_lookup(synch_beta_tags, outfile):
         print("----------------------------------")
@@ -748,7 +744,6 @@ def get_params(m, outfile, polt, signal_labels):
         unit = ""
         cmap = plt.get_cmap("bone")
 
-
     elif tag_lookup(ff_Te_tags, outfile):
         print("----------------------------------")
         print("Plotting freefree T_e")
@@ -764,7 +759,6 @@ def get_params(m, outfile, polt, signal_labels):
         unit = r"$\mathrm{K}$"
         title = r"$T_{e}$"
         cmap = plt.get_cmap("bone")
-
 
     elif tag_lookup(ff_EM_tags, outfile):
         print("----------------------------------")
@@ -785,7 +779,6 @@ def get_params(m, outfile, polt, signal_labels):
         unit = r"$\mathrm{K}$"
         title = r"$T_{e}$"
         cmap = plt.get_cmap("bone")
-
 
     #################
     # RESIDUAL MAPS #
@@ -883,6 +876,7 @@ def get_params(m, outfile, polt, signal_labels):
         title = r"$" + signal_labels[polt] + "$"
 
         from pathlib import Path
+
         color = Path(__file__).parent / "parchment1.dat"
         cmap = col.ListedColormap(np.loadtxt(color) / 255.0)
 
@@ -911,7 +905,6 @@ def get_sizes(size):
     return sizes
 
 
-
 def fmt(x, pos):
     """
     Format color bar labels
@@ -936,6 +929,3 @@ def cm2inch(cm):
 
 def tag_lookup(tags, outfile):
     return any(e in outfile for e in tags)
-
-
-
