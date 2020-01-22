@@ -20,7 +20,7 @@ def h5handler(input, dataset, min, max, smooth, output, command):
     l = max - min
 
     # Check if you want to output a map
-    map = True if "fits" in output[-4:] else False
+    map = True if output.endswith(".fits") else False
 
     import h5py
     import healpy as hp
@@ -66,10 +66,11 @@ def h5handler(input, dataset, min, max, smooth, output, command):
 @click.argument("min", nargs=1, type=click.INT)
 @click.argument("max", nargs=1, type=click.INT)
 @click.option("-smooth", default=None, help="FWHM")
-@click.argument("output", type=click.File("wb"))
+@click.argument("output", type=click.STRING)
 def mean(input, dataset, min, max, smooth, output):
     """
-    Calculates the mean over sample range from .h5 file.
+    Calculates the mean over sample range from .h5 file.\n
+    ex. chains_c0001.h5 dust/amp_map 5 50 dust_5-50_mean_40arcmin.fits -smooth 40
     """
     h5handler(input, dataset, min, max, smooth, output, np.mean)
 
@@ -80,10 +81,11 @@ def mean(input, dataset, min, max, smooth, output):
 @click.argument("min", nargs=1, type=click.INT)
 @click.argument("max", nargs=1, type=click.INT)
 @click.option("-smooth", default="", help="FWHM")
-@click.argument("output", type=click.File("wb"))
+@click.argument("output", type=click.STRING)
 def stddev(input, dataset, min, max, smooth, output):
     """
-    Calculates the stddev over sample range from .h5 file.
+    Calculates the stddev over sample range from .h5 file.\n
+    ex. chains_c0001.h5 dust/amp_map 5 50 dust_5-50_mean_40arcmin.fits -smooth 40
     """
     h5handler(input, dataset, min, max, smooth, output, np.std)
 
@@ -350,7 +352,7 @@ def ploth5(
 @click.argument("nchains", type=click.INT)
 @click.argument("burnin", type=click.INT)
 @click.option("-path", default="cmb/sigma_l", help="Dataset path ex. cmb/sigma_l")
-@click.argument("outname", type=click.File("wb"))
+@click.argument("outname", type=click.STRING)
 def sigma_l2fits(filename, nchains, burnin, path, outname, save=True):
     """
     \b
@@ -420,7 +422,7 @@ def sigma_l2fits(filename, nchains, burnin, path, outname, save=True):
 @click.argument("filename", type=click.STRING)
 @click.argument("min", type=click.INT)
 @click.argument("max", type=click.INT)
-@click.argument("binfile", type=click.File("wb"))
+@click.argument("binfile", type=click.STRING)
 def dlbin2dat(filename, min, max, binfile):
     """
     Outputs a .dat file of binned powerspectra averaged over a range of output samples with tilename Dl_[signal]_binned.dat.
