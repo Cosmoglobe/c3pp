@@ -26,13 +26,13 @@ def h5handler(input, dataset, min, max, smooth, output, command):
     import healpy as hp
 
     dats = []
-    with h5py.File(filename, "r") as f:
+    with h5py.File(input, "r") as f:
         for sample in range(min, max + 1):
 
             # Get sample number with leading zeros
             s = str(sample).zfill(6)
-
             # Get data from hdf
+            print("Reading ", s + "/" + dataset)
             data = f[s + "/" + dataset][()]
             # Smooth every sample if calculating std.
             if smooth != None and command == np.std and map:
