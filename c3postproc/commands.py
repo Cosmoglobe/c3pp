@@ -514,17 +514,18 @@ def release(input):
     Creates a release file-set on the BeyondPlanck format.
     https://gitlab.com/BeyondPlanck/repo/-/wikis/BeyondPlanck-Release-Candidate-2
     """
-    
+    """
     # Full-mission Gibbs chain file
     cp input BP_chain01_full_rc2.00.h5
     # Resampled CMB-only full-mission Gibbs chain file with Cls (for BR estimator)
     cp input_resamp_BR BP_resamp_chain01_full_Cl_rc2.00.h5
     # Resampled CMB-only full-mission Gibbs chain file without Cls (for brute-force likelihood)
     cp input_resamp_brute BP_resamp_chain01_full_noCl_rc2.00.h5
-
+    """
     """
     IQU mean, IQU stdev, (Masks for cmb)
     Run mean and stddev from min to max sample (Choose min manually or start at 1?)
+    """
     """
     # Full-mission 30 GHz IQU frequency map
     BP_030_IQU_full_n0512_rc2.00.fits
@@ -548,27 +549,28 @@ def release(input):
     BP_freefree_I_full_n1024_rc2.00.fits
     # Full-mission AME I map
     BP_ame_I_full_n1024_rc2.00.fits
-
+    """
     """ As implemented by Simone
     """
     # Gaussianized TT Blackwell-Rao input file
-    BP_cmb_GBRlike_rc2.00.fits
+    #BP_cmb_GBRlike_rc2.00.fits
 
     """ Both sigma_l's and Dl's re in the h5. (Which one do we use?)
     """
     # CMB TT, TE, EE power spectrum
-    BP_cmb_Cl_rc2.00.txt
+    #BP_cmb_Cl_rc2.00.txt
 
     """ Just get this from somewhere
     """
     # Best-fit LCDM CMB TT, TE, EE power spectrum
-    BP_cmb_bfLCDM_rc2.00.txt
+    #BP_cmb_bfLCDM_rc2.00.txt
 
     """ Simple copy parameter files
     """
     # Commander3 parameter file for main chain
-    BP_param_full_v1.txt
+    #BP_param_full_v1.txt
     # Commander3 parameter file for CMB resampling chain with Cls (for BR)
-    BP_param_resamp_Cl_v1.txt
+    #BP_param_resamp_Cl_v1.txt
     # Commander3 parameter file for CMB resampling chain without Cls (for brute-force likelihood)
-    BP_param_resamp_noCl_v1.txt
+    #BP_param_resamp_noCl_v1.txt
+    pass
