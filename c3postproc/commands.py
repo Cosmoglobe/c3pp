@@ -362,6 +362,14 @@ def sigma_l2fits(filename, nchains, burnin, path, outname, save=True):
     """
     import h5py
 
+    temp = np.zeros(nchains)
+    for nc in range(1,nchains+1):
+        with h5py.File(filename+'_c'+str(nc).zfill(4)+'.h5', 'r') as f:
+            groups = list(f.keys())
+            temp[nc-1] = len(groups)
+    nsamples_max = int(max(temp[:]))
+    click.echo('maximum number of samples for chain: '+str(nsamples_max))
+    
     for nc in range(1, nchains + 1):
         with h5py.File(filename + "_c" + str(nc).zfill(4) + ".h5", "r") as f:
             click.echo("Reading HDF5 file: " + filename + " ...")
@@ -370,12 +378,13 @@ def sigma_l2fits(filename, nchains, burnin, path, outname, save=True):
             click.echo("Reading " + str(len(groups)) + " samples from file.")
 
             if nc == 1:
-                dset = np.zeros((len(groups) + 1, 1, len(f[groups[0] + "/" + path]), len(f[groups[0] + "/" + path][0])))
+                dset = np.zeros((nsamples_max + 1, 1, len(f[groups[0] + "/" + path]), len(f[groups[0] + "/" + path][0])))
                 nspec = len(f[groups[0] + "/" + path])
                 lmax = len(f[groups[0] + "/" + path][0]) - 1
                 nsamples = len(groups)
             else:
-                dset = np.append(dset, np.zeros((nsamples + 1, 1, nspec, lmax + 1)), axis=1)
+                nsamples = len(groups)
+                dset = np.append(dset, np.zeros((nsamples_max+1, 1, nspec, lmax + 1)), axis=1)
             click.echo(np.shape(dset))
 
             click.echo(
@@ -395,7 +404,7 @@ def sigma_l2fits(filename, nchains, burnin, path, outname, save=True):
     # Optimize with jit?
     ell = np.arange(lmax + 1)
     for nc in range(1, nchains + 1):
-        for i in range(1, nsamples + 1):
+        for i in range(1, nsamples_max + 1):
             for j in range(nspec):
                 dset[i, nc - 1, j, :] = dset[i, nc - 1, j, :] * ell[:] * (ell[:] + 1.0) / 2.0 / np.pi
     dset[0, :, :, :] = nsamples - burnin
@@ -409,7 +418,7 @@ def sigma_l2fits(filename, nchains, burnin, path, outname, save=True):
         h_dict = [
             {"name": "FUNCNAME", "value": "Gibbs sampled power spectra", "comment": "Full function name"},
             {"name": "LMAX", "value": lmax, "comment": "Maximum multipole moment"},
-            {"name": "NUMSAMP", "value": nsamples, "comment": "Number of samples"},
+            {"name": "NUMSAMP", "value": nsamples_max, "comment": "Number of samples"},
             {"name": "NUMCHAIN", "value": nchains, "comment": "Number of independent chains"},
             {"name": "NUMSPEC", "value": nspec, "comment": "Number of power spectra"},
         ]
