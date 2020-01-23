@@ -2,16 +2,11 @@ import time
 
 totaltime = time.time()
 import sys
-import os
-import re
 import healpy as hp
 import numpy as np
-import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import matplotlib.colors as col
-import matplotlib.ticker as ticker
 from matplotlib import rcParams, rc
-
 from c3postproc.tools import arcmin2rad
 
 print("Importtime:", (time.time() - totaltime))
@@ -43,8 +38,7 @@ def Plotter(
     unit,
     verbose,
 ):
-
-    rcParams["backend"] = "pdf"
+    rcParams["backend"] = "pdf" if pdf else "Agg"
     rcParams["legend.fancybox"] = True
     rcParams["lines.linewidth"] = 2
     rcParams["savefig.dpi"] = 300
@@ -60,8 +54,12 @@ def Plotter(
         rcParams["xtick.color"] = "white"  # color of the tick labels
         rcParams["ytick.color"] = "white"  # color of the tick labels
         rcParams["grid.color"] = "white"  # grid color
-        rcParams["legend.facecolor"] = "inherit"  # legend background color (when 'inherit' uses axes.facecolor)
-        rcParams["legend.edgecolor"] = "white"  # legend edge color (when 'inherit' uses axes.edgecolor)
+        rcParams[
+            "legend.facecolor"
+        ] = "inherit"  # legend background color (when 'inherit' uses axes.facecolor)
+        rcParams[
+            "legend.edgecolor"
+        ] = "white"  # legend edge color (when 'inherit' uses axes.edgecolor)
 
     rc("text.latex", preamble=r"\usepackage{sfmath}")
 
@@ -87,14 +85,14 @@ def Plotter(
                 nsid = hp.npix2nside(len(dats[i]))
                 map_exists = True
             except:
-                print("Signal {} not found in data, skipping".format(signal_labels[i]))
+                print(f"Signal {signal_labels[i]} not found in data, skipping")
                 continue
 
         if map_exists == False:
             hihi = []
             [hihi.append(signal_labels[i]) for i in pollist]
             print()
-            print("{} does not contain a {} signal. Breaking.".format(input, hihi))
+            print(f"{input} does not contain a {hihi} signal. Breaking.")
             sys.exit()
 
         maps = np.array(dats)
@@ -106,7 +104,9 @@ def Plotter(
 
         if dataset.endswith("alm"):
             print("Converting alms to map")
-            maps, nsid, lmax, fwhm, outfile = alm2fits_tool(input, dataset, nside, lmax, fwhm, save=False)
+            maps, nsid, lmax, fwhm, outfile = alm2fits_tool(
+                input, dataset, nside, lmax, fwhm, save=False
+            )
 
         elif dataset.endswith("map"):
             print("Reading map from h5")
@@ -114,7 +114,7 @@ def Plotter(
 
         else:
             print("Dataset not found. Breaking.")
-            print("Does {}/{} exist?".format(input, dataset))
+            print(f"Does {input}/{dataset} exist?")
             sys.exit()
     else:
         print("Dataset not found. Breaking.")
@@ -131,14 +131,14 @@ def Plotter(
         #  SMOOTH  #
         ############
         if fwhm > 0 and input.endswith(".fits"):
-            print("Smoothing fits map to {} degrees fwhm".format(fwhm))
+            print(f"Smoothing fits map to {fwhm} degrees fwhm")
             m = hp.smoothing(m, fwhm=arcmin2rad(fwhm), lmax=lmax)
 
         ############
         # UD_GRADE #
         ############
         if nside is not None and input.endswith(".fits"):
-            print("UDgrading map from {} to {}".format(nsid, nside))
+            print(f"UDgrading map from {nsid} to {nside}")
             m = hp.ud_grade(m, nside)
         else:
             nside = nsid
@@ -156,8 +156,8 @@ def Plotter(
 
             # Fit dipole to masked map
             mono, dip = hp.fit_dipole(m_masked)
-            print("Dipole vector: {}".format(dip))
-            print("Dipole amplitude: {}".format(np.sqrt(np.sum(dip ** 2))))
+            print(f"Dipole vector: {dip}")
+            print(f"Dipole amplitude: {np.sqrt(np.sum(dip ** 2))}")
 
             # Create dipole template
             nside = int(nside)
@@ -167,14 +167,18 @@ def Plotter(
 
             # Subtract dipole map from data
             m = m - dipole
-            print("Dipole removal : ", (time.time() - starttime)) if verbose else None
+            print(
+                f"Dipole removal : {(time.time() - starttime)}"
+            ) if verbose else None
 
         #######################
         #### Auto-param   #####
         #######################
         # ttl, unt and cmb are temporary variables for title, unit and colormap
         if auto:
-            ttl, ticks, ticklabels, unt, cmp, lgscale = get_params(m, outfile, polt, signal_labels)
+            ttl, ticks, ticklabels, unt, cmp, lgscale = get_params(
+                m, outfile, polt, signal_labels
+            )
         else:
             ttl = ""
             unt = ""
@@ -193,13 +197,10 @@ def Plotter(
                 else:
                     mx = np.percentile(m, 97.5)
                     mn = np.percentile(m, 2.5)
-                # print("Autocalculating limits, min {}, max {}".format(mn,mx))
-                # print("Manual limints, min {}, max {}".format(min, max))
                 if min is False:
                     min = mn
                 if max is False:
                     max = mx
-                # print("Limits after test, min {}, max {}".format(min, max))
             else:
                 rng = float(rng)
                 min = -rng
@@ -250,7 +251,7 @@ def Plotter(
         ######################
         # Chose colormap manually
         if cmap:
-            print("Setting colormap to {}".format(cmap))
+            print(f"Setting colormap to {cmap}")
             if cmap == "planck":
                 from pathlib import Path
 
@@ -277,7 +278,7 @@ def Plotter(
         ######## Mask ########
         ######################
         if mask:
-            print("Masking using {}".format(mask))
+            print(f"Masking using {mask}")
             masked = True
 
             # Apply mask
@@ -336,7 +337,13 @@ def Plotter(
             # rasterized makes the map bitmap while the labels remain vectorial
             # flip longitude to the astro convention
             image = plt.pcolormesh(
-                longitude[::-1], latitude, grid_map, vmin=ticks[0], vmax=ticks[-1], rasterized=True, cmap=cmap
+                longitude[::-1],
+                latitude,
+                grid_map,
+                vmin=ticks[0],
+                vmax=ticks[-1],
+                rasterized=True,
+                cmap=cmap,
             )
             # graticule
             ax.set_longitude_grid(60)
@@ -351,8 +358,15 @@ def Plotter(
             ################
             if colorbar:
                 # colorbar
+                from matplotlib.ticker import FuncFormatter
+
                 cb = fig.colorbar(
-                    image, orientation="horizontal", shrink=0.3, pad=0.08, ticks=ticks, format=ticker.FuncFormatter(fmt)
+                    image,
+                    orientation="horizontal",
+                    shrink=0.3,
+                    pad=0.08,
+                    ticks=ticks,
+                    format=FuncFormatter(fmt),
                 )
                 # Format tick labels if autosetting
                 # if auto:
@@ -360,7 +374,9 @@ def Plotter(
                 cb.ax.xaxis.set_label_text(unit)
                 cb.ax.xaxis.label.set_size(fontsize)
                 cb.ax.minorticks_on()
-                cb.ax.tick_params(which="both", axis="x", direction="in", labelsize=fontsize)
+                cb.ax.tick_params(
+                    which="both", axis="x", direction="in", labelsize=fontsize
+                )
                 cb.ax.xaxis.labelpad = 4  # -11
                 # workaround for issue with viewers, see colorbar docstring
                 cb.solids.set_edgecolor("face")
@@ -376,21 +392,29 @@ def Plotter(
             #############
             ## TITLE ####
             #############
-            plt.text(6.0, 1.3, r"%s" % title, ha="center", va="center", fontsize=fontsize)
+            plt.text(
+                6.0,
+                1.3,
+                r"%s" % title,
+                ha="center",
+                va="center",
+                fontsize=fontsize,
+            )
 
             ##############
             #### SAVE ####
             ##############
             plt.tight_layout()
-            filetype = ".pdf" if pdf else ".png"
-            tp = False if white_background else True  # Turn on transparency unless told otherwise
+            filetype = "pdf" if pdf else "png"
+            tp = (
+                False if white_background else True
+            )  # Turn on transparency unless told otherwise
 
             ##############
             ## filename ##
             ##############
-            starttime = time.time()
             filename = []
-            filename.append("{}arcmin".format(str(int(fwhm)))) if fwhm > 0 else None
+            filename.append(f"{str(int(fwhm))}arcmin") if fwhm > 0 else None
             filename.append("cb") if colorbar else None
             filename.append("masked") if masked else None
             filename.append("dark") if darkmode else None
@@ -398,15 +422,27 @@ def Plotter(
             nside_tag = "_n" + str(int(nside))
             if nside_tag in outfile:
                 outfile = outfile.replace(nside_tag, "")
-            fn = outfile + "_" + signal_labels[polt] + "_w" + str(int(width)) + nside_tag
+            fn = (
+                outfile
+                + f"_{signal_labels[polt]}_w{str(int(width))}"
+                + nside_tag
+            )
 
             for i in filename:
-                fn += "_" + i
-            fn += filetype
+                fn += f"_{i}"
+            fn += f".{filetype}"
 
-            plt.savefig(fn, bbox_inches="tight", pad_inches=0.02, transparent=tp)
+            starttime = time.time()
+            plt.savefig(
+                fn,
+                bbox_inches="tight",
+                pad_inches=0.02,
+                transparent=tp,
+                format=filetype,
+            )
+            print("Savefig", (time.time() - starttime)) if verbose else None
+
             plt.close()
-            print("Outputting", (time.time() - starttime)) if verbose else None
             print("Totaltime:", (time.time() - totaltime)) if verbose else None
 
 
@@ -481,7 +517,12 @@ def get_params(m, outfile, polt, signal_labels):
         ticklabels = [tmin, tmax]
 
         print("----------------------------------")
-        print("Plotting chisq with vmax = " + str(vmax) + " " + signal_labels[polt])
+        print(
+            "Plotting chisq with vmax = "
+            + str(vmax)
+            + " "
+            + signal_labels[polt]
+        )
 
         unit = ""
         cmap = col.LinearSegmentedColormap.from_list("own2", ["black", "white"])
@@ -505,14 +546,18 @@ def get_params(m, outfile, polt, signal_labels):
 
             col1 = "darkgoldenrod"
             col2 = "darkgreen"
-            cmap = col.LinearSegmentedColormap.from_list("own2", [endcolor, col1, startcolor, col2, endcolor])
+            cmap = col.LinearSegmentedColormap.from_list(
+                "own2", [endcolor, col1, startcolor, col2, endcolor]
+            )
         else:
             vmin = 1
             vmax = np.log10(100)
             tmin = str(10)
             tmax = str(100)
             logscale = True
-            cmap = col.LinearSegmentedColormap.from_list("own2", ["black", "green", "white"])
+            cmap = col.LinearSegmentedColormap.from_list(
+                "own2", ["black", "green", "white"]
+            )
 
             ticks = [vmin, vmax]
             ticklabels = [tmin, tmax]
@@ -538,7 +583,9 @@ def get_params(m, outfile, polt, signal_labels):
         unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
         title = r"$" + signal_labels[polt] + "$" + r"$_{\mathrm{ff}}$"
         logscale = True
-        cmap = col.LinearSegmentedColormap.from_list("own2", ["black", "Navy", "white"])
+        cmap = col.LinearSegmentedColormap.from_list(
+            "own2", ["black", "Navy", "white"]
+        )
 
     elif tag_lookup(dust_tags, outfile):
         print("----------------------------------")
@@ -600,7 +647,9 @@ def get_params(m, outfile, polt, signal_labels):
         unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
         title = r"$" + signal_labels[polt] + "$" + r"$_{\mathrm{ame}}$"
         logscale = True
-        cmap = col.LinearSegmentedColormap.from_list("own2", ["black", "DarkOrange", "white"])
+        cmap = col.LinearSegmentedColormap.from_list(
+            "own2", ["black", "DarkOrange", "white"]
+        )
 
     elif tag_lookup(co10_tags, outfile):
         print("----------------------------------")
@@ -785,15 +834,17 @@ def get_params(m, outfile, polt, signal_labels):
     #################
 
     elif tag_lookup(res_tags, outfile):
+        from re import findall
+
         print("----------------------------------")
         print("Plotting residual map" + " " + signal_labels[polt])
 
         if "res_" in outfile:
-            tit = str(re.findall(r"res_(.*?)_", outfile)[0])
+            tit = str(findall(r"res_(.*?)_", outfile)[0])
         else:
-            tit = str(re.findall(r"residual_(.*?)_", outfile)[0])
+            tit = str(findall(r"residual_(.*?)_", outfile)[0])
 
-        title = r"{} ".format(tit) + r"  $" + signal_labels[polt] + "$"
+        title = fr"{tit} " + r"  $" + signal_labels[polt] + "$"
 
         vmin = -10
         vmid = 0
@@ -830,11 +881,13 @@ def get_params(m, outfile, polt, signal_labels):
     ############
 
     elif tag_lookup(tod_tags, outfile):
+        from re import findall
+
         print("----------------------------------")
         print("Plotting Smap map" + " " + signal_labels[polt])
 
-        tit = str(re.findall(r"tod_(.*?)_Smap", outfile)[0])
-        title = r"{} ".format(tit) + r"  $" + signal_labels[polt] + "$"
+        tit = str(findall(r"tod_(.*?)_Smap", outfile)[0])
+        title = fr"{tit} " + r"  $" + signal_labels[polt] + "$"
 
         vmin = -0.2
         vmid = 0
@@ -858,9 +911,7 @@ def get_params(m, outfile, polt, signal_labels):
     ############################
     elif tag_lookup(ignore_tags, outfile):
         print(
-            '{} is on the ignore list, under tags {}.  Remove from "ignore_tags" in plotter.py. Breaking.'.format(
-                outfile, ignore_tags
-            )
+            f'{outfile} is on the ignore list, under tags {ignore_tags}. Remove from "ignore_tags" in plotter.py. Breaking.'
         )
         sys.exit()
     else:
@@ -910,17 +961,17 @@ def fmt(x, pos):
     Format color bar labels
     """
     if abs(x) > 1e4:
-        a, b = "{:.2e}".format(x).split("e")
+        a, b = f"{x:.2e}".split("e")
         b = int(b)
-        return r"${} \cdot 10^{{{}}}$".format(a, b)
+        return r"${a} \cdot 10^{{{}}}$".format(a, b)
     elif abs(x) > 1e2:
-        return r"${:d}$".format(int(x))
+        return fr"${int(x):d}$"
     elif abs(x) > 1e1:
-        return r"${:.1f}$".format(x)
+        return fr"${x:.1f}$"
     elif abs(x) == 0.0:
-        return r"${:.1f}$".format(x)
+        return fr"${x:.1f}$"
     else:
-        return r"${:.2f}$".format(x)
+        return fr"${x:.2f}$"
 
 
 def cm2inch(cm):

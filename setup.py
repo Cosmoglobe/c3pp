@@ -29,6 +29,7 @@ setuptools.setup(
         'numpy',
         'matplotlib',
         'numba',
+        'fitsio',
     ],
     python_requires=">=3.6",
 )
