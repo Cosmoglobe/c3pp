@@ -13,23 +13,22 @@ def commands():
 @click.argument("dataset", type=click.STRING)
 @click.argument("min", nargs=1, type=click.INT)
 @click.argument("max", nargs=1, type=click.INT)
-@click.option("-smooth", default=None, help="FWHM in arcmin")
+@click.argument("output", type=click.STRING)
+@click.option("-fwhm", default=0.0, help="FWHM in arcmin")
 @click.option(
     "-nside", default=None, type=click.STRING, help="Nside for alm binning"
 )
-@click.option(
-    "-output", default=None, type=click.STRING, help="Output file name "
-)
-def mean(input, dataset, min, max, smooth, nside, output):
+def mean(input, dataset, min, max, output, fwhm, nside, ):
     """
     Calculates the mean over sample range from .h5 file.\n
-    ex. chains_c0001.h5 dust/amp_map 5 50 -output dust_5-50_mean_40arcmin.fits -smooth 40
+    ex. chains_c0001.h5 dust/amp_map 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40\n
+    If output name is set to .dat, data will not be converted to map.
     """
     if dataset.endswith("alm") and nside == None:
         click.echo("Please specify nside when handling alms.")
         sys.exit()
 
-    h5handler(input, dataset, min, max, smooth, nside, output, np.mean)
+    h5handler(input, dataset, min, max, output, fwhm, nside, np.mean)
 
 
 @commands.command()
@@ -37,23 +36,22 @@ def mean(input, dataset, min, max, smooth, nside, output):
 @click.argument("dataset", type=click.STRING)
 @click.argument("min", nargs=1, type=click.INT)
 @click.argument("max", nargs=1, type=click.INT)
-@click.option("-smooth", default=None, help="FWHM in arcmin")
+@click.argument("output", type=click.STRING)
+@click.option("-fwhm", default=0.0, help="FWHM in arcmin")
 @click.option(
     "-nside", default=None, type=click.STRING, help="Nside for alm binning"
 )
-@click.option(
-    "-output", default=None, type=click.STRING, help="Output file name "
-)
-def stddev(input, dataset, min, max, smooth, nside, output):
+def stddev(input, dataset, min, max,output, fwhm, nside, ):
     """
     Calculates the stddev over sample range from .h5 file.\n
-    ex. chains_c0001.h5 dust/amp_map 5 50 -output dust_5-50_mean_40arcmin.fits -smooth 40
+    ex. chains_c0001.h5 dust/amp_map 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40\n
+    If output name is set to .dat, data will not be converted to map.
     """
     if dataset.endswith("alm") and nside == None:
         click.echo("Please specify nside when handling alms.")
         sys.exit()
 
-    h5handler(input, dataset, min, max, smooth, nside, output, np.std)
+    h5handler(input, dataset, min, max,output, fwhm, nside, np.std)
 
 
 @commands.command()
@@ -600,6 +598,10 @@ def release(chain, chain_resamp, chain_resamp_nocls, burnin, procver):
     Outputs to procver directory.
     """
     from c3postproc.fitsformatter import format_fits, get_data, get_header
+    # Make procver directory if not exists
+    from pathlib import Path
+    print(f"Creating directory {procver}")
+    Path(procver).mkdir(parents=True, exist_ok=True)
 
     # Full-mission Gibbs chain file
     # cp input BP_chain01_full_rc2.00.h5
@@ -628,6 +630,7 @@ def release(chain, chain_resamp, chain_resamp_nocls, burnin, procver):
     """
     FOREGROUND MAPS
     """
+    
     # Full-mission CMB IQU map
     format_fits(
         chain=chain,
@@ -649,9 +652,10 @@ def release(chain, chain_resamp, chain_resamp_nocls, burnin, procver):
         component="CMB",
         fwhm=0.0,
         nu_ref="30.0 GHz",
-        ProcVer=procver,
+        procver=procver,
         filename="BP_cmb_IQU_full_n1024_rc2.00.fits",
     )
+    
 
     # Full-mission synchrotron IQU map
     format_fits(
@@ -687,21 +691,18 @@ def release(chain, chain_resamp, chain_resamp_nocls, burnin, procver):
         component="SYNCHROTRON",
         fwhm=0.0,
         nu_ref="30.0 GHz",
-        ProcVer=procver,
+        procver=procver,
         filename="BP_synch_IQU_full_n1024_rc2.00.fits",
     )
-
     # Full-mission free-free I map
     format_fits(
         chain=chain,
         extname="COMP-MAP-FREE-FREE",
-        types=["I_MEAN", "EM_MEAN", "TE_MEAN", "I_RMS", "EM_RMS", "TE_RMS",],
+        types=["I_MEAN", "TE_MEAN", "I_RMS", "TE_RMS",],
         units=[
             "uK",
-            "NONE",
             "K",
             "uK",
-            "NONE",
             "K",
         ],  # TODO Is this correct units for rms?
         nside=1024,
@@ -710,23 +711,23 @@ def release(chain, chain_resamp, chain_resamp_nocls, burnin, procver):
         component="FREE-FREE",
         fwhm=0.0,
         nu_ref="30.0 GHz",
-        ProcVer=procver,
+        procver=procver,
         filename="BP_freefree_I_full_n1024_rc2.00.fits",
     )
-
+    
     # Full-mission AME I map
     format_fits(
         chain=chain,
         extname="COMP-MAP-AME",
         types=["I_MEAN", "NU_P_MEAN", "I_RMS", "NU_P_RMS"],
-        units=["uK", "NONE", "uK" "NONE",],
+        units=["uK", "NONE", "uK", "NONE",],
         nside=1024,
         burnin=burnin,
         polar=False,
         component="AME",
         fwhm=0.0,
         nu_ref="30.0 GHz",
-        ProcVer=procver,
+        procver=procver,
         filename="BP_ame_I_full_n1024_rc2.00.fits",
     )
 
