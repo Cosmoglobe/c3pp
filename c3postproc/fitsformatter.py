@@ -28,7 +28,6 @@ def get_data(chain, extname, component, burnin, fwhm, nside, types):
         mask2 = np.zeros((hp.nside2npix(nside)))
 
         dset = np.zeros((len(types),hp.nside2npix(nside)))
-
         dset[0] = amp_mean[0,:]
         dset[1] = amp_mean[1,:]
         dset[2] = amp_mean[2,:]
@@ -99,7 +98,7 @@ def get_data(chain, extname, component, burnin, fwhm, nside, types):
         dset[2] = amp_stddev[0]
         dset[3] = nu_p_stddev[0]
     if extname.endswith('FREQMAP'):
-                # Mean data
+        # Mean data
         amp_mean = h5handler(input=chain, dataset=f"tod/{component}/map", min=burnin, max=None, output="map",fwhm=fwhm,  nside=nside, command=np.mean)
 
         # stddev data
