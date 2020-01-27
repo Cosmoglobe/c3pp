@@ -593,10 +593,10 @@ def alm2fits(input, dataset, nside, lmax, fwhm):
 
 @commands.command()
 @click.argument("chain", type=click.STRING)
-@click.argument("chain_resamp", type=click.STRING)
 @click.argument("burnin1", type=click.INT)
-@click.argument("chain_resamp_nocls", type=click.STRING)
+@click.argument("chain_resamp", type=click.STRING)
 @click.argument("burnin2", type=click.INT)
+@click.argument("chain_resamp_nocls", type=click.STRING)
 @click.argument("procver", type=click.STRING)
 @click.pass_context
 def release(ctx, chain, burnin1, chain_resamp, burnin2, chain_resamp_nocls, procver):
@@ -629,8 +629,11 @@ def release(ctx, chain, burnin1, chain_resamp, burnin2, chain_resamp_nocls, proc
     """
     # TODO
     # Fix header smoothing and center frequency parameters.
+    # Only use Map data for freq maps
+    # Smooth alm data to PLA standards
     # Use proper masks for output of CMB component
     # Use inpainted data as well in CMB component
+
 
     from c3postproc.fitsformatter import format_fits, get_data, get_header
     from pathlib import Path
