@@ -624,9 +624,14 @@ def release(ctx, chain, burnin1, chain_resamp, burnin2, chain_resamp_nocls, proc
     BP_synch_IQU_full_n1024_rc2.00.fits\n
     BP_freefree_I_full_n1024_rc2.00.fits\n
     BP_ame_I_full_n1024_rc2.00.fits\n
-    
+
     BP_cmb_GBRlike_rc2.00.fits
     """
+    # TODO
+    # Fix header smoothing and center frequency parameters.
+    # Use proper masks for output of CMB component
+    # Use inpainted data as well in CMB component
+
     from c3postproc.fitsformatter import format_fits, get_data, get_header
     from pathlib import Path
     import shutil
@@ -839,7 +844,7 @@ def release(ctx, chain, burnin1, chain_resamp, burnin2, chain_resamp_nocls, proc
             "K",
             "uK",
             "K",
-        ],  # TODO Is this correct units for rms?
+        ],
         nside=1024,
         burnin=burnin1,
         polar=False,
