@@ -9,6 +9,7 @@ from c3postproc.tools import *
 def commands():
     pass
 
+
 @commands.command()
 @click.argument("input", type=click.STRING)
 @click.argument("dataset", type=click.STRING)
@@ -16,10 +17,10 @@ def commands():
 @click.argument("max", nargs=1, type=click.INT)
 @click.argument("output", type=click.STRING)
 @click.option("-fwhm", default=0.0, help="FWHM in arcmin")
-@click.option(
-    "-nside", default=None, type=click.STRING, help="Nside for alm binning"
-)
-def mean(input, dataset, min, max, output, fwhm, nside, ):
+@click.option("-nside", default=None, type=click.STRING, help="Nside for alm binning")
+def mean(
+    input, dataset, min, max, output, fwhm, nside,
+):
     """
     Calculates the mean over sample range from .h5 file.\n
     ex. chains_c0001.h5 dust/amp_map 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40\n
@@ -39,10 +40,10 @@ def mean(input, dataset, min, max, output, fwhm, nside, ):
 @click.argument("max", nargs=1, type=click.INT)
 @click.argument("output", type=click.STRING)
 @click.option("-fwhm", default=0.0, help="FWHM in arcmin")
-@click.option(
-    "-nside", default=None, type=click.STRING, help="Nside for alm binning"
-)
-def stddev(input, dataset, min, max,output, fwhm, nside, ):
+@click.option("-nside", default=None, type=click.STRING, help="Nside for alm binning")
+def stddev(
+    input, dataset, min, max, output, fwhm, nside,
+):
     """
     Calculates the stddev over sample range from .h5 file.\n
     ex. chains_c0001.h5 dust/amp_map 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40\n
@@ -52,15 +53,13 @@ def stddev(input, dataset, min, max,output, fwhm, nside, ):
         click.echo("Please specify nside when handling alms.")
         sys.exit()
 
-    h5handler(input, dataset, min, max,output, fwhm, nside, np.std)
+    h5handler(input, dataset, min, max, output, fwhm, nside, np.std)
 
 
 @commands.command()
 @click.argument("input", type=click.STRING)
 @click.option("-nside", type=click.INT, help="nside for optional ud_grade.")
-@click.option(
-    "-auto", is_flag=True, help="Automatically sets all plotting parameters."
-)
+@click.option("-auto", is_flag=True, help="Automatically sets all plotting parameters.")
 @click.option(
     "-min", default=False, help="Min value of colorbar, overrides autodetector."
 )
@@ -79,9 +78,7 @@ def stddev(input, dataset, min, max,output, fwhm, nside, ):
     type=click.STRING,
     help='Color range. "-range auto" sets to 97.5 percentile of data.',
 )  # str until changed to float
-@click.option(
-    "-colorbar", is_flag=True, help='Adds colorbar ("cb" in filename)'
-)
+@click.option("-colorbar", "-bar", is_flag=True, help='Adds colorbar ("cb" in filename)')
 @click.option(
     "-lmax",
     default=None,
@@ -108,9 +105,10 @@ def stddev(input, dataset, min, max,output, fwhm, nside, ):
 )
 @click.option(
     "-sig",
-    default="I",
-    type=click.STRING,
-    help='Signal to be plotted (I default) ex. "QU" or "IQ"',
+    default=[0,],
+    type=click.INT,
+    multiple=True,
+    help='Signal to be plotted 0 by default (0, 1, 2 is interprated as IQU)',
 )
 @click.option(
     "-remove_dipole",
@@ -140,13 +138,10 @@ def stddev(input, dataset, min, max,output, fwhm, nside, ):
     is_flag=True,
     help='Plots all outlines in white for dark bakgrounds ("dark" in filename)',
 )
-@click.option(
-    "-pdf", is_flag=True, help="Saves output as .pdf ().png by default)"
-)
+@click.option("-pdf", is_flag=True, help="Saves output as .pdf ().png by default)")
 @click.option(
     "-cmap",
-    default="planck",
-    type=click.STRING,
+    default=None,
     help="Choose different color map (string), such as Jet or planck",
 )
 @click.option(
@@ -231,9 +226,7 @@ def plot(
 @click.argument("input", nargs=1, type=click.STRING)
 @click.argument("dataset", type=click.STRING)
 @click.argument("nside", type=click.INT)
-@click.option(
-    "-auto", is_flag=True, help="Automatically sets all plotting parameters."
-)
+@click.option("-auto", is_flag=True, help="Automatically sets all plotting parameters.")
 @click.option(
     "-min", default=False, help="Min value of colorbar, overrides autodetector."
 )
@@ -252,9 +245,7 @@ def plot(
     type=click.STRING,
     help='Color range. "-range auto" sets to 97.5 percentile of data.',
 )  # str until changed to float
-@click.option(
-    "-colorbar", is_flag=True, help='Adds colorbar ("cb" in filename)'
-)
+@click.option("-colorbar","-bar", is_flag=True, help='Adds colorbar ("cb" in filename)')
 @click.option(
     "-lmax",
     default=None,
@@ -281,9 +272,10 @@ def plot(
 )
 @click.option(
     "-sig",
-    default="I",
-    type=click.STRING,
-    help='Signal to be plotted (I default) ex. "QU" or "IQ"',
+    default=[0,],
+    type=click.INT,
+    multiple=True,
+    help='Signal to be plotted 0 by default (0, 1, 2 is interprated as IQU)',
 )
 @click.option(
     "-remove_dipole",
@@ -313,13 +305,10 @@ def plot(
     is_flag=True,
     help='Plots all outlines in white for dark bakgrounds ("dark" in filename)',
 )
-@click.option(
-    "-pdf", is_flag=True, help="Saves output as .pdf ().png by default)"
-)
+@click.option("-pdf", is_flag=True, help="Saves output as .pdf ().png by default)")
 @click.option(
     "-cmap",
-    default="planck",
-    type=click.STRING,
+    default=None,
     help="Choose different color map (string), such as Jet or planck",
 )
 @click.option(
@@ -408,9 +397,7 @@ def ploth5(
 @click.argument("filename", type=click.STRING)
 @click.argument("nchains", type=click.INT)
 @click.argument("burnin", type=click.INT)
-@click.option(
-    "-path", default="cmb/sigma_l", help="Dataset path ex. cmb/sigma_l"
-)
+@click.option("-path", default="cmb/sigma_l", help="Dataset path ex. cmb/sigma_l")
 @click.argument("outname", type=click.STRING)
 def sigma_l2fits(filename, nchains, burnin, path, outname, save=True):
     """
@@ -425,16 +412,16 @@ def sigma_l2fits(filename, nchains, burnin, path, outname, save=True):
     import h5py
 
     if filename.endswith(".h5"):
-        filename = filename.rsplit("_",1)[0]
+        filename = filename.rsplit("_", 1)[0]
 
     temp = np.zeros(nchains)
-    for nc in range(1,nchains+1):
-        with h5py.File(filename+'_c'+str(nc).zfill(4)+'.h5', 'r') as f:
+    for nc in range(1, nchains + 1):
+        with h5py.File(filename + "_c" + str(nc).zfill(4) + ".h5", "r") as f:
             groups = list(f.keys())
-            temp[nc-1] = len(groups)
+            temp[nc - 1] = len(groups)
     nsamples_max = int(max(temp[:]))
-    click.echo('maximum number of samples for chain: '+str(nsamples_max))
-    
+    click.echo("maximum number of samples for chain: " + str(nsamples_max))
+
     for nc in range(1, nchains + 1):
         with h5py.File(filename + "_c" + str(nc).zfill(4) + ".h5", "r") as f:
             click.echo("Reading HDF5 file: " + filename + " ...")
@@ -443,13 +430,22 @@ def sigma_l2fits(filename, nchains, burnin, path, outname, save=True):
             click.echo("Reading " + str(len(groups)) + " samples from file.")
 
             if nc == 1:
-                dset = np.zeros((nsamples_max + 1, 1, len(f[groups[0] + "/" + path]), len(f[groups[0] + "/" + path][0])))
+                dset = np.zeros(
+                    (
+                        nsamples_max + 1,
+                        1,
+                        len(f[groups[0] + "/" + path]),
+                        len(f[groups[0] + "/" + path][0]),
+                    )
+                )
                 nspec = len(f[groups[0] + "/" + path])
                 lmax = len(f[groups[0] + "/" + path][0]) - 1
                 nsamples = len(groups)
             else:
                 nsamples = len(groups)
-                dset = np.append(dset, np.zeros((nsamples_max+1, 1, nspec, lmax + 1)), axis=1)
+                dset = np.append(
+                    dset, np.zeros((nsamples_max + 1, 1, nspec, lmax + 1)), axis=1
+                )
             click.echo(np.shape(dset))
 
             click.echo(
@@ -474,11 +470,7 @@ def sigma_l2fits(filename, nchains, burnin, path, outname, save=True):
         for i in range(1, nsamples_max + 1):
             for j in range(nspec):
                 dset[i, nc - 1, j, :] = (
-                    dset[i, nc - 1, j, :]
-                    * ell[:]
-                    * (ell[:] + 1.0)
-                    / 2.0
-                    / np.pi
+                    dset[i, nc - 1, j, :] * ell[:] * (ell[:] + 1.0) / 2.0 / np.pi
                 )
     dset[0, :, :, :] = nsamples - burnin
 
@@ -489,10 +481,18 @@ def sigma_l2fits(filename, nchains, burnin, path, outname, save=True):
         dset = np.asarray(dset, dtype="f4")
         fits = fitsio.FITS(outname, mode="rw", clobber=True, verbose=True)
         h_dict = [
-            {"name": "FUNCNAME", "value": "Gibbs sampled power spectra", "comment": "Full function name"},
+            {
+                "name": "FUNCNAME",
+                "value": "Gibbs sampled power spectra",
+                "comment": "Full function name",
+            },
             {"name": "LMAX", "value": lmax, "comment": "Maximum multipole moment"},
             {"name": "NUMSAMP", "value": nsamples_max, "comment": "Number of samples"},
-            {"name": "NUMCHAIN", "value": nchains, "comment": "Number of independent chains"},
+            {
+                "name": "NUMCHAIN",
+                "value": nchains,
+                "comment": "Number of independent chains",
+            },
             {"name": "NUMSPEC", "value": nspec, "comment": "Number of power spectra"},
         ]
         fits.write(dset[:, :, :, :], header=h_dict, clobber=True)
@@ -551,9 +551,7 @@ def dlbin2dat(filename, min, max, binfile):
 
     header = f"{'l':22} {'lmin':24} {'lmax':24} {'Dl':24} {'stddev':24}"
     for signal in binned_data.keys():
-        np.savetxt(
-            "Dl_" + signal + "_binned.dat", binned_data[signal], header=header
-        )
+        np.savetxt("Dl_" + signal + "_binned.dat", binned_data[signal], header=header)
 
 
 @commands.command()
@@ -598,8 +596,20 @@ def alm2fits(input, dataset, nside, lmax, fwhm):
 @click.argument("burnin2", type=click.INT)
 @click.argument("chain_resamp_nocls", type=click.STRING)
 @click.argument("procver", type=click.STRING)
+@click.option("-skipcopy", is_flag=True, help="Don't copy .h5 files")
+@click.option("-skipfreqmaps", is_flag=True, help="Don't output freqmaps")
 @click.pass_context
-def release(ctx, chain, burnin1, chain_resamp, burnin2, chain_resamp_nocls, procver):
+def release(
+    ctx,
+    chain,
+    burnin1,
+    chain_resamp,
+    burnin2,
+    chain_resamp_nocls,
+    procver,
+    skipcopy,
+    skipfreqmaps,
+):
     """
     Creates a release file-set on the BeyondPlanck format.\n
     https://gitlab.com/BeyondPlanck/repo/-/wikis/BeyondPlanck-Release-Candidate-2\n
@@ -628,35 +638,42 @@ def release(ctx, chain, burnin1, chain_resamp, burnin2, chain_resamp_nocls, proc
     BP_cmb_GBRlike_rc2.00.fits
     """
     # TODO
-    # Fix header smoothing and center frequency parameters.
-    # Only use Map data for freq maps
+    # Use PIXWIN = True Is this always true?
+    # When handling h5. Smooth in alms ? Not convert then smooth.
     # Smooth alm data to PLA standards
     # Use proper masks for output of CMB component
     # Use inpainted data as well in CMB component
 
-
     from c3postproc.fitsformatter import format_fits, get_data, get_header
     from pathlib import Path
     import shutil
+
     # Make procver directory if not exists
+    print("{:#^80}".format("")) 
     print(f"Creating directory {procver}")
     Path(procver).mkdir(parents=True, exist_ok=True)
 
     """
     Copying chains files
     """
+    if not skipcopy:
+        # Full-mission Gibbs chain file
+        print(f"Copying {chain} to {procver}/BP_resamp_chain01_full_noCl_rc2.00.h5")
+        shutil.copyfile(chain, f"{procver}/BP_chain01_full_rc2.00.h5")
 
-    # Full-mission Gibbs chain file
-    print(f"Copying {chain} to {procver}/BP_resamp_chain01_full_noCl_rc2.00.h5")
-    shutil.copyfile(chain, f"{procver}/BP_chain01_full_rc2.00.h5")
+        # Resampled CMB-only full-mission Gibbs chain file with Cls (for BR estimator)
+        print(
+            f"Copying {chain_resamp} to {procver}/BP_resamp_chain01_full_noCl_rc2.00.h5"
+        )
+        shutil.copyfile(chain_resamp, f"{procver}/BP_resamp_chain01_full_Cl_rc2.00.h5")
 
-    # Resampled CMB-only full-mission Gibbs chain file with Cls (for BR estimator)
-    print(f"Copying {chain_resamp} to {procver}/BP_resamp_chain01_full_noCl_rc2.00.h5")
-    shutil.copyfile(chain_resamp, f"{procver}/BP_resamp_chain01_full_Cl_rc2.00.h5")
-
-    # Resampled CMB-only full-mission Gibbs chain file without Cls (for brute-force likelihood)
-    print(f"Copying {chain_resamp_nocls} to {procver}/BP_resamp_chain01_full_noCl_rc2.00.h5")
-    shutil.copyfile(chain_resamp_nocls, f"{procver}/BP_resamp_chain01_full_noCl_rc2.00.h5")
+        # Resampled CMB-only full-mission Gibbs chain file without Cls (for brute-force likelihood)
+        print(
+            f"Copying {chain_resamp_nocls} to {procver}/BP_resamp_chain01_full_noCl_rc2.00.h5"
+        )
+        shutil.copyfile(
+            chain_resamp_nocls, f"{procver}/BP_resamp_chain01_full_noCl_rc2.00.h5"
+        )
 
     """
     Copying parameter files
@@ -665,109 +682,91 @@ def release(ctx, chain, burnin1, chain_resamp, burnin2, chain_resamp_nocls, proc
     # Commander3 parameter file for main chain
     path = os.path.split(chain)[0]
     for file in os.listdir(path):
-        if file.startswith("param"):    
+        if file.startswith("param"):
             print(f"Copying {path}/{file} to {procver}/BP_param_full_v1.txt")
-            shutil.copyfile(f'{path}/{file}', f"{procver}/BP_param_full_v1.txt")
+            shutil.copyfile(f"{path}/{file}", f"{procver}/BP_param_full_v1.txt")
 
     # Commander3 parameter file for CMB resampling chain with Cls (for BR)
     path = os.path.split(chain_resamp)[0]
     for file in os.listdir(path):
-        if file.startswith("param"):    
+        if file.startswith("param"):
             print(f"Copying {path}/{file} to {procver}/BP_param_resamp_Cl_v1.txt")
-            shutil.copyfile(f'{path}/{file}', f"{procver}/BP_param_resamp_Cl_v1.txt")
+            shutil.copyfile(f"{path}/{file}", f"{procver}/BP_param_resamp_Cl_v1.txt")
 
     # Commander3 parameter file for CMB resampling chain without Cls (for brute-force likelihood)
     path = os.path.split(chain_resamp_nocls)[0]
     for file in os.listdir(path):
-        if file.startswith("param"):    
+        if file.startswith("param"):
             print(f"Copying {path}/{file} to {procver}/BP_param_resamp_noCl_v1.txt")
-            shutil.copyfile(f'{path}/{file}', f"{procver}/BP_param_resamp_noCl_v1.txt")
+            shutil.copyfile(f"{path}/{file}", f"{procver}/BP_param_resamp_noCl_v1.txt")
 
     """
     IQU mean, IQU stdev, (Masks for cmb)
     Run mean and stddev from min to max sample (Choose min manually or start at 1?)
     """
-    # Full-mission 30 GHz IQU frequency map
-    # BP_030_IQU_full_n0512_rc2.00.fits
-    format_fits(
-        chain=chain,
-        extname="FREQMAP",
-        types=[
-            "I_MEAN",
-            "Q_MEAN",
-            "U_MEAN",
-            "I_RMS",
-            "Q_RMS",
-            "U_RMS",
-        ],
-        units=["uK", "uK", "uK", "uK", "uK", "uK",],
-        nside=512,
-        burnin=burnin1,
-        polar=True,
-        component="030",
-        fwhm=0.0,
-        nu_ref="30.0 GHz",
-        procver=procver,
-        filename="BP_030_IQU_full_n0512_rc2.00.fits",
-        bndctr = 30,
-        restfreq = 28.456,
-        bndwid = 9.899,
-    )
-    # Full-mission 44 GHz IQU frequency map
-    format_fits(
-        chain=chain,
-        extname="FREQMAP",
-        types=[
-            "I_MEAN",
-            "Q_MEAN",
-            "U_MEAN",
-            "I_RMS",
-            "Q_RMS",
-            "U_RMS",
-        ],
-        units=["uK", "uK", "uK", "uK", "uK", "uK",],
-        nside=512,
-        burnin=burnin1,
-        polar=True,
-        component="030",
-        fwhm=0.0,
-        nu_ref="44.0 GHz",
-        procver=procver,
-        filename="BP_044_IQU_full_n0512_rc2.00.fits",
-        bndctr = 44,
-        restfreq = 44.121,
-        bndwid = 10.719,
-    )
-    # Full-mission 70 GHz IQU frequency map
-    format_fits(
-        chain=chain,
-        extname="FREQMAP",
-        types=[
-            "I_MEAN",
-            "Q_MEAN",
-            "U_MEAN",
-            "I_RMS",
-            "Q_RMS",
-            "U_RMS",
-        ],
-        units=["uK", "uK", "uK", "uK", "uK", "uK",],
-        nside=1024,
-        burnin=burnin1,
-        polar=True,
-        component="070",
-        fwhm=0.0,
-        nu_ref="70.0 GHz",
-        procver=procver,
-        filename="BP_070_IQU_full_n1024_rc2.00.fits",
-        bndctr = 70,
-        restfreq = 70.467,
-        bndwid = 14.909,
-    )
+    if not skipfreqmaps:
+        # Full-mission 30 GHz IQU frequency map
+        # BP_030_IQU_full_n0512_rc2.00.fits
+        format_fits(
+            chain=chain,
+            extname="FREQMAP",
+            types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS",],
+            units=["uK", "uK", "uK", "uK", "uK", "uK",],
+            nside=512,
+            burnin=burnin1,
+            polar=True,
+            component="030",
+            fwhm=0.0,
+            nu_ref_t="30.0 GHz",
+            nu_ref_p="30.0 GHz",
+            procver=procver,
+            filename="BP_030_IQU_full_n0512_rc2.00.fits",
+            bndctr=30,
+            restfreq=28.456,
+            bndwid=9.899,
+        )
+        # Full-mission 44 GHz IQU frequency map
+        format_fits(
+            chain=chain,
+            extname="FREQMAP",
+            types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS",],
+            units=["uK", "uK", "uK", "uK", "uK", "uK",],
+            nside=512,
+            burnin=burnin1,
+            polar=True,
+            component="030",
+            fwhm=0.0,
+            nu_ref_t="44.0 GHz",
+            nu_ref_p="44.0 GHz",
+            procver=procver,
+            filename="BP_044_IQU_full_n0512_rc2.00.fits",
+            bndctr=44,
+            restfreq=44.121,
+            bndwid=10.719,
+        )
+        # Full-mission 70 GHz IQU frequency map
+        format_fits(
+            chain=chain,
+            extname="FREQMAP",
+            types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS",],
+            units=["uK", "uK", "uK", "uK", "uK", "uK",],
+            nside=1024,
+            burnin=burnin1,
+            polar=True,
+            component="070",
+            fwhm=0.0,
+            nu_ref_t="70.0 GHz",
+            nu_ref_p="70.0 GHz",
+            procver=procver,
+            filename="BP_070_IQU_full_n1024_rc2.00.fits",
+            bndctr=70,
+            restfreq=70.467,
+            bndwid=14.909,
+        )
 
     """
     FOREGROUND MAPS
     """
-    
     # Full-mission CMB IQU map
     format_fits(
         chain_resamp,
@@ -782,21 +781,20 @@ def release(ctx, chain, burnin1, chain_resamp, burnin2, chain_resamp_nocls, proc
             "mask1",
             "mask2",
         ],
-        units=["uK", "uK", "uK", "uK", "uK", "uK", "NONE", "NONE",],
+        units=["uK_cmb", "uK_cmb", "uK_cmb", "uK", "uK", "uK", "NONE", "NONE",],
         nside=1024,
         burnin=burnin2,
         polar=True,
         component="CMB",
         fwhm=0.0,
-        nu_ref="30.0 GHz",
+        nu_ref_t="NONE",  # TODO What is this?
+        nu_ref_p="NONE",
         procver=procver,
         filename="BP_cmb_IQU_full_n1024_rc2.00.fits",
-        bndctr = None,
-        restfreq = None,
-        bndwid = None,
+        bndctr=None,
+        restfreq=None,
+        bndwid=None,
     )
-    
-
     # Full-mission synchrotron IQU map
     format_fits(
         chain,
@@ -814,9 +812,9 @@ def release(ctx, chain, burnin1, chain_resamp, burnin2, chain_resamp_nocls, proc
             "BETA_P_RMS",
         ],
         units=[
-            "uK",
-            "uK",
-            "uK",
+            "uK_RJ",
+            "uK_RJ",
+            "uK_RJ",
             "NONE",
             "NONE",
             "uK",
@@ -829,62 +827,68 @@ def release(ctx, chain, burnin1, chain_resamp, burnin2, chain_resamp_nocls, proc
         burnin=burnin1,
         polar=True,
         component="SYNCHROTRON",
-        fwhm=0.0,
-        nu_ref="30.0 GHz",
+        fwhm=60.0,
+        nu_ref_t="0.408 GHz",
+        nu_ref_p="30.0 GHz",
         procver=procver,
         filename="BP_synch_IQU_full_n1024_rc2.00.fits",
-        bndctr = None,
-        restfreq = None,
-        bndwid = None,
+        bndctr=None,
+        restfreq=None,
+        bndwid=None,
     )
     # Full-mission free-free I map
     format_fits(
         chain,
         extname="COMP-MAP-FREE-FREE",
         types=["I_MEAN", "TE_MEAN", "I_RMS", "TE_RMS",],
-        units=[
-            "uK",
-            "K",
-            "uK",
-            "K",
-        ],
+        units=["uK_RJ", "K", "uK_RJ", "K",],
         nside=1024,
         burnin=burnin1,
         polar=False,
         component="FREE-FREE",
-        fwhm=0.0,
-        nu_ref="30.0 GHz",
+        fwhm=75.0,
+        nu_ref_t="40.0 GHz",
+        nu_ref_p="40.0 GHz",
         procver=procver,
         filename="BP_freefree_I_full_n1024_rc2.00.fits",
-        bndctr = None,
-        restfreq = None,
-        bndwid = None,
+        bndctr=None,
+        restfreq=None,
+        bndwid=None,
     )
-    
+
     # Full-mission AME I map
     format_fits(
         chain,
         extname="COMP-MAP-AME",
         types=["I_MEAN", "NU_P_MEAN", "I_RMS", "NU_P_RMS"],
-        units=["uK", "NONE", "uK", "NONE",],
+        units=["uK_RJ", "GHz", "uK_RJ", "GHz",],
         nside=1024,
         burnin=burnin1,
         polar=False,
         component="AME",
-        fwhm=0.0,
-        nu_ref="30.0 GHz",
+        fwhm=90.0,
+        nu_ref_t="22.0 GHz",
+        nu_ref_p="22.0 GHz",
         procver=procver,
         filename="BP_ame_I_full_n1024_rc2.00.fits",
-        bndctr = None,
-        restfreq = None,
-        bndwid = None,
+        bndctr=None,
+        restfreq=None,
+        bndwid=None,
     )
-
     """ As implemented by Simone
     """
     # Gaussianized TT Blackwell-Rao input file
-    ctx.invoke(sigma_l2fits, filename=chain_resamp, nchains=1, burnin=burnin2, path="cmb/sigma_l", outname="BP_cmb_GBRlike_rc2.00.fits", save=True)
-
+    print()
+    print("{:-^50}".format("CMB GBR")) 
+    ctx.invoke(
+        sigma_l2fits,
+        filename=chain_resamp,
+        nchains=1,
+        burnin=burnin2,
+        path="cmb/sigma_l",
+        outname=f"{procver}/BP_cmb_GBRlike_rc2.00.fits",
+        save=True,
+    )
 
     """
     TODO Generalize this so that they can be generated by Elina and Anna-Stiina
@@ -905,6 +909,3 @@ def release(ctx, chain, burnin1, chain_resamp, burnin2, chain_resamp_nocls, proc
     """
     # Best-fit LCDM CMB TT, TE, EE power spectrum
     # BP_cmb_bfLCDM_rc2.00.txt
-
-
-    
