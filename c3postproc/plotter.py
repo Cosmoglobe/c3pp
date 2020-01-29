@@ -169,7 +169,7 @@ def Plotter(
         #######################
         # ttl, unt and cmb are temporary variables for title, unit and colormap
         if auto:
-            ttl, ticks, ticklabels, unt, cmp, lgscale = get_params(
+            ttl, ticks, ticklabels, unt, cmp, lgscale, format_ticks= get_params(
                 m, outfile, polt,
             )
         else:
@@ -184,6 +184,7 @@ def Plotter(
         # If range has been specified, set.
         if rng:
             if rng == "auto":
+                format_ticks = False
                 if minmax:
                     mn = np.min(m)
                     mx = np.max(m)
@@ -366,8 +367,8 @@ def Plotter(
                     format=FuncFormatter(fmt),
                 )
 
-                # Format tick labels if autosetting
-                if auto:
+                # Don't format ticks if autoset
+                if format_ticks:
                    cb.ax.set_xticklabels(ticklabels)
 
                 cb.ax.xaxis.set_label_text(unit)
@@ -461,11 +462,13 @@ def get_params(m, outfile, polt):
     ff_EM_tags = ["ff_EM"]
     res_tags = ["residual_", "res_"]
     tod_tags = ["Smap"]
+    freqmap_tags = ["BP_030", "BP_044", "BP_070"]
     ignore_tags = ["radio_"]
 
     sl = get_signallabel(polt)
     startcolor = 'black'
     endcolor = 'white'
+    format_ticks = True # If min and max are autoset, dont do this.
 
     if tag_lookup(cmb_tags, outfile,):
         print("----------------------------------")
@@ -559,8 +562,6 @@ def get_params(m, outfile, polt):
                 "own2", ["black", "green", "white"]
             )
 
-            #ticks = [np.log10(5*10**6), vmin,vmid1, vmid2, vmax, np.log10(500*10**6)]
-            #ticklabels = ["",tmin, tmid1, tmid2, tmax, ""]
             ticks = [vmin,vmid1, vmid2, vmax,]
             ticklabels = [tmin, tmid1, tmid2, tmax, ]
 
@@ -806,17 +807,16 @@ def get_params(m, outfile, polt):
         print("----------------------------------")
         print("Plotting freefree EM MIN AND MAX VALUES UPDATE!")
 
-        vmin = 5000
-        vmax = 8000
-        tmin = str(vmin)
-        tmax = str(vmax)
-
         vmax = np.percentile(m, 97.5)
         vmin = np.percentile(m, 2.5)
-        tmin = False
-        tmax = False
+
+        tmid = str(vmid)
+        tmax = str(vmax)
+
         ticks = [vmin, vmax]
         ticklabels = [tmin, tmax]
+
+        format_ticks = False
 
         unit = r"$\mathrm{K}$"
         title = r"$T_{e}$"
@@ -898,6 +898,34 @@ def get_params(m, outfile, polt):
 
         ticks = [vmin, vmid, vmax]
         ticklabels = [tmin, tmid, tmax]
+    ############
+    # FREQMAPS #
+    ############
+
+    elif tag_lookup(freqmap_tags, outfile):
+        from re import findall
+
+        print("----------------------------------")
+        print("Plotting Frequency map" + " " + sl)
+
+        tit = str(findall(r"BP_(.*?)_", outfile)[0])
+        title = fr"{tit} " + r"  $" + sl + "$"
+
+        vmax = np.percentile(m, 97.5)
+        vmid = 0.0
+        vmin = np.percentile(m, 2.5)
+    
+        tmin = str(vmin)
+        tmid = str(vmid)
+        tmax = str(vmax)
+        format_ticks = False
+
+        unit = r"$\mu\mathrm{K}$"
+        
+        cmap ="planck"
+
+        ticks = [vmin, vmid, vmax]
+        ticklabels = [tmin, tmid, tmax]
 
     ############################
     # Not idenified or ignored #
@@ -912,8 +940,11 @@ def get_params(m, outfile, polt):
         print("Map not recognized, plotting with min and max values")
         vmax = np.percentile(m, 97.5)
         vmin = np.percentile(m, 2.5)
-        tmin = False
-        tmax = False
+    
+        tmin = str(vmin)
+        tmax = str(vmax)
+        format_ticks = False
+
         ticks = [vmin, vmax]
         ticklabels = [tmin, tmax]
         unit = ""
@@ -924,7 +955,7 @@ def get_params(m, outfile, polt):
         color = Path(__file__).parent / "parchment1.dat"
         cmap = col.ListedColormap(np.loadtxt(color) / 255.0)
 
-    return title, ticks, ticklabels, unit, cmap, logscale
+    return title, ticks, ticklabels, unit, cmap, logscale, format_ticks
 
 def get_signallabel(x):
     if x == 0:

@@ -85,31 +85,19 @@ def h5handler(input, dataset, min, max, output, fwhm, nside, command):
         print("{:-^50}".format(f" Samples {min} to {max} "))
         print("{:-^50}".format(f" nside {nside}, {fwhm} arcmin smoothing "))
 
+        type = dataset.split("_")[-1]
         for sample in range(min, max + 1):
             # Identify dataset
-            if dataset.endswith("alm"):
-                type = "alm"
-            elif dataset.endswith("map"):
-                type = "map"
-            elif dataset.endswith("sigma_l"):
-                type = "sigma"
-            else:
-                print(f"Dataset {dataset} not recognized")
-                sys.exit()
+            # alm, map or (sigma_l, which is recognized as l)
 
-            # Should potential alms be converted to map
-            if output.endswith(".fits"):
-                alm2map = True
-            elif output.endswith(".dat"):
-                alm2map = False
-            elif output.endswith("map"):
-                alm2map = True
-            else:
-                alm2map = False
+            # Unless output is ".fits" or "map", don't convert alms to map.
+            alm2map = True if output.endswith((".fits", "map")) else False
 
             # HDF dataset path formatting
             s = str(sample).zfill(6)
-            tag = f"{s}/{dataset}"
+    
+            # Sets tag with type
+            tag = f"{s}/{dataset[:-4]}_{type}"
             print(f"Reading {tag}")
 
             # Check if map is available, if not, use alms.
@@ -117,8 +105,9 @@ def h5handler(input, dataset, min, max, output, fwhm, nside, command):
             try:
                 data = f[tag][()]
                 if len(data[0]) == 0:
-                    print("-- warning! No alm data, switching to map.")
-                    data = f[f"{tag[:-4]}_map"][()]
+                    tag = f"{tag[:-4]}_map"
+                    print(f"WARNING! No {type} data found, switching to map.")
+                    data = f[tag][()]
                     type = "map"
             except:
                 print(f"Found no dataset called {dataset}")
@@ -131,11 +120,8 @@ def h5handler(input, dataset, min, max, output, fwhm, nside, command):
                 except:
                     print("Dataset not found.")
 
-
-            # If input data is alms, and output is not .dat bin to map.
-            # IF output name is .fits, alms will be binned to map.
-            # TODO This might be inefficient at some points?
-            if type == "alm" and alm2map:
+            # If data is alm, unpack.
+            if type == "alm":
                 lmax_h5 = f[tag[:-4] + "_lmax"][()]
                 data = unpack_alms(data, lmax_h5)  # Unpack alms
 
@@ -144,14 +130,16 @@ def h5handler(input, dataset, min, max, output, fwhm, nside, command):
                 # For non-polarization data, (1,npix) is not accepted by healpy
                 data = data.ravel()
 
-            if type == "alm" and alm2map:
-                data = hp.alm2map(data, nside=nside, lmax=lmax_h5, pixwin=True,)
-                type = "map"
-                
-            # Smooth every sample if calculating std.
-            if fwhm > 0.0 and command == np.std and type == "map":
-                print(f"--- Smoothing sample {sample} ---")
-                data = hp.sphtfunc.smoothing(data, fwhm=arcmin2rad(fwhm), )
+            # If data is alm and calculating std. Bin to map and smooth first.
+            if type == "alm" and command == np.std and alm2map:
+                print(f"#{sample} --- alm2map with {fwhm} arcmin, lmax {lmax_h5} ---")
+                data = hp.alm2map(data, nside=nside, lmax=lmax_h5, fwhm=arcmin2rad(fwhm), pixwin=True,)
+
+            # If data is map, smooth first.
+            elif type == "map" and fwhm > 0.0 and command == np.std:
+                print(f"#{sample} --- Smoothing map ---")
+                data = hp.sphtfunc.smoothing(data, fwhm=arcmin2rad(fwhm),)
+
             # Append sample to list
             dats.append(data)
 
@@ -160,9 +148,14 @@ def h5handler(input, dataset, min, max, output, fwhm, nside, command):
     # Calculate std or mean
     outdata = command(dats, axis=0)
 
+    # Smoothing afterwards when calculating mean
+    if type == "alm" and command == np.mean and alm2map:
+        print(f"# --- alm2map mean with {fwhm} arcmin, lmax {lmax_h5} ---")
+        outdata = hp.alm2map(outdata, nside=nside, lmax=lmax_h5, fwhm=arcmin2rad(fwhm), pixwin=True,)
+
     # Smoothing can be done after for np.mean
-    if fwhm > 0.0 and command == np.mean and type == "map":
-        print(outdata.shape)
+    if type == "map" and fwhm > 0.0 and command == np.mean :
+        print(f"--- Smoothing mean map with {fwhm} arcmin,---")
         outdata = hp.sphtfunc.smoothing(outdata, fwhm=arcmin2rad(fwhm))
 
     # Outputs fits map if output name is .fits
@@ -172,7 +165,6 @@ def h5handler(input, dataset, min, max, output, fwhm, nside, command):
         np.savetxt(output, outdata)
     else:
         return outdata
-
 
 def arcmin2rad(arcmin):
     return arcmin * (2 * np.pi) / 21600

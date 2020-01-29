@@ -598,6 +598,11 @@ def alm2fits(input, dataset, nside, lmax, fwhm):
 @click.argument("procver", type=click.STRING)
 @click.option("-skipcopy", is_flag=True, help="Don't copy .h5 files")
 @click.option("-skipfreqmaps", is_flag=True, help="Don't output freqmaps")
+@click.option("-skipame", is_flag=True, help="Don't output ame")
+@click.option("-skipff","-skipfreefree",'skipff', is_flag=True, help="Don't output freefree")
+@click.option("-skipcmb", is_flag=True, help="Don't output cmb")
+@click.option("-skipsynch", is_flag=True, help="Don't output synchrotron")
+@click.option("-skipbr", is_flag=True, help="Don't output BR")
 @click.pass_context
 def release(
     ctx,
@@ -609,6 +614,11 @@ def release(
     procver,
     skipcopy,
     skipfreqmaps,
+    skipame,
+    skipff,
+    skipcmb,
+    skipsynch,
+    skipbr,
 ):
     """
     Creates a release file-set on the BeyondPlanck format.\n
@@ -638,9 +648,7 @@ def release(
     BP_cmb_GBRlike_rc2.00.fits
     """
     # TODO
-    # Use PIXWIN = True Is this always true?
     # When handling h5. Smooth in alms ? Not convert then smooth.
-    # Smooth alm data to PLA standards
     # Use proper masks for output of CMB component
     # Use inpainted data as well in CMB component
 
@@ -768,127 +776,135 @@ def release(
     FOREGROUND MAPS
     """
     # Full-mission CMB IQU map
-    format_fits(
-        chain_resamp,
-        extname="COMP-MAP-CMB",
-        types=[
-            "I_MEAN",
-            "Q_MEAN",
-            "U_MEAN",
-            "I_RMS",
-            "Q_RMS",
-            "U_RMS",
-            "mask1",
-            "mask2",
-        ],
-        units=["uK_cmb", "uK_cmb", "uK_cmb", "uK", "uK", "uK", "NONE", "NONE",],
-        nside=1024,
-        burnin=burnin2,
-        polar=True,
-        component="CMB",
-        fwhm=0.0,
-        nu_ref_t="NONE",  # TODO What is this?
-        nu_ref_p="NONE",
-        procver=procver,
-        filename="BP_cmb_IQU_full_n1024_rc2.00.fits",
-        bndctr=None,
-        restfreq=None,
-        bndwid=None,
-    )
-    # Full-mission synchrotron IQU map
-    format_fits(
-        chain,
-        extname="COMP-MAP-SYNCHROTRON",
-        types=[
-            "I_MEAN",
-            "Q_MEAN",
-            "U_MEAN",
-            "BETA_MEAN",
-            "BETA_P_MEAN",
-            "I_RMS",
-            "Q_RMS",
-            "U_RMS",
-            "BETA_RMS",
-            "BETA_P_RMS",
-        ],
-        units=[
-            "uK_RJ",
-            "uK_RJ",
-            "uK_RJ",
-            "NONE",
-            "NONE",
-            "uK",
-            "uK",
-            "uK",
-            "NONE",
-            "NONE",
-        ],
-        nside=1024,
-        burnin=burnin1,
-        polar=True,
-        component="SYNCHROTRON",
-        fwhm=60.0,
-        nu_ref_t="0.408 GHz",
-        nu_ref_p="30.0 GHz",
-        procver=procver,
-        filename="BP_synch_IQU_full_n1024_rc2.00.fits",
-        bndctr=None,
-        restfreq=None,
-        bndwid=None,
-    )
-    # Full-mission free-free I map
-    format_fits(
-        chain,
-        extname="COMP-MAP-FREE-FREE",
-        types=["I_MEAN", "TE_MEAN", "I_RMS", "TE_RMS",],
-        units=["uK_RJ", "K", "uK_RJ", "K",],
-        nside=1024,
-        burnin=burnin1,
-        polar=False,
-        component="FREE-FREE",
-        fwhm=75.0,
-        nu_ref_t="40.0 GHz",
-        nu_ref_p="40.0 GHz",
-        procver=procver,
-        filename="BP_freefree_I_full_n1024_rc2.00.fits",
-        bndctr=None,
-        restfreq=None,
-        bndwid=None,
-    )
+    if not skipcmb:
+        format_fits(
+            chain_resamp,
+            extname="COMP-MAP-CMB",
+            types=[
+                "I_MEAN",
+                "Q_MEAN",
+                "U_MEAN",
+                "I_RMS",
+                "Q_RMS",
+                "U_RMS",
+                "mask1",
+                "mask2",
+            ],
+            units=["uK_cmb", "uK_cmb", "uK_cmb", "uK", "uK", "uK", "NONE", "NONE",],
+            nside=1024,
+            burnin=burnin2,
+            polar=True,
+            component="CMB",
+            fwhm=0.0,
+            nu_ref_t="NONE", 
+            nu_ref_p="NONE",
+            procver=procver,
+            filename="BP_cmb_IQU_full_n1024_rc2.00.fits",
+            bndctr=None,
+            restfreq=None,
+            bndwid=None,
+        )
 
-    # Full-mission AME I map
-    format_fits(
-        chain,
-        extname="COMP-MAP-AME",
-        types=["I_MEAN", "NU_P_MEAN", "I_RMS", "NU_P_RMS"],
-        units=["uK_RJ", "GHz", "uK_RJ", "GHz",],
-        nside=1024,
-        burnin=burnin1,
-        polar=False,
-        component="AME",
-        fwhm=90.0,
-        nu_ref_t="22.0 GHz",
-        nu_ref_p="22.0 GHz",
-        procver=procver,
-        filename="BP_ame_I_full_n1024_rc2.00.fits",
-        bndctr=None,
-        restfreq=None,
-        bndwid=None,
-    )
+    if not skipff:
+        # Full-mission free-free I map
+        format_fits(
+            chain,
+            extname="COMP-MAP-FREE-FREE",
+            types=["I_MEAN", "TE_MEAN", "I_RMS", "TE_RMS",],
+            units=["uK_RJ", "K", "uK_RJ", "K",],
+            nside=1024,
+            burnin=burnin1,
+            polar=False,
+            component="FREE-FREE",
+            fwhm=75.0,
+            nu_ref_t="40.0 GHz",
+            nu_ref_p="40.0 GHz",
+            procver=procver,
+            filename="BP_freefree_I_full_n1024_rc2.00.fits",
+            bndctr=None,
+            restfreq=None,
+            bndwid=None,
+        )
+
+    if not skipame:
+        # Full-mission AME I map
+        format_fits(
+            chain,
+            extname="COMP-MAP-AME",
+            types=["I_MEAN", "NU_P_MEAN", "I_RMS", "NU_P_RMS"],
+            units=["uK_RJ", "GHz", "uK_RJ", "GHz",],
+            nside=1024,
+            burnin=burnin1,
+            polar=False,
+            component="AME",
+            fwhm=90.0,
+            nu_ref_t="22.0 GHz",
+            nu_ref_p="22.0 GHz",
+            procver=procver,
+            filename="BP_ame_I_full_n1024_rc2.00.fits",
+            bndctr=None,
+            restfreq=None,
+            bndwid=None,
+        )
+
+    if not skipsynch:
+        # Full-mission synchrotron IQU map
+        format_fits(
+            chain,
+            extname="COMP-MAP-SYNCHROTRON",
+            types=[
+                "I_MEAN",
+                "Q_MEAN",
+                "U_MEAN",
+                "BETA_MEAN",
+                "BETA_P_MEAN",
+                "I_RMS",
+                "Q_RMS",
+                "U_RMS",
+                "BETA_RMS",
+                "BETA_P_RMS",
+            ],
+            units=[
+                "uK_RJ",
+                "uK_RJ",
+                "uK_RJ",
+                "NONE",
+                "NONE",
+                "uK",
+                "uK",
+                "uK",
+                "NONE",
+                "NONE",
+            ],
+            nside=1024,
+            burnin=burnin1,
+            polar=True,
+            component="SYNCHROTRON",
+            fwhm=60.0,
+            nu_ref_t="0.408 GHz",
+            nu_ref_p="30.0 GHz",
+            procver=procver,
+            filename="BP_synch_IQU_full_n1024_rc2.00.fits",
+            bndctr=None,
+            restfreq=None,
+            bndwid=None,
+        )
     """ As implemented by Simone
     """
-    # Gaussianized TT Blackwell-Rao input file
-    print()
-    print("{:-^50}".format("CMB GBR")) 
-    ctx.invoke(
-        sigma_l2fits,
-        filename=chain_resamp,
-        nchains=1,
-        burnin=burnin2,
-        path="cmb/sigma_l",
-        outname=f"{procver}/BP_cmb_GBRlike_rc2.00.fits",
-        save=True,
-    )
+    if not skipbr:
+        # Gaussianized TT Blackwell-Rao input file
+        print()
+        print("{:-^50}".format("CMB GBR")) 
+        ctx.invoke(
+            sigma_l2fits,
+            filename=chain_resamp,
+            nchains=1,
+            burnin=burnin2,
+            path="cmb/sigma_l",
+            outname=f"{procver}/BP_cmb_GBRlike_rc2.00.fits",
+            save=True,
+        )
+
 
     """
     TODO Generalize this so that they can be generated by Elina and Anna-Stiina
