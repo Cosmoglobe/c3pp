@@ -12,6 +12,21 @@ def commands():
 
 @commands.command()
 @click.argument("input", type=click.STRING)
+def printheader(
+    input,
+):
+    """
+    Prints the header of a fits file.
+    """
+    from astropy.io import fits
+
+    with fits.open(input) as hdulist: 
+        hdulist.info() 
+        for hdu in hdulist: 
+            print(repr(hdu.header)) 
+
+@commands.command()
+@click.argument("input", type=click.STRING)
 @click.argument("dataset", type=click.STRING)
 @click.argument("min", nargs=1, type=click.INT)
 @click.argument("max", nargs=1, type=click.INT)
@@ -648,7 +663,6 @@ def release(
     BP_cmb_GBRlike_rc2.00.fits
     """
     # TODO
-    # When handling h5. Smooth in alms ? Not convert then smooth.
     # Use proper masks for output of CMB component
     # Use inpainted data as well in CMB component
 

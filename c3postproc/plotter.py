@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as col
 from matplotlib import rcParams, rc
 from c3postproc.tools import arcmin2rad
-
+from astropy.io import fits
 print("Importtime:", (time.time() - totaltime))
 
 
@@ -70,57 +70,55 @@ def Plotter(
     #######################
     ####   READ MAP   #####
     #######################
-    starttime = time.time()
-
-    if input.endswith(".fits"):
-        # Make sure its the right shape for indexing
-        # This is a really dumb way of doing it
-        dats = [0, 0, 0]
-        map_exists = False
-        for i in sig:
-            try:
-                dats[i] = hp.ma(hp.read_map(input, field=i, verbose=False))
-                nsid = hp.npix2nside(len(dats[i]))
-                map_exists = True
-            except:
-                print(f"Signal {i} not found in data, skipping")
-                continue
-
-        if map_exists == False:
-            print(f"{input} does not contain a {sig} signal. Breaking.")
-            sys.exit()
-
-        maps = np.array(dats)
-        outfile = input.replace(".fits", "")
-
-    elif input.endswith(".h5"):
+    
+    # Get maps array if .h5 file
+    if input.endswith(".h5"):
         from c3postproc.commands import h5map2fits
         from c3postproc.tools import alm2fits_tool
 
+        # Get maps from alm data in .h5
         if dataset.endswith("alm"):
             print("Converting alms to map")
             maps, nsid, lmax, fwhm, outfile = alm2fits_tool(
                 input, dataset, nside, lmax, fwhm, save=False
             )
 
+        # Get maps from map data in .h5
         elif dataset.endswith("map"):
             print("Reading map from h5")
             maps, nsid, lmax, outfile = h5map2fits(input, dataset, save=False)
 
+        # Found no data specified kind in .h5
         else:
             print("Dataset not found. Breaking.")
             print(f"Does {input}/{dataset} exist?")
             sys.exit()
-    else:
-        print("Dataset not found. Breaking.")
-        sys.exit()
 
-    print("Map reading: ", (time.time() - starttime)) if verbose else None
-    print("nside", nsid, "total file shape", maps.shape)
-
-    # Iterate through I, Q and U
+    # Plot all signals specified
+    print(f"Plotting the following signals: {sig}")
     for polt in sig:
-        m = maps[polt]
+        print("----------------------------------")
+        signal_label = get_signallabel(polt)
+
+        try:
+            if input.endswith(".fits"):
+                map, header = hp.read_map(input, field=polt, verbose=False, h=True)
+                header = dict(header)
+                try:
+                    signal_label = header[f'TTYPE{polt+1}']
+                except:
+                    pass
+
+                m = hp.ma(map) # Dont use header for this
+                nsid = hp.npix2nside(len(m))
+                outfile = input.replace(".fits", "")
+
+            elif input.endswith(".h5"):
+                m = maps[polt]
+        except:
+            print(f"{polt} not found")
+            sys.exit()
+    
 
         ############
         #  SMOOTH  #
@@ -167,6 +165,14 @@ def Plotter(
         #######################
         #### Auto-param   #####
         #######################
+        # Reset these every signal 
+        tempmin = min
+        tempmax = max
+        temptitle = title
+        tempunit = unit
+        templogscale = logscale
+        tempcmap = cmap
+        
         # ttl, unt and cmb are temporary variables for title, unit and colormap
         if auto:
             ttl, ticks, ticklabels, unt, cmp, lgscale, format_ticks= get_params(
@@ -409,6 +415,8 @@ def Plotter(
             ##############
             ## filename ##
             ##############
+            print(f"Using signal label {signal_label}")
+
             filename = []
             filename.append(f"{str(int(fwhm))}arcmin") if fwhm > 0 else None
             filename.append("cb") if colorbar else None
@@ -419,7 +427,7 @@ def Plotter(
             if nside_tag in outfile:
                 outfile = outfile.replace(nside_tag, "")
             
-            fn = outfile + f"_{get_signallabel(polt)}_w{str(int(width))}" + nside_tag
+            fn = outfile + f"_{signal_label}_w{str(int(width))}" + nside_tag
 
             for i in filename:
                 fn += f"_{i}"
@@ -438,6 +446,12 @@ def Plotter(
             plt.close()
             print("Totaltime:", (time.time() - totaltime)) if verbose else None
 
+        min = tempmin
+        max = tempmax
+        title = temptitle
+        unit = tempunit
+        logscale = templogscale
+        cmap = tempcmap
 
 def get_params(m, outfile, polt):
     print()
@@ -471,12 +485,12 @@ def get_params(m, outfile, polt):
     format_ticks = True # If min and max are autoset, dont do this.
 
     if tag_lookup(cmb_tags, outfile,):
-        print("----------------------------------")
+
         print(f"Plotting CMB signal {sl}")
         
         title = r"$" + sl + "$" + r"$_{\mathrm{CMB}}$"
 
-        if polt > 0:
+        if polt%3 > 0:
             vmin = -2
             vmid = 0
             vmax = 2
@@ -502,7 +516,7 @@ def get_params(m, outfile, polt):
     elif tag_lookup(chisq_tags, outfile):
         title = r"$\chi^2$ " + sl
 
-        if polt > 0:
+        if polt%3 > 0:
             vmin = 0
             vmax = 32
         else:
@@ -515,17 +529,15 @@ def get_params(m, outfile, polt):
         ticks = [vmin, vmax]
         ticklabels = [tmin, tmax]
 
-        print("----------------------------------")
         print("Plotting chisq with vmax = " + str(vmax) + " " + sl)
 
         unit = ""
         cmap = col.LinearSegmentedColormap.from_list("own2", ["black", "white"])
 
     elif tag_lookup(synch_tags, outfile):
-        print("----------------------------------")
         print(f"Plotting Synchrotron {sl}")
         title = r"$" + sl + "$" + r"$_{\mathrm{s}}$ "
-        if polt > 0:
+        if polt%3 > 0:
             # BP uses 30 GHz ref freq for pol
             vmin = -np.log10(50)
             vmax = np.log10(50)
@@ -568,7 +580,6 @@ def get_params(m, outfile, polt):
             unit = r"$\mathrm{K}_{\mathrm{RJ}}$"
 
     elif tag_lookup(ff_tags, outfile):
-        print("----------------------------------")
         print("Plotting freefree")
 
         vmin = 0  # 0
@@ -588,10 +599,9 @@ def get_params(m, outfile, polt):
         cmap = col.LinearSegmentedColormap.from_list("own2", ["black", "Navy", "white"])
 
     elif tag_lookup(dust_tags, outfile):
-        print("----------------------------------")
         print("Plotting Thermal dust" + " " + sl)
         title = r"$" + sl + "$" + r"$_{\mathrm{d}}$ "
-        if polt > 0:
+        if polt%3 > 0:
             vmin = -np.log10(100)
             vmid = 0
             vmax = np.log10(100)
@@ -628,7 +638,6 @@ def get_params(m, outfile, polt):
         unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
 
     elif tag_lookup(ame_tags, outfile):
-        print("----------------------------------")
         print("Plotting AME")
 
         vmin = 0  # 0
@@ -650,7 +659,6 @@ def get_params(m, outfile, polt):
         )
 
     elif tag_lookup(co10_tags, outfile):
-        print("----------------------------------")
         print("Plotting CO10")
         vmin = 0
         vmid = np.log10(10)
@@ -669,7 +677,6 @@ def get_params(m, outfile, polt):
         cmap = plt.get_cmap("gray")
 
     elif tag_lookup(co21_tags, outfile):
-        print("----------------------------------")
         print("Plotting CO21")
         vmin = 0
         vmid = 1
@@ -687,7 +694,6 @@ def get_params(m, outfile, polt):
         cmap = plt.get_cmap("gray")
 
     elif tag_lookup(co32_tags, outfile):
-        print("----------------------------------")
         print("Plotting 32")
         vmin = 0
         vmid = 1
@@ -705,7 +711,6 @@ def get_params(m, outfile, polt):
         cmap = plt.get_cmap("gray")
 
     elif tag_lookup(hcn_tags, outfile):
-        print("----------------------------------")
         print("Plotting HCN")
         vmin = -14
         vmax = -10
@@ -721,7 +726,6 @@ def get_params(m, outfile, polt):
         cmap = plt.get_cmap("gray")
 
     elif tag_lookup(ame_tags, outfile):
-        print("----------------------------------")
         print("Plotting AME nu_p")
 
         vmin = 17
@@ -738,7 +742,6 @@ def get_params(m, outfile, polt):
 
     # SPECTRAL INDEX MAPS
     elif tag_lookup(dust_T_tags, outfile):
-        print("----------------------------------")
         print("Plotting Thermal dust Td")
 
         title = r"$" + sl + "$ " + r"$T_d$ "
@@ -755,7 +758,6 @@ def get_params(m, outfile, polt):
         cmap = plt.get_cmap("bone")
 
     elif tag_lookup(dust_beta_tags, outfile):
-        print("----------------------------------")
         print("Plotting Thermal dust beta")
 
         title = r"$" + sl + "$ " + r"$\beta_d$ "
@@ -771,7 +773,6 @@ def get_params(m, outfile, polt):
         cmap = plt.get_cmap("bone")
 
     elif tag_lookup(synch_beta_tags, outfile):
-        print("----------------------------------")
         print("Plotting Synchrotron beta")
 
         title = r"$" + sl + "$ " + r"$\beta_s$ "
@@ -804,7 +805,6 @@ def get_params(m, outfile, polt):
         cmap = plt.get_cmap("bone")
 
     elif tag_lookup(ff_EM_tags, outfile):
-        print("----------------------------------")
         print("Plotting freefree EM MIN AND MAX VALUES UPDATE!")
 
         vmax = np.percentile(m, 97.5)
@@ -829,7 +829,6 @@ def get_params(m, outfile, polt):
     elif tag_lookup(res_tags, outfile):
         from re import findall
 
-        print("----------------------------------")
         print("Plotting residual map" + " " + sl)
 
         if "res_" in outfile:
@@ -876,7 +875,6 @@ def get_params(m, outfile, polt):
     elif tag_lookup(tod_tags, outfile):
         from re import findall
 
-        print("----------------------------------")
         print("Plotting Smap map" + " " + sl)
 
         tit = str(findall(r"tod_(.*?)_Smap", outfile)[0])
@@ -905,7 +903,6 @@ def get_params(m, outfile, polt):
     elif tag_lookup(freqmap_tags, outfile):
         from re import findall
 
-        print("----------------------------------")
         print("Plotting Frequency map" + " " + sl)
 
         tit = str(findall(r"BP_(.*?)_", outfile)[0])
@@ -936,7 +933,6 @@ def get_params(m, outfile, polt):
         )
         sys.exit()
     else:
-        print("----------------------------------")
         print("Map not recognized, plotting with min and max values")
         vmax = np.percentile(m, 97.5)
         vmin = np.percentile(m, 2.5)
