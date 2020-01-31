@@ -507,7 +507,7 @@ def get_params(m, outfile, polt, signal_label):
     # SPECTRAL INDEX MAPS #
     #######################
 
-    elif tag_lookup(ame_nup_tags, outfile) or tag_lookup(dust_tags, outfile) and "NU_P_MEAN" in signal_label:
+    elif tag_lookup(ame_nup_tags, outfile) or tag_lookup(dust_tags, outfile) and sidx_tag_lookup(["NU_P_MEAN"], signal_label):
         print("Plotting AME nu_p")
 
         vmin = 17
@@ -522,7 +522,7 @@ def get_params(m, outfile, polt, signal_label):
         title = r"$\nu_{ame}$"
         cmap = plt.get_cmap("bone")
 
-    elif tag_lookup(dust_T_tags, outfile) or tag_lookup(dust_tags, outfile) and "T_MEAN" in signal_label:
+    elif tag_lookup(dust_T_tags, outfile) or tag_lookup(dust_tags, outfile) and sidx_tag_lookup(["T_MEAN"], signal_label):
         print("Plotting Thermal dust Td")
 
         title = r"$" + sl + "$ " + r"$T_d$ "
@@ -538,7 +538,7 @@ def get_params(m, outfile, polt, signal_label):
         unit = r"$\mathrm{K}$"
         cmap = plt.get_cmap("bone")
 
-    elif tag_lookup(dust_beta_tags, outfile) or tag_lookup(dust_tags, outfile) and "BETA_MEAN" in signal_label:
+    elif tag_lookup(dust_beta_tags, outfile) or tag_lookup(dust_tags, outfile) and sidx_tag_lookup(["BETA_MEAN", "BETA_P_MEAN"], signal_label):
         print("Plotting Thermal dust beta")
 
         title = r"$" + sl + "$ " + r"$\beta_d$ "
@@ -553,7 +553,7 @@ def get_params(m, outfile, polt, signal_label):
         unit = ""
         cmap = plt.get_cmap("bone")
 
-    elif tag_lookup(synch_beta_tags, outfile) or tag_lookup(synch_tags, outfile) and "BETA_MEAN" in signal_label:
+    elif tag_lookup(synch_beta_tags, outfile) or tag_lookup(synch_tags, outfile) and sidx_tag_lookup(["BETA_MEAN", "BETA_P_MEAN"], signal_label):
         print("Plotting Synchrotron beta")
 
         title = r"$" + sl + "$ " + r"$\beta_s$ "
@@ -569,7 +569,7 @@ def get_params(m, outfile, polt, signal_label):
         unit = ""
         cmap = plt.get_cmap("bone")
 
-    elif tag_lookup(ff_Te_tags, outfile) or tag_lookup(ff_tags, outfile) and "TE_MEAN" in signal_label:
+    elif tag_lookup(ff_Te_tags, outfile) or tag_lookup(ff_tags, outfile) and sidx_tag_lookup(["TE_MEAN"], signal_label):
         print("----------------------------------")
         print("Plotting freefree T_e")
 
@@ -656,7 +656,7 @@ def get_params(m, outfile, polt, signal_label):
 
     elif tag_lookup(synch_tags, outfile):
         print(f"Plotting Synchrotron {sl}")
-        title = r"$" + sl + "$" + r"$_{\mathrm{s}}$ "
+        title = r"$" + sl + "$" + r"$_{\mathrm{synch.}}$ "
         if polt%3 > 0:
             # BP uses 30 GHz ref freq for pol
             vmin = -np.log10(50)
@@ -718,7 +718,7 @@ def get_params(m, outfile, polt, signal_label):
         ticklabels = [tmin, tmid, tmax]
 
         unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
-        title = r"$" + sl + "$" + r"$_{\mathrm{ff}}$"
+        title = r"$" + sl + "$" + r"$_{\mathrm{free-free}}$"
         logscale = True
 
         #  cmap = col.LinearSegmentedColormap.from_list("BkBlWh",["black", "Navy", "white"], )
@@ -1028,6 +1028,9 @@ def fmt(x, pos):
 def cm2inch(cm):
     return cm * 0.393701
 
+
+def sidx_tag_lookup(tags, signal_label):
+    return any(e in signal_label for e in tags)
 
 def tag_lookup(tags, outfile):
     return any(e in outfile for e in tags)

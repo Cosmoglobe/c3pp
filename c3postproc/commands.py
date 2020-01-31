@@ -659,7 +659,7 @@ def plotrelease(
     input="BP_synch_IQU_full_n1024_rc2.00.fits",
     colorbar=True,
     auto=True,
-    sig=[0, 1, 2, 5, 6, 7], 
+    sig=[0, 1, 2, 3, 4, 5, 6, 7], 
     )
 
     # freefree mean and rms
@@ -667,7 +667,7 @@ def plotrelease(
     input="BP_freefree_I_full_n1024_rc2.00.fits",
     colorbar=True,
     auto=True,
-    sig=[0, 2], 
+    sig=[0, 1, 2, 3], 
     )
 
     # ame mean and rms
@@ -675,7 +675,7 @@ def plotrelease(
     input="BP_ame_I_full_n1024_rc2.00.fits",
     colorbar=True,
     auto=True,
-    sig=[0, 2], 
+    sig=[0, 1, 2, 4], 
     )
 
 
