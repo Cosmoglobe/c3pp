@@ -605,6 +605,82 @@ def alm2fits(input, dataset, nside, lmax, fwhm):
 
 
 @commands.command()
+@click.argument("mask", type=click.STRING)
+@click.pass_context
+def plotrelease(
+    ctx,
+    mask,
+):
+    """
+    \b
+    Plots all release files\n
+    """
+    # CMB I no dip
+    ctx.invoke(plot, 
+    input="BP_cmb_IQU_full_n1024_rc2.00.fits",
+    colorbar=True,
+    auto=True,
+    remove_dipole = mask,
+    )
+
+    # CMB QU and IQU rms
+    ctx.invoke(plot, 
+    input="BP_cmb_IQU_full_n1024_rc2.00.fits",
+    colorbar=True,
+    auto=True,
+    sig=[1, 2, 3, 4, 5], 
+    )
+
+
+    # 030 GHz IQU
+    ctx.invoke(plot, 
+    input="BP_030_IQU_full_n0512_rc2.00.fits",
+    colorbar=True,
+    auto=True,
+    sig=[0, 1, 2, 3, 4, 5,], 
+    )
+    # 044 GHz IQU
+    ctx.invoke(plot, 
+    input="BP_044_IQU_full_n0512_rc2.00.fits",
+    colorbar=True,
+    auto=True,
+    sig=[0, 1, 2, 3, 4, 5,], 
+    )
+    # 070 GHz IQU
+    ctx.invoke(plot, 
+    input="BP_070_IQU_full_n1024_rc2.00.fits",
+    colorbar=True,
+    auto=True,
+    sig=[0, 1, 2, 3, 4, 5,], 
+    )
+    
+    # Synch IQU
+    ctx.invoke(plot, 
+    input="BP_synch_IQU_full_n1024_rc2.00.fits",
+    colorbar=True,
+    auto=True,
+    sig=[0, 1, 2, 5, 6, 7], 
+    )
+
+    # freefree mean and rms
+    ctx.invoke(plot, 
+    input="BP_freefree_I_full_n1024_rc2.00.fits",
+    colorbar=True,
+    auto=True,
+    sig=[0, 2], 
+    )
+
+    # ame mean and rms
+    ctx.invoke(plot, 
+    input="BP_ame_I_full_n1024_rc2.00.fits",
+    colorbar=True,
+    auto=True,
+    sig=[0, 2], 
+    )
+
+
+
+@commands.command()
 @click.argument("chain", type=click.STRING)
 @click.argument("burnin1", type=click.INT)
 @click.argument("chain_resamp", type=click.STRING)
@@ -939,3 +1015,4 @@ def release(
     """
     # Best-fit LCDM CMB TT, TE, EE power spectrum
     # BP_cmb_bfLCDM_rc2.00.txt
+
