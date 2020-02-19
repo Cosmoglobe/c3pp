@@ -507,7 +507,7 @@ def get_params(m, outfile, polt, signal_label):
     # SPECTRAL INDEX MAPS #
     #######################
 
-    elif tag_lookup(ame_nup_tags, outfile) or tag_lookup(dust_tags, outfile) and sidx_tag_lookup(["NU_P_MEAN"], signal_label):
+    elif tag_lookup(ame_nup_tags, outfile) or tag_lookup(ame_tags, outfile) and sidx_tag_lookup(["NU_P_MEAN"], signal_label):
         print("Plotting AME nu_p")
 
         vmin = 17
@@ -520,7 +520,8 @@ def get_params(m, outfile, polt, signal_label):
 
         unit = "GHz"
         title = r"$\nu_{ame}$"
-        cmap = plt.get_cmap("bone")
+        #cmap = plt.get_cmap("bone")
+        cmap = "planck"
 
     elif tag_lookup(dust_T_tags, outfile) or tag_lookup(dust_tags, outfile) and sidx_tag_lookup(["T_MEAN"], signal_label):
         print("Plotting Thermal dust Td")
@@ -536,10 +537,15 @@ def get_params(m, outfile, polt, signal_label):
         ticklabels = [tmin, tmax]
 
         unit = r"$\mathrm{K}$"
-        cmap = plt.get_cmap("bone")
+        #cmap = plt.get_cmap("bone")
+        cmap = "planck"
 
     elif tag_lookup(dust_beta_tags, outfile) or tag_lookup(dust_tags, outfile) and sidx_tag_lookup(["BETA_MEAN", "BETA_P_MEAN"], signal_label):
         print("Plotting Thermal dust beta")
+        if "BETA_MEAN" in signal_label:
+            sl = "I"
+        elif "BETA_P_MEAN" in signal_label:
+            sl = "QU"
 
         title = r"$" + sl + "$ " + r"$\beta_d$ "
 
@@ -551,11 +557,17 @@ def get_params(m, outfile, polt, signal_label):
         ticklabels = [tmin, tmax]
 
         unit = ""
-        cmap = plt.get_cmap("bone")
+        #cmap = plt.get_cmap("bone")
+        cmap = "planck"
 
     elif tag_lookup(synch_beta_tags, outfile) or tag_lookup(synch_tags, outfile) and sidx_tag_lookup(["BETA_MEAN", "BETA_P_MEAN"], signal_label):
         print("Plotting Synchrotron beta")
 
+        if "BETA_MEAN" in signal_label:
+            sl = "I"
+        elif "BETA_P_MEAN" in signal_label:
+            sl = "QU"
+        
         title = r"$" + sl + "$ " + r"$\beta_s$ "
 
         vmin = -4.0
@@ -567,10 +579,10 @@ def get_params(m, outfile, polt, signal_label):
         ticklabels = [tmin, tmax]
 
         unit = ""
-        cmap = plt.get_cmap("bone")
+        #cmap = plt.get_cmap("bone")
+        cmap = "planck"
 
     elif tag_lookup(ff_Te_tags, outfile) or tag_lookup(ff_tags, outfile) and sidx_tag_lookup(["TE_MEAN"], signal_label):
-        print("----------------------------------")
         print("Plotting freefree T_e")
 
         vmin = 5000
@@ -583,7 +595,8 @@ def get_params(m, outfile, polt, signal_label):
 
         unit = r"$\mathrm{K}$"
         title = r"$T_{e}$"
-        cmap = plt.get_cmap("bone")
+        #cmap = plt.get_cmap("bone")
+        cmap = "planck"
 
     elif tag_lookup(ff_EM_tags, outfile):
         print("Plotting freefree EM MIN AND MAX VALUES UPDATE!")
@@ -601,7 +614,8 @@ def get_params(m, outfile, polt, signal_label):
 
         unit = r"$\mathrm{K}$"
         title = r"$T_{e}$"
-        cmap = plt.get_cmap("bone")
+        #cmap = plt.get_cmap("bone")
+        cmap = "planck"
 
     #######################
     #### AMPLITUDE MAPS ###

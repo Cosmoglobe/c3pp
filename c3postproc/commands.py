@@ -606,10 +606,12 @@ def alm2fits(input, dataset, nside, lmax, fwhm):
 
 @commands.command()
 @click.argument("mask", type=click.STRING)
+@click.argument("procver", type=click.STRING)
 @click.pass_context
 def plotrelease(
     ctx,
     mask,
+    procver,
 ):
     """
     \b
@@ -617,7 +619,7 @@ def plotrelease(
     """
     # CMB I no dip
     ctx.invoke(plot, 
-    input="BP_cmb_IQU_full_n1024_rc2.00.fits",
+    input=f"BP_cmb_IQU_full_n1024_{procver}.fits",
     colorbar=True,
     auto=True,
     remove_dipole = mask,
@@ -625,7 +627,7 @@ def plotrelease(
 
     # CMB QU and IQU rms
     ctx.invoke(plot, 
-    input="BP_cmb_IQU_full_n1024_rc2.00.fits",
+    input=f"BP_cmb_IQU_full_n1024_{procver}.fits",
     colorbar=True,
     auto=True,
     sig=[1, 2, 3, 4, 5], 
@@ -634,21 +636,21 @@ def plotrelease(
 
     # 030 GHz IQU
     ctx.invoke(plot, 
-    input="BP_030_IQU_full_n0512_rc2.00.fits",
+    input=f"BP_030_IQU_full_n0512_{procver}.fits",
     colorbar=True,
     auto=True,
     sig=[0, 1, 2, 3, 4, 5,], 
     )
     # 044 GHz IQU
     ctx.invoke(plot, 
-    input="BP_044_IQU_full_n0512_rc2.00.fits",
+    input=f"BP_044_IQU_full_n0512_{procver}.fits",
     colorbar=True,
     auto=True,
     sig=[0, 1, 2, 3, 4, 5,], 
     )
     # 070 GHz IQU
     ctx.invoke(plot, 
-    input="BP_070_IQU_full_n1024_rc2.00.fits",
+    input=f"BP_070_IQU_full_n1024_{procver}.fits",
     colorbar=True,
     auto=True,
     sig=[0, 1, 2, 3, 4, 5,], 
@@ -656,7 +658,7 @@ def plotrelease(
     
     # Synch IQU
     ctx.invoke(plot, 
-    input="BP_synch_IQU_full_n1024_rc2.00.fits",
+    input=f"BP_synch_IQU_full_n1024_{procver}.fits",
     colorbar=True,
     auto=True,
     sig=[0, 1, 2, 3, 4, 5, 6, 7], 
@@ -664,7 +666,7 @@ def plotrelease(
 
     # freefree mean and rms
     ctx.invoke(plot, 
-    input="BP_freefree_I_full_n1024_rc2.00.fits",
+    input=f"BP_freefree_I_full_n1024_{procver}.fits",
     colorbar=True,
     auto=True,
     sig=[0, 1, 2, 3], 
@@ -672,10 +674,10 @@ def plotrelease(
 
     # ame mean and rms
     ctx.invoke(plot, 
-    input="BP_ame_I_full_n1024_rc2.00.fits",
+    input=f"BP_ame_I_full_n1024_{procver}.fits",
     colorbar=True,
     auto=True,
-    sig=[0, 1, 2, 4], 
+    sig=[0, 1, 2, 3], 
     )
 
 
@@ -687,7 +689,9 @@ def plotrelease(
 @click.argument("burnin2", type=click.INT)
 @click.argument("chain_resamp_nocls", type=click.STRING)
 @click.argument("procver", type=click.STRING)
-@click.option("-skipcopy", is_flag=True, help="Don't copy .h5 files")
+@click.option("-skipcopy1", is_flag=True, help="Don't copy full .h5 file")
+@click.option("-skipcopy2", is_flag=True, help="Don't copy Cl .h5 file")
+@click.option("-skipcopy3", is_flag=True, help="Don't copy noCl .h5 file")
 @click.option("-skipfreqmaps", is_flag=True, help="Don't output freqmaps")
 @click.option("-skipame", is_flag=True, help="Don't output ame")
 @click.option("-skipff","-skipfreefree",'skipff', is_flag=True, help="Don't output freefree")
@@ -703,7 +707,9 @@ def release(
     burnin2,
     chain_resamp_nocls,
     procver,
-    skipcopy,
+    skipcopy1,
+    skipcopy2,
+    skipcopy3,
     skipfreqmaps,
     skipame,
     skipff,
@@ -720,23 +726,23 @@ def release(
     Where there are different burnin variables for each of the two used hdf files. \n
 
     This function outputs the following files to the procver directory:\n
-    BP_chain01_full_rc2.00.h5\n
-    BP_resamp_chain01_full_Cl_rc2.00.h5\n
-    BP_resamp_chain01_full_noCl_rc2.00.h5\n
+    BP_chain01_full_{procver}.h5\n
+    BP_resamp_chain01_full_Cl_{procver}.h5\n
+    BP_resamp_chain01_full_noCl_{procver}.h5\n
     BP_param_full_v1.txt\n
     BP_param_resamp_Cl_v1.txt\n
     BP_param_resamp_noCl_v1.txt\n
 
-    BP_030_IQU_full_n0512_rc2.00.fits\n
-    BP_044_IQU_full_n0512_rc2.00.fits\n
-    BP_070_IQU_full_n1024_rc2.00.fits\n
+    BP_030_IQU_full_n0512_{procver}.fits\n
+    BP_044_IQU_full_n0512_{procver}.fits\n
+    BP_070_IQU_full_n1024_{procver}.fits\n
 
-    BP_cmb_IQU_full_n1024_rc2.00.fits\n
-    BP_synch_IQU_full_n1024_rc2.00.fits\n
-    BP_freefree_I_full_n1024_rc2.00.fits\n
-    BP_ame_I_full_n1024_rc2.00.fits\n
+    BP_cmb_IQU_full_n1024_{procver}.fits\n
+    BP_synch_IQU_full_n1024_{procver}.fits\n
+    BP_freefree_I_full_n1024_{procver}.fits\n
+    BP_ame_I_full_n1024_{procver}.fits\n
 
-    BP_cmb_GBRlike_rc2.00.fits
+    BP_cmb_GBRlike_{procver}.fits
     """
     # TODO
     # Use proper masks for output of CMB component
@@ -754,23 +760,25 @@ def release(
     """
     Copying chains files
     """
-    if not skipcopy:
+    if not skipcopy1:
         # Full-mission Gibbs chain file
-        print(f"Copying {chain} to {procver}/BP_resamp_chain01_full_noCl_rc2.00.h5")
-        shutil.copyfile(chain, f"{procver}/BP_chain01_full_rc2.00.h5")
+        print(f"Copying {chain} to {procver}/BP_resamp_chain01_full_{procver}.h5")
+        shutil.copyfile(chain, f"{procver}/BP_chain01_full_{procver}.h5")
 
+    if not skipcopy2:
         # Resampled CMB-only full-mission Gibbs chain file with Cls (for BR estimator)
         print(
-            f"Copying {chain_resamp} to {procver}/BP_resamp_chain01_full_noCl_rc2.00.h5"
+            f"Copying {chain_resamp} to {procver}/BP_resamp_chain01_full_Cl_{procver}.h5"
         )
-        shutil.copyfile(chain_resamp, f"{procver}/BP_resamp_chain01_full_Cl_rc2.00.h5")
+        shutil.copyfile(chain_resamp, f"{procver}/BP_resamp_chain01_full_Cl_{procver}.h5")
 
+    if not skipcopy3:
         # Resampled CMB-only full-mission Gibbs chain file without Cls (for brute-force likelihood)
         print(
-            f"Copying {chain_resamp_nocls} to {procver}/BP_resamp_chain01_full_noCl_rc2.00.h5"
+            f"Copying {chain_resamp_nocls} to {procver}/BP_resamp_chain01_full_noCl_{procver}.h5"
         )
         shutil.copyfile(
-            chain_resamp_nocls, f"{procver}/BP_resamp_chain01_full_noCl_rc2.00.h5"
+            chain_resamp_nocls, f"{procver}/BP_resamp_chain01_full_noCl_{procver}.h5"
         )
 
     """
@@ -804,7 +812,7 @@ def release(
     """
     if not skipfreqmaps:
         # Full-mission 30 GHz IQU frequency map
-        # BP_030_IQU_full_n0512_rc2.00.fits
+        # BP_030_IQU_full_n0512_{procver}.fits
         format_fits(
             chain=chain,
             extname="FREQMAP",
@@ -818,7 +826,7 @@ def release(
             nu_ref_t="30.0 GHz",
             nu_ref_p="30.0 GHz",
             procver=procver,
-            filename="BP_030_IQU_full_n0512_rc2.00.fits",
+            filename=f"BP_030_IQU_full_n0512_{procver}.fits",
             bndctr=30,
             restfreq=28.456,
             bndwid=9.899,
@@ -837,7 +845,7 @@ def release(
             nu_ref_t="44.0 GHz",
             nu_ref_p="44.0 GHz",
             procver=procver,
-            filename="BP_044_IQU_full_n0512_rc2.00.fits",
+            filename=f"BP_044_IQU_full_n0512_{procver}.fits",
             bndctr=44,
             restfreq=44.121,
             bndwid=10.719,
@@ -856,7 +864,7 @@ def release(
             nu_ref_t="70.0 GHz",
             nu_ref_p="70.0 GHz",
             procver=procver,
-            filename="BP_070_IQU_full_n1024_rc2.00.fits",
+            filename=f"BP_070_IQU_full_n1024_{procver}.fits",
             bndctr=70,
             restfreq=70.467,
             bndwid=14.909,
@@ -889,7 +897,7 @@ def release(
             nu_ref_t="NONE", 
             nu_ref_p="NONE",
             procver=procver,
-            filename="BP_cmb_IQU_full_n1024_rc2.00.fits",
+            filename=f"BP_cmb_IQU_full_n1024_{procver}.fits",
             bndctr=None,
             restfreq=None,
             bndwid=None,
@@ -910,7 +918,7 @@ def release(
             nu_ref_t="40.0 GHz",
             nu_ref_p="40.0 GHz",
             procver=procver,
-            filename="BP_freefree_I_full_n1024_rc2.00.fits",
+            filenamef="BP_freefree_I_full_n1024_{procver}.fits",
             bndctr=None,
             restfreq=None,
             bndwid=None,
@@ -931,7 +939,7 @@ def release(
             nu_ref_t="22.0 GHz",
             nu_ref_p="22.0 GHz",
             procver=procver,
-            filename="BP_ame_I_full_n1024_rc2.00.fits",
+            filename=f"BP_ame_I_full_n1024_{procver}.fits",
             bndctr=None,
             restfreq=None,
             bndwid=None,
@@ -974,7 +982,7 @@ def release(
             nu_ref_t="0.408 GHz",
             nu_ref_p="30.0 GHz",
             procver=procver,
-            filename="BP_synch_IQU_full_n1024_rc2.00.fits",
+            filename=f"BP_synch_IQU_full_n1024_{procver}.fits",
             bndctr=None,
             restfreq=None,
             bndwid=None,
@@ -991,7 +999,7 @@ def release(
             nchains=1,
             burnin=burnin2,
             path="cmb/sigma_l",
-            outname=f"{procver}/BP_cmb_GBRlike_rc2.00.fits",
+            outname=f"{procver}/BP_cmb_GBRlike_{procver}.fits",
             save=True,
         )
 
@@ -1000,19 +1008,19 @@ def release(
     TODO Generalize this so that they can be generated by Elina and Anna-Stiina
     """
     # Full-mission 30 GHz IQU beam symmetrized frequency map
-    # BP_030_IQUdeconv_full_n0512_rc2.00.fits
+    # BP_030_IQUdeconv_full_n0512_{procver}.fits
     # Full-mission 44 GHz IQU beam symmetrized frequency map
-    # BP_044_IQUdeconv_full_n0512_rc2.00.fits
+    # BP_044_IQUdeconv_full_n0512_{procver}.fits
     # Full-mission 70 GHz IQU beam symmetrized frequency map
-    # BP_070_IQUdeconv_full_n1024_rc2.00.fits
+    # BP_070_IQUdeconv_full_n1024_{procver}.fits
 
     """ Both sigma_l's and Dl's re in the h5. (Which one do we use?)
     """
     # CMB TT, TE, EE power spectrum
-    # BP_cmb_Cl_rc2.00.txt
+    # BP_cmb_Cl_{procver}.txt
 
     """ Just get this from somewhere
     """
     # Best-fit LCDM CMB TT, TE, EE power spectrum
-    # BP_cmb_bfLCDM_rc2.00.txt
+    # BP_cmb_bfLCDM_{procver}.txt
 
