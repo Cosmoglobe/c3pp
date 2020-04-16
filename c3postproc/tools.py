@@ -42,7 +42,7 @@ def alm2fits_tool(input, dataset, nside, lmax, fwhm, save=True):
 
     with h5py.File(input, "r") as f:
         alms = f[dataset][()]
-        lmax_h5 = f[dataset[:-4] + "_lmax"][()]  # Get lmax from h5
+        lmax_h5 = f[f"{dataset[:-3]}lmax"][()]  # Get lmax from h5
 
     if lmax:
         # Check if chosen lmax is compatible with data
@@ -85,7 +85,16 @@ def h5handler(input, dataset, min, max, output, fwhm, nside, command):
         print("{:-^50}".format(f" Samples {min} to {max} "))
         print("{:-^50}".format(f" nside {nside}, {fwhm} arcmin smoothing "))
 
-        type = dataset.split("_")[-1]
+        if dataset.endswith("map"):
+            type = "map"
+        elif dataset.endswith("alm"):
+            type = "alm"
+        elif dataset.endswith("sigma"):
+            type = "sigma"
+        else:
+            print(f"Type {type} not recognized")
+            sys.exit()
+
         for sample in range(min, max + 1):
             # Identify dataset
             # alm, map or (sigma_l, which is recognized as l)
@@ -97,7 +106,7 @@ def h5handler(input, dataset, min, max, output, fwhm, nside, command):
             s = str(sample).zfill(6)
     
             # Sets tag with type
-            tag = f"{s}/{dataset[:-4]}_{type}"
+            tag = f"{s}/{dataset}"
             print(f"Reading {tag}")
 
             # Check if map is available, if not, use alms.
@@ -105,7 +114,7 @@ def h5handler(input, dataset, min, max, output, fwhm, nside, command):
             try:
                 data = f[tag][()]
                 if len(data[0]) == 0:
-                    tag = f"{tag[:-4]}_map"
+                    tag = f"{tag[:-3]}map"
                     print(f"WARNING! No {type} data found, switching to map.")
                     data = f[tag][()]
                     type = "map"
@@ -114,7 +123,7 @@ def h5handler(input, dataset, min, max, output, fwhm, nside, command):
                 print(f"Trying alms instead {tag}")
                 try:
                     # Use alms instead (This takes longer and is not preferred)
-                    tag = f"{tag[:-4]}_alm"
+                    tag = f"{tag[:-3]}alm"
                     type = "alm"
                     data = f[tag][()]
                 except:
@@ -122,7 +131,7 @@ def h5handler(input, dataset, min, max, output, fwhm, nside, command):
 
             # If data is alm, unpack.
             if type == "alm":
-                lmax_h5 = f[tag[:-4] + "_lmax"][()]
+                lmax_h5 = f[f"{tag[:-3]}lmax"][()]
                 data = unpack_alms(data, lmax_h5)  # Unpack alms
 
             if data.shape[0] == 1:

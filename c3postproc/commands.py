@@ -568,22 +568,25 @@ def dlbin2dat(filename, min, max, binfile):
     for signal in binned_data.keys():
         np.savetxt("Dl_" + signal + "_binned.dat", binned_data[signal], header=header)
 
-
-@commands.command()
-@click.argument("filename", type=click.STRING)
-@click.argument("dataset", type=click.STRING)
+# ISSUE!
+#@commands.command()
+#@click.argument("filename", type=click.STRING)
+#@click.argument("dataset", type=click.STRING)
+#@click.option("-save", is_flag=True, default=True)
 def h5map2fits(filename, dataset, save=True):
     """
     Outputs a .h5 map to fits on the form 000001_cmb_amp_n1024.fits
     """
     import healpy as hp
     import h5py
+    dataset, tag = dataset.rsplit("/",1)
 
     with h5py.File(filename, "r") as f:
-        maps = f[dataset][()]
-        lmax = f[dataset[:-4] + "_lmax"][()]  # Get lmax from h5
+        maps = f[f"{dataset}/{tag}"][()]
+        lmax = f[f"{dataset}/amp_lmax"][()]  # Get lmax from h5
 
     nside = hp.npix2nside(maps.shape[-1])
+    dataset = f"{dataset}/{tag}"
     outfile = dataset.replace("/", "_")
     outfile = outfile.replace("_map", "")
     if save:
@@ -650,7 +653,21 @@ def plotrelease(
     )
     # 070 GHz IQU
     ctx.invoke(plot, 
-    input=f"BP_070_IQU_full_n1024_{procver}.fits",
+    input=f"BP_070ds1_IQU_full_n1024_{procver}.fits",
+    colorbar=True,
+    auto=True,
+    sig=[0, 1, 2, 3, 4, 5,], 
+    )
+    # 070 GHz IQU
+    ctx.invoke(plot, 
+    input=f"BP_070ds2_IQU_full_n1024_{procver}.fits",
+    colorbar=True,
+    auto=True,
+    sig=[0, 1, 2, 3, 4, 5,], 
+    )
+    # 070 GHz IQU
+    ctx.invoke(plot, 
+    input=f"BP_070ds3_IQU_full_n1024_{procver}.fits",
     colorbar=True,
     auto=True,
     sig=[0, 1, 2, 3, 4, 5,], 
@@ -840,7 +857,7 @@ def release(
             nside=512,
             burnin=burnin1,
             polar=True,
-            component="030",
+            component="044",
             fwhm=0.0,
             nu_ref_t="44.0 GHz",
             nu_ref_p="44.0 GHz",
@@ -859,12 +876,50 @@ def release(
             nside=1024,
             burnin=burnin1,
             polar=True,
-            component="070",
+            component="070ds1",
             fwhm=0.0,
             nu_ref_t="70.0 GHz",
             nu_ref_p="70.0 GHz",
             procver=procver,
-            filename=f"BP_070_IQU_full_n1024_{procver}.fits",
+            filename=f"BP_070ds1_IQU_full_n1024_{procver}.fits",
+            bndctr=70,
+            restfreq=70.467,
+            bndwid=14.909,
+        )
+        # Full-mission 70 GHz IQU frequency map
+        format_fits(
+            chain=chain,
+            extname="FREQMAP",
+            types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS",],
+            units=["uK", "uK", "uK", "uK", "uK", "uK",],
+            nside=1024,
+            burnin=burnin1,
+            polar=True,
+            component="070ds2",
+            fwhm=0.0,
+            nu_ref_t="70.0 GHz",
+            nu_ref_p="70.0 GHz",
+            procver=procver,
+            filename=f"BP_070ds2_IQU_full_n1024_{procver}.fits",
+            bndctr=70,
+            restfreq=70.467,
+            bndwid=14.909,
+        )
+        # Full-mission 70 GHz ds3 IQU frequency map
+        format_fits(
+            chain=chain,
+            extname="FREQMAP",
+            types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS",],
+            units=["uK", "uK", "uK", "uK", "uK", "uK",],
+            nside=1024,
+            burnin=burnin1,
+            polar=True,
+            component="070ds3",
+            fwhm=0.0,
+            nu_ref_t="70.0 GHz",
+            nu_ref_p="70.0 GHz",
+            procver=procver,
+            filename=f"BP_070ds3_IQU_full_n1024_{procver}.fits",
             bndctr=70,
             restfreq=70.467,
             bndwid=14.909,
@@ -918,7 +973,7 @@ def release(
             nu_ref_t="40.0 GHz",
             nu_ref_p="40.0 GHz",
             procver=procver,
-            filenamef="BP_freefree_I_full_n1024_{procver}.fits",
+            filename=f"BP_freefree_I_full_n1024_{procver}.fits",
             bndctr=None,
             restfreq=None,
             bndwid=None,

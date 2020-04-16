@@ -116,7 +116,7 @@ def get_data(chain, extname, component, burnin, fwhm, nside, types):
         )
         beta_mean = h5handler(
             input=chain,
-            dataset="synch/beta_alm",
+            dataset="synch/beta_map",
             min=burnin,
             max=None,
             output="map",
@@ -138,7 +138,7 @@ def get_data(chain, extname, component, burnin, fwhm, nside, types):
         )
         beta_stddev = h5handler(
             input=chain,
-            dataset="synch/beta_alm",
+            dataset="synch/beta_map",
             min=burnin,
             max=None,
             output="map",
