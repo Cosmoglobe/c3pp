@@ -173,10 +173,9 @@ def Plotter(
         templogscale = logscale
         tempcmap = cmap
 
-    
         # ttl, unt and cmb are temporary variables for title, unit and colormap
         if auto:
-            ttl, ticks, ticklabels, unt, cmp, lgscale, format_ticks= get_params(
+            ttl, ticks, unt, cmp, lgscale, format_ticks= get_params(
                 m, outfile, polt, signal_label,
             )
         else:
@@ -184,7 +183,6 @@ def Plotter(
             unt = ""
             rng = "auto"
             ticks = [False, False]
-            ticklabels = [False, False]
             cmp = "planck"
             lgscale = False
 
@@ -210,11 +208,9 @@ def Plotter(
         # If min and max have been specified, set.
         if min is not False:
             ticks[0] = float(min)
-            ticklabels[0] = str(min)
 
         if max is not False:
             ticks[-1] = float(max)
-            ticklabels[-1] = str(max)
 
         ##########################
         #### Plotting Params #####
@@ -377,7 +373,8 @@ def Plotter(
 
                 # Don't format ticks if autoset
                 if format_ticks:
-                   cb.ax.set_xticklabels(ticklabels)
+                    ticklabels = [str(i) for i in ticks]
+                    cb.ax.set_xticklabels(ticklabels)
 
                 cb.ax.xaxis.set_label_text(unit)
                 cb.ax.xaxis.label.set_size(fontsize)
@@ -492,7 +489,7 @@ def get_params(m, outfile, polt, signal_label):
     startcolor = 'black'
     endcolor = 'white'
     format_ticks = True # If min and max are autoset, dont do this.
-
+    cmap = "planck" # Default cmap
 
     #######################
     ###### RMS MAPS #######
@@ -510,35 +507,16 @@ def get_params(m, outfile, polt, signal_label):
     elif tag_lookup(ame_nup_tags, outfile) or tag_lookup(ame_tags, outfile) and sidx_tag_lookup(["NU_P_MEAN"], signal_label):
         print("Plotting AME nu_p")
 
-        vmin = 17
-        vmax = 23
-        tmin = str(vmin)
-        tmax = str(vmax)
-
-        ticks = [vmin, vmax]
-        ticklabels = [tmin, tmax]
-
+        ticks = [17,23]
         unit = "GHz"
         title = r"$\nu_{ame}$"
-        #cmap = plt.get_cmap("bone")
-        cmap = "planck"
 
     elif tag_lookup(dust_T_tags, outfile) or tag_lookup(dust_tags, outfile) and sidx_tag_lookup(["T_MEAN"], signal_label):
         print("Plotting Thermal dust Td")
 
-        title = r"$" + sl + "$ " + r"$T_d$ "
-
-        vmin = 14
-        vmax = 30
-        tmin = str(vmin)
-        tmax = str(vmax)
-
-        ticks = [vmin, vmax]
-        ticklabels = [tmin, tmax]
-
+        ticks = [14,30]
         unit = r"$\mathrm{K}$"
-        #cmap = plt.get_cmap("bone")
-        cmap = "planck"
+        title = r"$" + sl + "$ " + r"$T_d$ "
 
     elif tag_lookup(dust_beta_tags, outfile) or tag_lookup(dust_tags, outfile) and sidx_tag_lookup(["BETA_MEAN", "BETA_P_MEAN"], signal_label):
         print("Plotting Thermal dust beta")
@@ -547,18 +525,9 @@ def get_params(m, outfile, polt, signal_label):
         elif "BETA_P_MEAN" in signal_label:
             sl = "QU"
 
-        title = r"$" + sl + "$ " + r"$\beta_d$ "
-
-        vmin = 1.3
-        vmax = 1.8
-        tmin = str(vmin)
-        tmax = str(vmax)
-        ticks = [vmin, vmax]
-        ticklabels = [tmin, tmax]
-
+        ticks = [1.3,1.8]
         unit = ""
-        #cmap = plt.get_cmap("bone")
-        cmap = "planck"
+        title = r"$" + sl + "$ " + r"$\beta_d$ "
 
     elif tag_lookup(synch_beta_tags, outfile) or tag_lookup(synch_tags, outfile) and sidx_tag_lookup(["BETA_MEAN", "BETA_P_MEAN"], signal_label):
         print("Plotting Synchrotron beta")
@@ -568,54 +537,27 @@ def get_params(m, outfile, polt, signal_label):
         elif "BETA_P_MEAN" in signal_label:
             sl = "QU"
         
-        title = r"$" + sl + "$ " + r"$\beta_s$ "
-
-        vmin = -4.0
-        vmax = -1.5
-        tmin = str(vmin)
-        tmax = str(vmax)
-
-        ticks = [vmin, vmax]
-        ticklabels = [tmin, tmax]
-
+        ticks = [-3.5, -2.5]
         unit = ""
-        #cmap = plt.get_cmap("bone")
-        cmap = "planck"
+        title = r"$" + sl + "$ " + r"$\beta_s$ "
 
     elif tag_lookup(ff_Te_tags, outfile) or tag_lookup(ff_tags, outfile) and sidx_tag_lookup(["TE_MEAN"], signal_label):
         print("Plotting freefree T_e")
 
-        vmin = 5000
-        vmax = 8000
-        tmin = str(vmin)
-        tmax = str(vmax)
-
-        ticks = [vmin, vmax]
-        ticklabels = [tmin, tmax]
-
+        ticks = [5000,8000]
         unit = r"$\mathrm{K}$"
         title = r"$T_{e}$"
-        #cmap = plt.get_cmap("bone")
-        cmap = "planck"
 
     elif tag_lookup(ff_EM_tags, outfile):
         print("Plotting freefree EM MIN AND MAX VALUES UPDATE!")
 
         vmax = np.percentile(m, 97.5)
         vmin = np.percentile(m, 2.5)
-
-        tmid = str(vmid)
-        tmax = str(vmax)
-
         ticks = [vmin, vmax]
-        ticklabels = [tmin, tmax]
-
         format_ticks = False
 
         unit = r"$\mathrm{K}$"
         title = r"$T_{e}$"
-        #cmap = plt.get_cmap("bone")
-        cmap = "planck"
 
     #######################
     #### AMPLITUDE MAPS ###
@@ -625,47 +567,25 @@ def get_params(m, outfile, polt, signal_label):
 
         print(f"Plotting CMB signal {sl}")
         
-        title = r"$" + sl + "$" + r"$_{\mathrm{CMB}}$"
-
         if polt%3 > 0:
-            vmin = -2
-            vmid = 0
-            vmax = 2
+            ticks = [-2, 0, 2]
         else:
-            vmin = -300
-            vmid = 0
-            vmax = 300
-
-        tmin = str(vmin)
-        tmid = str(vmid)
-        tmax = str(vmax)
-
-        ticks = [vmin, vmid, vmax]
-        ticklabels = [tmin, tmid, tmax]
+            ticks = [-300, 0, 300]
 
         unit = r"$\mu\mathrm{K}_{\mathrm{CMB}}$"
-
-        cmap = "planck"
+        title = r"$" + sl + "$" + r"$_{\mathrm{CMB}}$"
 
     elif tag_lookup(chisq_tags, outfile):
-        title = r"$\chi^2$ " + sl
 
         if polt%3 > 0:
-            vmin = 0
-            vmax = 32
+            ticks = [0, 32]
         else:
-            vmin = 0
-            vmax = 76
+            ticks = [0, 76]
 
-        tmin = str(vmin)
-        tmax = str(vmax)
-
-        ticks = [vmin, vmax]
-        ticklabels = [tmin, tmax]
-
-        print("Plotting chisq with vmax = " + str(vmax) + " " + sl)
+        print("Plotting chisq with vmax = " + str(ticks[-1]) + " " + sl)
 
         unit = ""
+        title = r"$\chi^2$ " + sl
         cmap = col.LinearSegmentedColormap.from_list("BkWh", ["black", "white"])
 
     elif tag_lookup(synch_tags, outfile):
@@ -673,83 +593,29 @@ def get_params(m, outfile, polt, signal_label):
         title = r"$" + sl + "$" + r"$_{\mathrm{synch.}}$ "
         if polt%3 > 0:
             # BP uses 30 GHz ref freq for pol
-            vmin = -np.log10(50)
-            vmax = np.log10(50)
-            tmin = str(-50)
-            tmax = str(50)
+
+            ticks = [-50, 0, 50]
             logscale = True
-
-            vmid = 0
-            tmid = "0"
-            ticks = [vmin, vmid, vmax]
-            ticklabels = [tmin, tmid, tmax]
-
-            
-            #col1 = "darkgoldenrod"
-            #col2 = "darkgreen"
-            #cmap = col.LinearSegmentedColormap.from_list("YlBkGr",
-            #    [endcolor, col1, startcolor, col2, endcolor], 
-            #)
-            cmap = "planck"
-
             unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
         else:
             # BP uses 408 MHz GHz ref freq
-            vmin = np.log10(10*10**6)
-            vmid1 = np.log10(30*10**6)
-            vmid2 = np.log10(100*10**6)
-            vmax = np.log10(300*10**6)
-
-            tmin = str(r"$10$")
-            tmid1 = str(r"$30$")
-            tmid2 = str(r"$100$")
-            tmax = str(r"$300$")
-    
+            ticks = [10*10**6, 30*10**6, 100*10**6, 300*10**6]
             logscale = True
-            #cmap = col.LinearSegmentedColormap.from_list("BkGrWh",
-            #    ["black", "green", "white"], 
-            #)
-            cmap = "planck"
-
-
-            ticks = [vmin,vmid1, vmid2, vmax,]
-            ticklabels = [tmin, tmid1, tmid2, tmax, ]
-
-            unit = r"$\mathrm{K}_{\mathrm{RJ}}$"
+            unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
 
     elif tag_lookup(ff_tags, outfile):
         print("Plotting freefree")
 
-        vmin = 0  # 0
-        vmid = np.log10(100)
-        vmax = np.log10(10000)  # 1000
-
-        tmin = str(0)
-        tmid = str(r"$10^2$")
-        tmax = str(r"$10^4$")
-
-        ticks = [vmin, vmid, vmax]
-        ticklabels = [tmin, tmid, tmax]
-
+        ticks = [0, 100, 10000]
         unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
         title = r"$" + sl + "$" + r"$_{\mathrm{free-free}}$"
         logscale = True
 
-        #  cmap = col.LinearSegmentedColormap.from_list("BkBlWh",["black", "Navy", "white"], )
-        cmap = "planck"
-
     elif tag_lookup(dust_tags, outfile):
         print("Plotting Thermal dust" + " " + sl)
-        title = r"$" + sl + "$" + r"$_{\mathrm{d}}$ "
+
         if polt%3 > 0:
-            vmin = -np.log10(100)
-            vmid = 0
-            vmax = np.log10(100)
-
-            tmin = str(-100)
-            tmid = 0
-            tmax = str(100)
-
+            ticks = [-100, 0, 100]
             logscale = True
 
             col1 = "deepskyblue"
@@ -761,43 +627,20 @@ def get_params(m, outfile, polt, signal_label):
             )
 
         else:
-            vmin = 0
-            vmid = np.log10(100)
-            vmax = np.log10(10000)
-
-            tmin = str(0)
-            tmid = str(r"$10^2$")
-            tmax = str(r"$10^4$")
-
+            ticks = [0, 100, 10000]
             logscale = True
             cmap = plt.get_cmap("gist_heat")
 
-        ticks = [vmin, vmid, vmax]
-        ticklabels = [tmin, tmid, tmax]
-
         unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
+        title = r"$" + sl + "$" + r"$_{\mathrm{d}}$ "
 
     elif tag_lookup(ame_tags, outfile):
         print("Plotting AME")
 
-        vmin = 0  # 0
-        vmid = np.log10(100)
-        vmax = np.log10(10000)  # 1000
-
-        tmin = r"$0$"
-        tmid = r"$10^2$"
-        tmax = r"$10^4$"
-
-        ticks = [vmin, vmid, vmax]
-        ticklabels = [tmin, tmid, tmax]
-
+        ticks = [0, 100, 10000]
         unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
         title = r"$" + sl + "$" + r"$_{\mathrm{ame}}$"
         logscale = True
-        #cmap = col.LinearSegmentedColormap.from_list("BkOrWh",
-        #    ["black", "DarkOrange", "white"], 
-        #)
-        cmap = "planck"
 
     #######################
     ## LINE EMISSION MAPS #
@@ -805,70 +648,35 @@ def get_params(m, outfile, polt, signal_label):
 
     elif tag_lookup(co10_tags, outfile):
         print("Plotting CO10")
-        vmin = 0
-        vmid = np.log10(10)
-        vmax = np.log10(100)
 
-        tmin = str(0)
-        tmid = str(10)
-        tmax = str(100)
-
-        ticks = [vmin, vmid, vmax]
-        ticklabels = [tmin, tmid, tmax]
-
+        ticks = [0, 10, 100]
         unit = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
         title = r"$" + sl + "$" + r"$_{\mathrm{CO10}}$"
         logscale = True
-        cmap = plt.get_cmap("gray")
 
     elif tag_lookup(co21_tags, outfile):
         print("Plotting CO21")
-        vmin = 0
-        vmid = 1
-        vmax = 2
-        tmin = str(0)
-        tmid = str(10)
-        tmax = str(100)
 
-        ticks = [vmin, vmid, vmax]
-        ticklabels = [tmin, tmid, tmax]
-
+        ticks = [0, 10, 100]
         unit = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
         title = r"$" + sl + "$" + r"$_{\mathrm{CO21}}$"
         logscale = True
-        cmap = plt.get_cmap("gray")
 
     elif tag_lookup(co32_tags, outfile):
         print("Plotting 32")
-        vmin = 0
-        vmid = 1
-        vmax = 2  # 0.5
-        tmin = str(0)
-        tmid = str(10)
-        tmax = str(100)
 
-        ticks = [vmin, vmid, vmax]
-        ticklabels = [tmin, tmid, tmax]
-
+        ticks = [0, 10, 100]
         unit = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
         title = r"$" + sl + "$" + r"$_{\mathrm{CO32}}$"
         logscale = True
-        cmap = plt.get_cmap("gray")
 
     elif tag_lookup(hcn_tags, outfile):
         print("Plotting HCN")
-        vmin = -14
-        vmax = -10
-        tmin = str(0.01)
-        tmax = str(100)
 
-        ticks = [vmin, vmax]
-        ticklabels = [tmin, tmax]
-
+        ticks = [0.01, 100]
         unit = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
         title = r"$" + sl + "$" + r"$_{\mathrm{HCN}}$"
         logscale = True
-        cmap = plt.get_cmap("gray")
 
     #################
     # RESIDUAL MAPS #
@@ -886,31 +694,15 @@ def get_params(m, outfile, polt, signal_label):
 
         title = fr"{tit} " + r"  $" + sl + "$"
 
-        vmin = -10
-        vmid = 0
-        vmax = 10
-        tmin = str(vmin)
-        tmid = str(vmid)
-        tmax = str(vmax)
-
+        ticks = [-10,0,10]
         unit = r"$\mu\mathrm{K}$"
-        cmap = "planck"
 
         if "545" in outfile:
-            vmin = -1e2
-            vmax = 1e2
-            tmin = str(vmin)
-            tmax = str(vmax)
+            ticks = [-100,0,100]
             unit = r"$\mathrm{MJy/sr}$"
         elif "857" in outfile:
-            vmin = -0.05  # -1e4
-            vmax = 0.05  # 1e4
-            tmin = str(vmin)
-            tmax = str(vmax)
+            ticks = [-0.05, 0, 0.05]
             unit = r"$\mathrm{MJy/sr}$"
-
-        ticks = [vmin, vmid, vmax]
-        ticklabels = [tmin, tmid, tmax]
 
     ############
     # TOD MAPS #
@@ -924,18 +716,8 @@ def get_params(m, outfile, polt, signal_label):
         tit = str(findall(r"tod_(.*?)_Smap", outfile)[0])
         title = fr"{tit} " + r"  $" + sl + "$"
 
-        vmin = -0.2
-        vmid = 0
-        vmax = 0.2
-        tmin = str(vmin)
-        tmid = str(vmid)
-        tmax = str(vmax)
-
+        ticks = [-0.2, 0, 0.2]
         unit = r"$\mu\mathrm{K}$"
-        cmap = "planck"
-
-        ticks = [vmin, vmid, vmax]
-        ticklabels = [tmin, tmid, tmax]
 
     ############
     # FREQMAPS #
@@ -946,24 +728,15 @@ def get_params(m, outfile, polt, signal_label):
 
         print("Plotting Frequency map" + " " + sl)
 
-        tit = str(findall(r"BP_(.*?)_", outfile)[0])
-        title = fr"{tit} " + r"  $" + sl + "$"
-
         vmax = np.percentile(m, 97.5)
-        vmid = 0.0
         vmin = np.percentile(m, 2.5)
-    
-        tmin = str(vmin)
-        tmid = str(vmid)
-        tmax = str(vmax)
+        ticks = [vmin, 0.0, vmax]    
         format_ticks = False
 
         unit = r"$\mu\mathrm{K}$"
-        
-        cmap ="planck"
+        tit = str(findall(r"BP_(.*?)_", outfile)[0])
+        title = fr"{tit} " + r"  $" + sl + "$"
 
-        ticks = [vmin, vmid, vmax]
-        ticklabels = [tmin, tmid, tmax]
 
     ############################
     # Not idenified or ignored #
@@ -977,29 +750,22 @@ def get_params(m, outfile, polt, signal_label):
         # Run map autoset
         return not_identified(m, signal_label, logscale,)
 
-    return title, ticks, ticklabels, unit, cmap, logscale, format_ticks
+    return title, ticks, unit, cmap, logscale, format_ticks
 
 
 def not_identified(m, signal_label, logscale):
         print("Map not recognized, plotting with min and max values")
         vmax = np.percentile(m, 97.5)
         vmin = np.percentile(m, 2.5)
-    
-        tmin = str(vmin)
-        tmax = str(vmax)
+        ticks = [vmin, vmax]    
         format_ticks = False
 
-        ticks = [vmin, vmax]
-        ticklabels = [tmin, tmax]
         unit = ""
-
         tl = signal_label.split('_')[0] +"_{"+signal_label.split('_')[-1]+"}"
         title = r"$" + tl + "$"
-
         cmap = "planck"
         
-        return title, ticks, ticklabels, unit, cmap, logscale, format_ticks
-
+        return title, ticks, unit, cmap, logscale, format_ticks
 
 def get_signallabel(x):
     if x == 0:

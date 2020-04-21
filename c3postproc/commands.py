@@ -28,18 +28,19 @@ def printheader(
 @commands.command()
 @click.argument("input", type=click.STRING)
 @click.argument("dataset", type=click.STRING)
-@click.argument("min", nargs=1, type=click.INT)
-@click.argument("max", nargs=1, type=click.INT)
 @click.argument("output", type=click.STRING)
+@click.option("min", default=1, help="Start sample, default 1")
+@click.option("max", default=None, type="End sample, calculated automatically if not set")
 @click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]")
 @click.option("-fwhm", default=0.0, help="FWHM in arcmin")
-@click.option("-nside", default=None, type=click.STRING, help="Nside for alm binning")
+@click.option("-nside", default=None, type=click.INT, help="Nside for alm binning")
 def mean(
-    input, dataset, min, max, output, maxchain, fwhm, nside,
+    input, dataset, output, min, max, maxchain, fwhm, nside,
 ):
     """
     Calculates the mean over sample range from .h5 file.\n
-    ex. chains_c0001.h5 dust/amp_map 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40\n
+    ex. chains_c0001.h5 dust/amp_map 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40 -maxchain 3\n
+    ex. chains_c0001.h5 dust/amp_alm 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40 -nside 512\n
     If output name is set to .dat, data will not be converted to map.
     """
     if dataset.endswith("alm") and nside == None:
@@ -52,18 +53,20 @@ def mean(
 @commands.command()
 @click.argument("input", type=click.STRING)
 @click.argument("dataset", type=click.STRING)
-@click.argument("min", nargs=1, type=click.INT)
-@click.argument("max", nargs=1, type=click.INT)
 @click.argument("output", type=click.STRING)
+@click.option("min", default=1, help="Start sample, default 1")
+@click.option("max", default=None, type="End sample, calculated automatically if not set")
 @click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]")
 @click.option("-fwhm", default=0.0, help="FWHM in arcmin")
-@click.option("-nside", default=None, type=click.STRING, help="Nside for alm binning")
+@click.option("-nside", default=None, type=click.INT, help="Nside for alm binning")
 def stddev(
-    input, dataset, min, max, output, maxchain, fwhm, nside,
+    input, dataset, output, min, max, maxchain, fwhm, nside,
 ):
     """
     Calculates the stddev over sample range from .h5 file.\n
-    ex. chains_c0001.h5 dust/amp_map 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40\n
+    ex. chains_c0001.h5 dust/amp_map 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40 -maxchain 3\n
+    ex. chains_c0001.h5 dust/amp_alm 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40 -nside 512\n
+
     If output name is set to .dat, data will not be converted to map.
     """
     if dataset.endswith("alm") and nside == None:
