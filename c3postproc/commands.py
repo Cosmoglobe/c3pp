@@ -31,10 +31,11 @@ def printheader(
 @click.argument("min", nargs=1, type=click.INT)
 @click.argument("max", nargs=1, type=click.INT)
 @click.argument("output", type=click.STRING)
+@click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]")
 @click.option("-fwhm", default=0.0, help="FWHM in arcmin")
 @click.option("-nside", default=None, type=click.STRING, help="Nside for alm binning")
 def mean(
-    input, dataset, min, max, output, fwhm, nside,
+    input, dataset, min, max, output, maxchain, fwhm, nside,
 ):
     """
     Calculates the mean over sample range from .h5 file.\n
@@ -45,7 +46,7 @@ def mean(
         click.echo("Please specify nside when handling alms.")
         sys.exit()
 
-    h5handler(input, dataset, min, max, output, fwhm, nside, np.mean)
+    h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.mean)
 
 
 @commands.command()
@@ -54,10 +55,11 @@ def mean(
 @click.argument("min", nargs=1, type=click.INT)
 @click.argument("max", nargs=1, type=click.INT)
 @click.argument("output", type=click.STRING)
+@click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]")
 @click.option("-fwhm", default=0.0, help="FWHM in arcmin")
 @click.option("-nside", default=None, type=click.STRING, help="Nside for alm binning")
 def stddev(
-    input, dataset, min, max, output, fwhm, nside,
+    input, dataset, min, max, output, maxchain, fwhm, nside,
 ):
     """
     Calculates the stddev over sample range from .h5 file.\n
@@ -68,7 +70,7 @@ def stddev(
         click.echo("Please specify nside when handling alms.")
         sys.exit()
 
-    h5handler(input, dataset, min, max, output, fwhm, nside, np.std)
+    h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.std)
 
 
 @commands.command()
@@ -653,6 +655,14 @@ def plotrelease(
     )
     # 070 GHz IQU
     ctx.invoke(plot, 
+    input=f"BP_070_IQU_full_n1024_{procver}.fits",
+    colorbar=True,
+    auto=True,
+    sig=[0, 1, 2, 3, 4, 5,], 
+    )
+    """
+    # 070 GHz IQU
+    ctx.invoke(plot, 
     input=f"BP_070ds1_IQU_full_n1024_{procver}.fits",
     colorbar=True,
     auto=True,
@@ -672,6 +682,7 @@ def plotrelease(
     auto=True,
     sig=[0, 1, 2, 3, 4, 5,], 
     )
+    """
     
     # Synch IQU
     ctx.invoke(plot, 
@@ -706,6 +717,7 @@ def plotrelease(
 @click.argument("burnin2", type=click.INT)
 @click.argument("chain_resamp_nocls", type=click.STRING)
 @click.argument("procver", type=click.STRING)
+@click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]")
 @click.option("-skipcopy1", is_flag=True, help="Don't copy full .h5 file")
 @click.option("-skipcopy2", is_flag=True, help="Don't copy Cl .h5 file")
 @click.option("-skipcopy3", is_flag=True, help="Don't copy noCl .h5 file")
@@ -724,6 +736,7 @@ def release(
     burnin2,
     chain_resamp_nocls,
     procver,
+    maxchain,
     skipcopy1,
     skipcopy2,
     skipcopy3,
@@ -837,6 +850,7 @@ def release(
             units=["uK", "uK", "uK", "uK", "uK", "uK",],
             nside=512,
             burnin=burnin1,
+            maxchain=maxchain,
             polar=True,
             component="030",
             fwhm=0.0,
@@ -856,6 +870,7 @@ def release(
             units=["uK", "uK", "uK", "uK", "uK", "uK",],
             nside=512,
             burnin=burnin1,
+            maxchain=maxchain,
             polar=True,
             component="044",
             fwhm=0.0,
@@ -875,6 +890,29 @@ def release(
             units=["uK", "uK", "uK", "uK", "uK", "uK",],
             nside=1024,
             burnin=burnin1,
+            maxchain=maxchain,
+            polar=True,
+            component="070",
+            fwhm=0.0,
+            nu_ref_t="70.0 GHz",
+            nu_ref_p="70.0 GHz",
+            procver=procver,
+            filename=f"BP_070_IQU_full_n1024_{procver}.fits",
+            bndctr=70,
+            restfreq=70.467,
+            bndwid=14.909,
+        )
+
+        """
+        # Full-mission 70 GHz IQU frequency map
+        format_fits(
+            chain=chain,
+            extname="FREQMAP",
+            types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS",],
+            units=["uK", "uK", "uK", "uK", "uK", "uK",],
+            nside=1024,
+            burnin=burnin1,
+            maxchain=maxchain,
             polar=True,
             component="070ds1",
             fwhm=0.0,
@@ -894,6 +932,7 @@ def release(
             units=["uK", "uK", "uK", "uK", "uK", "uK",],
             nside=1024,
             burnin=burnin1,
+            maxchain=maxchain,
             polar=True,
             component="070ds2",
             fwhm=0.0,
@@ -913,6 +952,7 @@ def release(
             units=["uK", "uK", "uK", "uK", "uK", "uK",],
             nside=1024,
             burnin=burnin1,
+            maxchain=maxchain,
             polar=True,
             component="070ds3",
             fwhm=0.0,
@@ -924,6 +964,7 @@ def release(
             restfreq=70.467,
             bndwid=14.909,
         )
+        """
 
     """
     FOREGROUND MAPS
@@ -946,6 +987,7 @@ def release(
             units=["uK_cmb", "uK_cmb", "uK_cmb", "uK", "uK", "uK", "NONE", "NONE",],
             nside=1024,
             burnin=burnin2,
+            maxchain=maxchain,
             polar=True,
             component="CMB",
             fwhm=0.0,
@@ -967,6 +1009,7 @@ def release(
             units=["uK_RJ", "K", "uK_RJ", "K",],
             nside=1024,
             burnin=burnin1,
+            maxchain=maxchain,
             polar=False,
             component="FREE-FREE",
             fwhm=75.0,
@@ -988,6 +1031,7 @@ def release(
             units=["uK_RJ", "GHz", "uK_RJ", "GHz",],
             nside=1024,
             burnin=burnin1,
+            maxchain=maxchain,
             polar=False,
             component="AME",
             fwhm=90.0,
@@ -1031,6 +1075,7 @@ def release(
             ],
             nside=1024,
             burnin=burnin1,
+            maxchain=maxchain,
             polar=True,
             component="SYNCHROTRON",
             fwhm=60.0,

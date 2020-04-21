@@ -14,6 +14,7 @@ def format_fits(
     units,
     nside,
     burnin,
+    maxchain,
     polar,
     component,
     fwhm,
@@ -46,7 +47,7 @@ def format_fits(
         restfreq,
         bndwid,
     )
-    dset = get_data(chain, extname, component, burnin, fwhm, nside, types)
+    dset = get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types)
 
     print(f"{procver}/{filename}", dset.shape)
     hp.write_map(
@@ -60,7 +61,7 @@ def format_fits(
     )
 
 
-def get_data(chain, extname, component, burnin, fwhm, nside, types):
+def get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types):
     if extname.endswith("CMB"):
         # Mean data
         amp_mean = h5handler(
@@ -68,6 +69,7 @@ def get_data(chain, extname, component, burnin, fwhm, nside, types):
             dataset="cmb/amp_alm",
             min=burnin,
             max=None,
+            maxchain=maxchain,
             output="map",
             fwhm=fwhm,
             nside=nside,
@@ -80,6 +82,7 @@ def get_data(chain, extname, component, burnin, fwhm, nside, types):
             dataset="cmb/amp_alm",
             min=burnin,
             max=None,
+            maxchain=maxchain,
             output="map",
             fwhm=fwhm,
             nside=nside,
@@ -109,6 +112,7 @@ def get_data(chain, extname, component, burnin, fwhm, nside, types):
             dataset="synch/amp_alm",
             min=burnin,
             max=None,
+            maxchain=maxchain,
             output="map",
             fwhm=fwhm,
             nside=nside,
@@ -119,6 +123,7 @@ def get_data(chain, extname, component, burnin, fwhm, nside, types):
             dataset="synch/beta_map",
             min=burnin,
             max=None,
+            maxchain=maxchain,
             output="map",
             fwhm=fwhm,
             nside=nside,
@@ -131,6 +136,7 @@ def get_data(chain, extname, component, burnin, fwhm, nside, types):
             dataset="synch/amp_alm",
             min=burnin,
             max=None,
+            maxchain=maxchain,
             output="map",
             fwhm=fwhm,
             nside=nside,
@@ -141,6 +147,7 @@ def get_data(chain, extname, component, burnin, fwhm, nside, types):
             dataset="synch/beta_map",
             min=burnin,
             max=None,
+            maxchain=maxchain,
             output="map",
             fwhm=fwhm,
             nside=nside,
@@ -170,6 +177,7 @@ def get_data(chain, extname, component, burnin, fwhm, nside, types):
             dataset="ff/amp_alm",
             min=burnin,
             max=None,
+            maxchain=maxchain,
             output="map",
             fwhm=fwhm,
             nside=nside,
@@ -177,9 +185,10 @@ def get_data(chain, extname, component, burnin, fwhm, nside, types):
         )
         Te_mean = h5handler(
             input=chain,
-            dataset="ff/Te_alm",
+            dataset="ff/Te_map",
             min=burnin,
             max=None,
+            maxchain=maxchain,
             output="map",
             fwhm=fwhm,
             nside=nside,
@@ -192,6 +201,7 @@ def get_data(chain, extname, component, burnin, fwhm, nside, types):
             dataset="ff/amp_alm",
             min=burnin,
             max=None,
+            maxchain=maxchain,
             output="map",
             fwhm=fwhm,
             nside=nside,
@@ -199,9 +209,10 @@ def get_data(chain, extname, component, burnin, fwhm, nside, types):
         )
         Te_stddev = h5handler(
             input=chain,
-            dataset="ff/Te_alm",
+            dataset="ff/Te_map",
             min=burnin,
             max=None,
+            maxchain=maxchain,
             output="map",
             fwhm=fwhm,
             nside=nside,
@@ -223,6 +234,7 @@ def get_data(chain, extname, component, burnin, fwhm, nside, types):
             dataset="ame/amp_alm",
             min=burnin,
             max=None,
+            maxchain=maxchain,
             output="map",
             fwhm=fwhm,
             nside=nside,
@@ -233,6 +245,7 @@ def get_data(chain, extname, component, burnin, fwhm, nside, types):
             dataset="ame/nu_p_alm",
             min=burnin,
             max=None,
+            maxchain=maxchain,
             output="map",
             fwhm=fwhm,
             nside=nside,
@@ -245,6 +258,7 @@ def get_data(chain, extname, component, burnin, fwhm, nside, types):
             dataset="ame/amp_alm",
             min=burnin,
             max=None,
+            maxchain=maxchain,
             output="map",
             fwhm=fwhm,
             nside=nside,
@@ -255,6 +269,7 @@ def get_data(chain, extname, component, burnin, fwhm, nside, types):
             dataset="ame/nu_p_alm",
             min=burnin,
             max=None,
+            maxchain=maxchain,
             output="map",
             fwhm=fwhm,
             nside=nside,
@@ -276,6 +291,7 @@ def get_data(chain, extname, component, burnin, fwhm, nside, types):
             dataset=f"tod/{component}/map",
             min=burnin,
             max=None,
+            maxchain=maxchain,
             output="map",
             fwhm=fwhm,
             nside=nside,
@@ -288,6 +304,7 @@ def get_data(chain, extname, component, burnin, fwhm, nside, types):
             dataset=f"tod/{component}/map",
             min=burnin,
             max=None,
+            maxchain=maxchain,
             output="map",
             fwhm=fwhm,
             nside=nside,
