@@ -27,9 +27,9 @@ def format_fits(
     bndwid,
 ):
     print()
-    print("{:#^80}".format("")) 
-    print("{:#^80}".format(f" Formatting and outputting {filename} ")) 
-    print("{:#^80}".format("")) 
+    print("{:#^80}".format(""))
+    print("{:#^80}".format(f" Formatting and outputting {filename} "))
+    print("{:#^80}".format(""))
 
     header = get_header(
         extname,

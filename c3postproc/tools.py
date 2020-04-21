@@ -89,8 +89,8 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command):
         sys.exit()
 
     dats = []
-    maxnone = True if max == None else False # set length of keys for maxchains>1
-    for c in range(1, maxchain+1):
+    maxnone = True if max == None else False  # set length of keys for maxchains>1
+    for c in range(1, maxchain + 1):
         filename = f"{input[:-7]}{str(c).zfill(4)}.h5"
         with h5py.File(filename, "r") as f:
             if maxnone:
@@ -108,7 +108,7 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command):
 
                 # HDF dataset path formatting
                 s = str(sample).zfill(6)
-    
+
                 # Sets tag with type
                 tag = f"{s}/{dataset}"
                 print(f"Reading c{str(c).zfill(4)} {tag}")
@@ -145,8 +145,16 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command):
 
                 # If data is alm and calculating std. Bin to map and smooth first.
                 if type == "alm" and command == np.std and alm2map:
-                    print(f"#{sample} --- alm2map with {fwhm} arcmin, lmax {lmax_h5} ---")
-                    data = hp.alm2map(data, nside=nside, lmax=lmax_h5, fwhm=arcmin2rad(fwhm), pixwin=True,)
+                    print(
+                        f"#{sample} --- alm2map with {fwhm} arcmin, lmax {lmax_h5} ---"
+                    )
+                    data = hp.alm2map(
+                        data,
+                        nside=nside,
+                        lmax=lmax_h5,
+                        fwhm=arcmin2rad(fwhm),
+                        pixwin=True,
+                    )
 
                 # If data is map, smooth first.
                 elif type == "map" and fwhm > 0.0 and command == np.std:
@@ -164,10 +172,12 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command):
     # Smoothing afterwards when calculating mean
     if type == "alm" and command == np.mean and alm2map:
         print(f"# --- alm2map mean with {fwhm} arcmin, lmax {lmax_h5} ---")
-        outdata = hp.alm2map(outdata, nside=nside, lmax=lmax_h5, fwhm=arcmin2rad(fwhm), pixwin=True,)
+        outdata = hp.alm2map(
+            outdata, nside=nside, lmax=lmax_h5, fwhm=arcmin2rad(fwhm), pixwin=True,
+        )
 
     # Smoothing can be done after for np.mean
-    if type == "map" and fwhm > 0.0 and command == np.mean :
+    if type == "map" and fwhm > 0.0 and command == np.mean:
         print(f"--- Smoothing mean map with {fwhm} arcmin,---")
         outdata = hp.sphtfunc.smoothing(outdata, fwhm=arcmin2rad(fwhm))
 
@@ -178,6 +188,7 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command):
         np.savetxt(output, outdata)
     else:
         return outdata
+
 
 def arcmin2rad(arcmin):
     return arcmin * (2 * np.pi) / 21600

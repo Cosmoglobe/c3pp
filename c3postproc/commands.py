@@ -12,25 +12,26 @@ def commands():
 
 @commands.command()
 @click.argument("input", type=click.STRING)
-def printheader(
-    input,
-):
+def printheader(input,):
     """
     Prints the header of a fits file.
     """
     from astropy.io import fits
 
-    with fits.open(input) as hdulist: 
-        hdulist.info() 
-        for hdu in hdulist: 
-            print(repr(hdu.header)) 
+    with fits.open(input) as hdulist:
+        hdulist.info()
+        for hdu in hdulist:
+            print(repr(hdu.header))
+
 
 @commands.command()
 @click.argument("input", type=click.STRING)
 @click.argument("dataset", type=click.STRING)
 @click.argument("output", type=click.STRING)
-@click.option("min", default=1, help="Start sample, default 1")
-@click.option("max", default=None, type="End sample, calculated automatically if not set")
+@click.option("-min", default=1, type=click.INT, help="Start sample, default 1")
+@click.option(
+    "-max", default=None, type=click.INT, help="End sample, calculated automatically if not set"
+)
 @click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]")
 @click.option("-fwhm", default=0.0, help="FWHM in arcmin")
 @click.option("-nside", default=None, type=click.INT, help="Nside for alm binning")
@@ -54,8 +55,10 @@ def mean(
 @click.argument("input", type=click.STRING)
 @click.argument("dataset", type=click.STRING)
 @click.argument("output", type=click.STRING)
-@click.option("min", default=1, help="Start sample, default 1")
-@click.option("max", default=None, type="End sample, calculated automatically if not set")
+@click.option("-min", default=1, type=click.INT, help="Start sample, default 1")
+@click.option(
+    "-max", default=None, type=click.INT, help="End sample, calculated automatically if not set"
+)
 @click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]")
 @click.option("-fwhm", default=0.0, help="FWHM in arcmin")
 @click.option("-nside", default=None, type=click.INT, help="Nside for alm binning")
@@ -98,7 +101,9 @@ def stddev(
     type=click.STRING,
     help='Color range. "-range auto" sets to 97.5 percentile of data.',
 )  # str until changed to float
-@click.option("-colorbar", "-bar", is_flag=True, help='Adds colorbar ("cb" in filename)')
+@click.option(
+    "-colorbar", "-bar", is_flag=True, help='Adds colorbar ("cb" in filename)'
+)
 @click.option(
     "-lmax",
     default=None,
@@ -128,7 +133,7 @@ def stddev(
     default=[0,],
     type=click.INT,
     multiple=True,
-    help='Signal to be plotted 0 by default (0, 1, 2 is interprated as IQU)',
+    help="Signal to be plotted 0 by default (0, 1, 2 is interprated as IQU)",
 )
 @click.option(
     "-remove_dipole",
@@ -265,7 +270,9 @@ def plot(
     type=click.STRING,
     help='Color range. "-range auto" sets to 97.5 percentile of data.',
 )  # str until changed to float
-@click.option("-colorbar","-bar", is_flag=True, help='Adds colorbar ("cb" in filename)')
+@click.option(
+    "-colorbar", "-bar", is_flag=True, help='Adds colorbar ("cb" in filename)'
+)
 @click.option(
     "-lmax",
     default=None,
@@ -295,7 +302,7 @@ def plot(
     default=[0,],
     type=click.INT,
     multiple=True,
-    help='Signal to be plotted 0 by default (0, 1, 2 is interprated as IQU)',
+    help="Signal to be plotted 0 by default (0, 1, 2 is interprated as IQU)",
 )
 @click.option(
     "-remove_dipole",
@@ -573,18 +580,20 @@ def dlbin2dat(filename, min, max, binfile):
     for signal in binned_data.keys():
         np.savetxt("Dl_" + signal + "_binned.dat", binned_data[signal], header=header)
 
+
 # ISSUE!
-#@commands.command()
-#@click.argument("filename", type=click.STRING)
-#@click.argument("dataset", type=click.STRING)
-#@click.option("-save", is_flag=True, default=True)
+# @commands.command()
+# @click.argument("filename", type=click.STRING)
+# @click.argument("dataset", type=click.STRING)
+# @click.option("-save", is_flag=True, default=True)
 def h5map2fits(filename, dataset, save=True):
     """
     Outputs a .h5 map to fits on the form 000001_cmb_amp_n1024.fits
     """
     import healpy as hp
     import h5py
-    dataset, tag = dataset.rsplit("/",1)
+
+    dataset, tag = dataset.rsplit("/", 1)
 
     with h5py.File(filename, "r") as f:
         maps = f[f"{dataset}/{tag}"][()]
@@ -615,102 +624,108 @@ def alm2fits(input, dataset, nside, lmax, fwhm):
 @commands.command()
 @click.argument("mask", type=click.STRING)
 @click.argument("procver", type=click.STRING)
+@click.option("-skipfreqmaps", is_flag=True, help="Don't output freqmaps")
+@click.option("-skipcmb", is_flag=True, help="Don't output cmb")
 @click.pass_context
-def plotrelease(
-    ctx,
-    mask,
-    procver,
-):
+def plotrelease(ctx, mask, procver, skipfreqmaps, skipcmb):
     """
     \b
     Plots all release files\n
     """
-    # CMB I no dip
-    ctx.invoke(plot, 
-    input=f"BP_cmb_IQU_full_n1024_{procver}.fits",
-    colorbar=True,
-    auto=True,
-    remove_dipole = mask,
-    )
+    if not skipcmb:
+        # CMB I no dip
+        ctx.invoke(
+            plot,
+            input=f"BP_cmb_IQU_full_n1024_{procver}.fits",
+            colorbar=True,
+            auto=True,
+            remove_dipole=mask,
+        )
 
-    # CMB QU and IQU rms
-    ctx.invoke(plot, 
-    input=f"BP_cmb_IQU_full_n1024_{procver}.fits",
-    colorbar=True,
-    auto=True,
-    sig=[1, 2, 3, 4, 5], 
-    )
+        # CMB QU and IQU rms
+        ctx.invoke(
+            plot,
+            input=f"BP_cmb_IQU_full_n1024_{procver}.fits",
+            colorbar=True,
+            auto=True,
+            sig=[1, 2, 3, 4, 5],
+        )
 
+    if not skipfreqmaps:
+        # 030 GHz IQU
+        ctx.invoke(
+            plot,
+            input=f"BP_030_IQU_full_n0512_{procver}.fits",
+            colorbar=True,
+            auto=True,
+            sig=[0, 1, 2, 3, 4, 5,],
+        )
+        # 044 GHz IQU
+        ctx.invoke(
+            plot,
+            input=f"BP_044_IQU_full_n0512_{procver}.fits",
+            colorbar=True,
+            auto=True,
+            sig=[0, 1, 2, 3, 4, 5,],
+        )
+        # 070 GHz IQU
+        ctx.invoke(
+            plot,
+            input=f"BP_070_IQU_full_n1024_{procver}.fits",
+            colorbar=True,
+            auto=True,
+            sig=[0, 1, 2, 3, 4, 5,],
+        )
+        """
+        # 070 GHz IQU
+        ctx.invoke(plot, 
+        input=f"BP_070ds1_IQU_full_n1024_{procver}.fits",
+        colorbar=True,
+        auto=True,
+        sig=[0, 1, 2, 3, 4, 5,], 
+        )
+        # 070 GHz IQU
+        ctx.invoke(plot, 
+        input=f"BP_070ds2_IQU_full_n1024_{procver}.fits",
+        colorbar=True,
+        auto=True,
+        sig=[0, 1, 2, 3, 4, 5,], 
+        )
+        # 070 GHz IQU
+        ctx.invoke(plot, 
+        input=f"BP_070ds3_IQU_full_n1024_{procver}.fits",
+        colorbar=True,
+        auto=True,
+        sig=[0, 1, 2, 3, 4, 5,], 
+        )
+        """
 
-    # 030 GHz IQU
-    ctx.invoke(plot, 
-    input=f"BP_030_IQU_full_n0512_{procver}.fits",
-    colorbar=True,
-    auto=True,
-    sig=[0, 1, 2, 3, 4, 5,], 
-    )
-    # 044 GHz IQU
-    ctx.invoke(plot, 
-    input=f"BP_044_IQU_full_n0512_{procver}.fits",
-    colorbar=True,
-    auto=True,
-    sig=[0, 1, 2, 3, 4, 5,], 
-    )
-    # 070 GHz IQU
-    ctx.invoke(plot, 
-    input=f"BP_070_IQU_full_n1024_{procver}.fits",
-    colorbar=True,
-    auto=True,
-    sig=[0, 1, 2, 3, 4, 5,], 
-    )
-    """
-    # 070 GHz IQU
-    ctx.invoke(plot, 
-    input=f"BP_070ds1_IQU_full_n1024_{procver}.fits",
-    colorbar=True,
-    auto=True,
-    sig=[0, 1, 2, 3, 4, 5,], 
-    )
-    # 070 GHz IQU
-    ctx.invoke(plot, 
-    input=f"BP_070ds2_IQU_full_n1024_{procver}.fits",
-    colorbar=True,
-    auto=True,
-    sig=[0, 1, 2, 3, 4, 5,], 
-    )
-    # 070 GHz IQU
-    ctx.invoke(plot, 
-    input=f"BP_070ds3_IQU_full_n1024_{procver}.fits",
-    colorbar=True,
-    auto=True,
-    sig=[0, 1, 2, 3, 4, 5,], 
-    )
-    """
-    
     # Synch IQU
-    ctx.invoke(plot, 
-    input=f"BP_synch_IQU_full_n1024_{procver}.fits",
-    colorbar=True,
-    auto=True,
-    sig=[0, 1, 2, 3, 4, 5, 6, 7], 
+    ctx.invoke(
+        plot,
+        input=f"BP_synch_IQU_full_n1024_{procver}.fits",
+        colorbar=True,
+        auto=True,
+        sig=[0, 1, 2, 3, 4, 5, 6, 7],
     )
 
     # freefree mean and rms
-    ctx.invoke(plot, 
-    input=f"BP_freefree_I_full_n1024_{procver}.fits",
-    colorbar=True,
-    auto=True,
-    sig=[0, 1, 2, 3], 
+    ctx.invoke(
+        plot,
+        input=f"BP_freefree_I_full_n1024_{procver}.fits",
+        colorbar=True,
+        auto=True,
+        sig=[0, 1, 2, 3],
     )
 
     # ame mean and rms
-    ctx.invoke(plot, 
-    input=f"BP_ame_I_full_n1024_{procver}.fits",
-    colorbar=True,
-    auto=True,
-    sig=[0, 1, 2, 3], 
+    ctx.invoke(
+        plot,
+        input=f"BP_ame_I_full_n1024_{procver}.fits",
+        colorbar=True,
+        auto=True,
+        sig=[0, 1, 2, 3],
     )
-
 
 
 @commands.command()
@@ -726,7 +741,9 @@ def plotrelease(
 @click.option("-skipcopy3", is_flag=True, help="Don't copy noCl .h5 file")
 @click.option("-skipfreqmaps", is_flag=True, help="Don't output freqmaps")
 @click.option("-skipame", is_flag=True, help="Don't output ame")
-@click.option("-skipff","-skipfreefree",'skipff', is_flag=True, help="Don't output freefree")
+@click.option(
+    "-skipff", "-skipfreefree", "skipff", is_flag=True, help="Don't output freefree"
+)
 @click.option("-skipcmb", is_flag=True, help="Don't output cmb")
 @click.option("-skipsynch", is_flag=True, help="Don't output synchrotron")
 @click.option("-skipbr", is_flag=True, help="Don't output BR")
@@ -786,7 +803,7 @@ def release(
     import shutil
 
     # Make procver directory if not exists
-    print("{:#^80}".format("")) 
+    print("{:#^80}".format(""))
     print(f"Creating directory {procver}")
     Path(procver).mkdir(parents=True, exist_ok=True)
 
@@ -803,7 +820,9 @@ def release(
         print(
             f"Copying {chain_resamp} to {procver}/BP_resamp_chain01_full_Cl_{procver}.h5"
         )
-        shutil.copyfile(chain_resamp, f"{procver}/BP_resamp_chain01_full_Cl_{procver}.h5")
+        shutil.copyfile(
+            chain_resamp, f"{procver}/BP_resamp_chain01_full_Cl_{procver}.h5"
+        )
 
     if not skipcopy3:
         # Resampled CMB-only full-mission Gibbs chain file without Cls (for brute-force likelihood)
@@ -994,7 +1013,7 @@ def release(
             polar=True,
             component="CMB",
             fwhm=0.0,
-            nu_ref_t="NONE", 
+            nu_ref_t="NONE",
             nu_ref_p="NONE",
             procver=procver,
             filename=f"BP_cmb_IQU_full_n1024_{procver}.fits",
@@ -1095,7 +1114,7 @@ def release(
     if not skipbr:
         # Gaussianized TT Blackwell-Rao input file
         print()
-        print("{:-^50}".format("CMB GBR")) 
+        print("{:-^50}".format("CMB GBR"))
         ctx.invoke(
             sigma_l2fits,
             filename=chain_resamp,
@@ -1105,7 +1124,6 @@ def release(
             outname=f"{procver}/BP_cmb_GBRlike_{procver}.fits",
             save=True,
         )
-
 
     """
     TODO Generalize this so that they can be generated by Elina and Anna-Stiina
@@ -1126,4 +1144,3 @@ def release(
     """
     # Best-fit LCDM CMB TT, TE, EE power spectrum
     # BP_cmb_bfLCDM_{procver}.txt
-
