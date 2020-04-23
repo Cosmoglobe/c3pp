@@ -37,6 +37,7 @@ def Plotter(
     cmap,
     title,
     unit,
+    scale,
     verbose,
 ):
     rcParams["backend"] = "pdf" if pdf else "Agg"
@@ -185,7 +186,6 @@ def Plotter(
             ticks = [False, False]
             cmp = "planck"
             lgscale = False
-            scale = 1
         
         # Scale map
         m *= scale
@@ -504,7 +504,7 @@ def get_params(m, outfile, polt, signal_label):
     # Simple signal label from pol index
     sl = get_signallabel(polt)
 
-    scale = 1 # Scale map? Default no
+    scale = 1.0 # Scale map? Default no
     startcolor = "black"
     endcolor = "white"
     cmap = "planck"  # Default cmap
@@ -830,7 +830,7 @@ def fmt(x, pos):
     Format color bar labels
     """
 
-    if abs(x) > 1e4:
+    if abs(x) > 1e4 or (abs(x) < 1e-2 and abs(x) > 0):
         a, b = f"{x:.2e}".split("e")
         b = int(b)
         return fr"${a} \cdot 10^{{{b}}}$"

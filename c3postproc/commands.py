@@ -181,6 +181,12 @@ def stddev(
     type=click.STRING,
     help="Set unit (Under color bar), has LaTeX functionality. Ex. $\mu$",
 )
+@click.option(
+    "-scale",
+    default=1.0,
+    type=click.FLOAT,
+    help="Scale input map [ex. 1e-6 for muK to K]",
+)
 @click.option("-verbose", is_flag=True, help="Verbose mode")
 def plot(
     input,
@@ -205,6 +211,7 @@ def plot(
     cmap,
     title,
     unit,
+    scale,
     verbose,
 ):
     """
@@ -243,6 +250,7 @@ def plot(
         cmap,
         title,
         unit,
+        scale,
         verbose,
     )
 
@@ -350,6 +358,12 @@ def plot(
     type=click.STRING,
     help="Set unit (Under color bar), has LaTeX functionality. Ex. $\mu$",
 )
+@click.option(
+    "-scale",
+    default=1.0,
+    type=click.FLOAT,
+    help="Scale input map [ex. 1e-6 for muK to K]",
+)
 @click.option("-verbose", is_flag=True, help="Verbose mode")
 def ploth5(
     input,
@@ -375,6 +389,7 @@ def ploth5(
     cmap,
     title,
     unit,
+    scale,
     verbose,
 ):
     """
@@ -416,6 +431,7 @@ def ploth5(
         cmap,
         title,
         unit,
+        scale,
         verbose,
     )
 
@@ -626,8 +642,11 @@ def alm2fits(input, dataset, nside, lmax, fwhm):
 @click.argument("procver", type=click.STRING)
 @click.option("-skipfreqmaps", is_flag=True, help="Don't output freqmaps")
 @click.option("-skipcmb", is_flag=True, help="Don't output cmb")
+@click.option("-skipsynch", is_flag=True, help="Don't output synch")
+@click.option("-skipame", is_flag=True, help="Don't output ame")
+@click.option("-skipff", is_flag=True, help="Don't output ff")
 @click.pass_context
-def plotrelease(ctx, mask, procver, skipfreqmaps, skipcmb):
+def plotrelease(ctx, mask, procver, skipfreqmaps, skipcmb, skipsynch, skipame, skipff):
     """
     \b
     Plots all release files\n
@@ -699,33 +718,35 @@ def plotrelease(ctx, mask, procver, skipfreqmaps, skipcmb):
         sig=[0, 1, 2, 3, 4, 5,], 
         )
         """
+    if not skipsynch:
+        # Synch IQU
+        ctx.invoke(
+            plot,
+            input=f"BP_synch_IQU_full_n1024_{procver}.fits",
+            colorbar=True,
+            auto=True,
+            sig=[0, 1, 2, 3, 4, 5, 6, 7],
+        )
 
-    # Synch IQU
-    ctx.invoke(
-        plot,
-        input=f"BP_synch_IQU_full_n1024_{procver}.fits",
-        colorbar=True,
-        auto=True,
-        sig=[0, 1, 2, 3, 4, 5, 6, 7],
-    )
+    if not skipff:
+        # freefree mean and rms
+        ctx.invoke(
+            plot,
+            input=f"BP_freefree_I_full_n1024_{procver}.fits",
+            colorbar=True,
+            auto=True,
+            sig=[0, 1, 2, 3],
+        )
 
-    # freefree mean and rms
-    ctx.invoke(
-        plot,
-        input=f"BP_freefree_I_full_n1024_{procver}.fits",
-        colorbar=True,
-        auto=True,
-        sig=[0, 1, 2, 3],
-    )
-
-    # ame mean and rms
-    ctx.invoke(
-        plot,
-        input=f"BP_ame_I_full_n1024_{procver}.fits",
-        colorbar=True,
-        auto=True,
-        sig=[0, 1, 2, 3],
-    )
+    if not skipame:
+        # ame mean and rms
+        ctx.invoke(
+            plot,
+            input=f"BP_ame_I_full_n1024_{procver}.fits",
+            colorbar=True,
+            auto=True,
+            sig=[0, 1, 2, 3],
+        )
 
 
 @commands.command()
