@@ -725,7 +725,7 @@ def plotrelease(ctx, mask, procver, skipfreqmaps, skipcmb, skipsynch, skipame, s
             input=f"BP_synch_IQU_full_n1024_{procver}.fits",
             colorbar=True,
             auto=True,
-            sig=[0, 1, 2, 3, 4, 5, 6, 7],
+            sig=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
         )
 
     if not skipff:
