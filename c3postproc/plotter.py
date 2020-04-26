@@ -38,6 +38,7 @@ def Plotter(
     title,
     unit,
     scale,
+    mid,
     verbose,
 ):
     rcParams["backend"] = "pdf" if pdf else "Agg"
@@ -182,7 +183,6 @@ def Plotter(
         else:
             ttl = ""
             unt = ""
-            rng = "auto"
             ticks = [False, False]
             cmp = "planck"
             lgscale = False
@@ -191,7 +191,7 @@ def Plotter(
         m *= scale
 
         # If range has been specified, set.
-        if rng:
+        if not rng==None:
             if rng == "auto":
                 if minmax:
                     mn = np.min(m)
@@ -215,6 +215,55 @@ def Plotter(
         if max is not False:
             ticks[-1] = float(max)
 
+
+        #adding extra ticks
+        if (len(mid)>0):
+            tempticks=[]
+            tempticks.append(ticks[0]) #start at minimum of color bar)
+            for i in range(len(mid)):
+                if ('center' in mid[i]): #add tick to center of min and max
+                    if logscale == None:
+                        logscale = lgscale
+                    if logscale:
+                        if (mid[i]=='center_bar' or np.absolute(ticks[0]) < 1.0 or np.absolute(ticks[-1]) < 1.0): 
+                            #If either min or max (or both) is  < 1.0, Need to use this method
+                            minc=np.log10(0.5 * (ticks[0] + np.sqrt(4.0 + ticks[0] * ticks[0])))
+                            maxc=np.log10(0.5 * (ticks[-1] + np.sqrt(4.0 + ticks[-1] * ticks[-1])))
+                            val=(maxc+minc)/2.0
+                            val=10**val - 10**(-val) #the true value of the center of the bar
+                        else:
+                            if (ticks[0] < 0.0):
+                                minc=np.log10(-ticks[0])
+                            else:
+                                minc=np.log10(ticks[0])
+                            if (ticks[-1] < 0.0):
+                                maxc=np.log10(-ticks[-1])
+                            else:
+                                maxc=np.log10(ticks[-1])
+                            if (ticks[0]*ticks[-1] > 0.0 ):
+                                val=10**((maxc+minc)/2.0)
+                                if (ticks[0] < 0.0):
+                                    val = -val
+                            else:
+                                val=(maxc+minc)/2-minc
+                                if (val == 0.0):
+                                    val = 0.0
+                                elif (val < 0.0):
+                                    val = -10**(-val)
+                                else:
+                                    val = 10**(val)
+                    else:
+                        val=(ticks[0]+ticks[-1])/2.0
+
+                    tempticks.append(val)
+
+                else:
+                    val=float(mid[i])
+                    if (val > ticks[0] and val < ticks[-1]):
+                        tempticks.append(val)
+            tempticks.append(ticks[-1])
+            ticks=tempticks.copy()
+
         ##########################
         #### Plotting Params #####
         ##########################
@@ -231,7 +280,7 @@ def Plotter(
         xsize = 2000
         ysize = int(xsize / 2.0)
 
-        ticklabels = ticks
+        ticklabels = ticks.copy()
         #######################
         ####   logscale   #####
         #######################
@@ -243,19 +292,14 @@ def Plotter(
         if logscale:
             print("Applying logscale")
             starttime = time.time()
-
+            m = np.maximum(np.minimum(m, ticks[-1]), ticks[0])
             m = np.log10(0.5 * (m + np.sqrt(4.0 + m * m)))
 
             ticks = []
             for i in ticklabels:
-                if i>0:
-                    ticks.append(np.log10(i))
-                elif i<0:
-                    ticks.append(-np.log10(abs(i)))
-                else:
-                    ticks.append(i)
+                ticks.append(np.log10(0.5 * (i + np.sqrt(4.0 + i * i))))
+                
 
-            m = np.maximum(np.minimum(m, ticks[-1]), ticks[0])
 
             print("Logscale", (time.time() - starttime)) if verbose else None
 
@@ -411,7 +455,7 @@ def Plotter(
             ## TITLE ####
             #############
             plt.text(
-                6.0, 1.3, r"%s" % title, ha="center", va="center", fontsize=fontsize,
+                6.0, 1.3, r"%s"%(title), ha="center", va="center", fontsize=fontsize,
             )
 
             ##############

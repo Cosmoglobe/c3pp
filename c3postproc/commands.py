@@ -99,7 +99,7 @@ def stddev(
     "rng",
     default=None,
     type=click.STRING,
-    help='Color range. "-range auto" sets to 97.5 percentile of data.',
+    help='Color range. "-range auto" sets to 97.5 percentile of data. Overwrites autodetector and min and max.',
 )  # str until changed to float
 @click.option(
     "-colorbar", "-bar", is_flag=True, help='Adds colorbar ("cb" in filename)'
@@ -187,6 +187,7 @@ def stddev(
     type=click.FLOAT,
     help="Scale input map [ex. 1e-6 for muK to K]",
 )
+@click.option("-mid", default=None, type=click.STRING, multiple=True, help="Adds value as tick to colorbar, 'center' adds a tick to the center of min and max to the color bar. If logscale is used, this is calculated on a (semi-)logarithmic basis (also across 0.0). In logscale, if either |min| or |max| < 1 or 'center_bar' is given, the tick is assigned to the exact center of the bar, not the (semi-)logarithmic center.")
 @click.option("-verbose", is_flag=True, help="Verbose mode")
 def plot(
     input,
@@ -212,6 +213,7 @@ def plot(
     title,
     unit,
     scale,
+    mid,
     verbose,
 ):
     """
@@ -251,6 +253,7 @@ def plot(
         title,
         unit,
         scale,
+        mid,
         verbose,
     )
 
