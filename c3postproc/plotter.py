@@ -36,6 +36,7 @@ def Plotter(
     pdf,
     cmap,
     title,
+    ltitle,
     unit,
     scale,
     verbose,
@@ -170,13 +171,14 @@ def Plotter(
         tempmin = min
         tempmax = max
         temptitle = title
+        templtitle = ltitle
         tempunit = unit
         templogscale = logscale
         tempcmap = cmap
 
         # ttl, unt and cmb are temporary variables for title, unit and colormap
         if auto:
-            ttl, ticks, unt, cmp, lgscale, scale = get_params(
+            ttl, lttl, ticks, unt, cmp, lgscale, scale = get_params(
                 m, outfile, polt, signal_label,
             )
         else:
@@ -197,8 +199,7 @@ def Plotter(
                     mn = np.min(m)
                     mx = np.max(m)
                 else:
-                    mx = np.percentile(m, 97.5)
-                    mn = np.percentile(m, 2.5)
+                    mn, mx = get_ticks(m, 97.5)
                 if min is False:
                     min = mn
                 if max is False:
@@ -223,6 +224,10 @@ def Plotter(
         if not title:
             title = ttl
 
+        # Upper left title
+        if not ltitle:
+            ltitle = lttl
+            
         # Unit under colorbar
         if not unit:
             unit = unt
@@ -407,11 +412,18 @@ def Plotter(
             ax.yaxis.set_ticks([])
             plt.grid(True)
 
-            #############
-            ## TITLE ####
-            #############
+            ###################
+            ## RIGHT TITLE ####
+            ###################
             plt.text(
                 6.0, 1.3, r"%s" % title, ha="center", va="center", fontsize=fontsize,
+            )
+
+            #############
+            ## LEFT TITLE ####
+            #############
+            plt.text(
+                -6.0, 1.3, r"%s" % ltitle, ha="center", va="center", fontsize=fontsize,
             )
 
             ##############
@@ -502,27 +514,18 @@ def get_params(m, outfile, polt, signal_label):
     ignore_tags = ["radio_"]
 
     # Simple signal label from pol index
-    sl = get_signallabel(polt)
-
+    sl = signal_label.split("_")[0]
+    ltitle = ""
     scale = 1.0 # Scale map? Default no
     startcolor = "black"
     endcolor = "white"
     cmap = "planck"  # Default cmap
-
-    #######################
-    ###### RMS MAPS #######
-    #######################
-
-    if signal_label.endswith("RMS"):
-        # Run autoset
-        print(f"Plotting RMS signal {signal_label}")
-        return not_identified(m, signal_label, logscale,)
+    
 
     #######################
     # SPECTRAL INDEX MAPS #
     #######################
-
-    elif (
+    if (
         tag_lookup(ame_nup_tags, outfile)
         or tag_lookup(ame_tags, outfile)
         and sidx_tag_lookup(["NU_P_MEAN"], signal_label)
@@ -531,8 +534,7 @@ def get_params(m, outfile, polt, signal_label):
 
         ticks = [17, 23]
         unit = "GHz"
-        title = r"$\nu_{ame}$"
-
+        title = r"$\nu_{peak}$"
     elif (
         tag_lookup(dust_T_tags, outfile)
         or tag_lookup(dust_tags, outfile)
@@ -543,38 +545,24 @@ def get_params(m, outfile, polt, signal_label):
         ticks = [14, 30]
         unit = r"$\mathrm{K}$"
         title = r"$" + sl + "$ " + r"$T_d$ "
-
     elif (
         tag_lookup(dust_beta_tags, outfile)
         or tag_lookup(dust_tags, outfile)
         and sidx_tag_lookup(["BETA_MEAN", "BETA_P_MEAN"], signal_label)
     ):
         print("Plotting Thermal dust beta")
-        if "BETA_MEAN" in signal_label:
-            sl = "I"
-        elif "BETA_P_MEAN" in signal_label:
-            sl = "QU"
-
         ticks = [1.3, 1.8]
         unit = ""
         title = r"$" + sl + "$ " + r"$\beta_d$ "
-
     elif (
         tag_lookup(synch_beta_tags, outfile)
         or tag_lookup(synch_tags, outfile)
         and sidx_tag_lookup(["BETA_MEAN", "BETA_P_MEAN"], signal_label)
     ):
         print("Plotting Synchrotron beta")
-
-        if "BETA_MEAN" in signal_label:
-            sl = "I"
-        elif "BETA_P_MEAN" in signal_label:
-            sl = "QU"
-
-        ticks = [-3.2, -2.8]
+        ticks = [-3.2, -3.0]
         unit = ""
         title = r"$" + sl + "$ " + r"$\beta_s$ "
-
     elif (
         tag_lookup(ff_Te_tags, outfile)
         or tag_lookup(ff_tags, outfile)
@@ -589,8 +577,8 @@ def get_params(m, outfile, polt, signal_label):
     elif tag_lookup(ff_EM_tags, outfile):
         print("Plotting freefree EM MIN AND MAX VALUES UPDATE!")
 
-        vmax = np.percentile(m, 97.5)
-        vmin = np.percentile(m, 2.5)
+        vmin, vmax = get_ticks(m, 97.5)
+
         ticks = [vmin, vmax]
 
         unit = r"$\mathrm{K}$"
@@ -636,7 +624,7 @@ def get_params(m, outfile, polt, signal_label):
             unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
         else:
             # BP uses 408 MHz GHz ref freq
-            scale = 1e-6
+            #scale = 1e-6
             ticks = [10, 30, 100, 300]
             logscale = True
             unit = r"$\mathrm{K}_{\mathrm{RJ}}$"
@@ -766,14 +754,14 @@ def get_params(m, outfile, polt, signal_label):
 
         print("Plotting Frequency map" + " " + sl)
 
-        vmax = np.percentile(m, 97.5)
-        vmin = np.percentile(m, 2.5)
+        vmin, vmax = get_ticks(m, 97.5)
         ticks = [vmin, 0.0, vmax]
 
         unit = r"$\mu\mathrm{K}$"
         tit = str(findall(r"BP_(.*?)_", outfile)[0])
-        title = fr"{tit} " + r"  $" + sl + "$"
-
+        tl =  sl + "_{"+fr"{tit}"+"}"
+        title = r"$" + tl + "$"
+        
     ############################
     # Not idenified or ignored #
     ############################
@@ -786,22 +774,33 @@ def get_params(m, outfile, polt, signal_label):
         # Run map autoset
         return not_identified(m, signal_label, logscale,)
 
-    return title, ticks, unit, cmap, logscale, scale
+    # If signal is an RMS map, add tag.
+    if signal_label.endswith("RMS"):
+        print(f"Plotting RMS signal {signal_label}")
+        ltitle = "RMS"
+        vmin, vmax = get_ticks(m, 97.5)
+        logscale=False
+        ticks = [vmin, vmax]        
+        unit = ""
+        cmap = "planck"
+        scale = 1.0
+
+    return title, ltitle, ticks, unit, cmap, logscale, scale
 
 
 def not_identified(m, signal_label, logscale):
     print("Map not recognized, plotting with min and max values")
     scale = 1.0
-    vmax = np.percentile(m, 97.5)
-    vmin = np.percentile(m, 2.5)
+    vmin, vmax = get_ticks(m, 97.5)
     ticks = [vmin, vmax]
 
     unit = ""
     tl = signal_label.split("_")[0] + "_{" + signal_label.split("_")[-1] + "}"
     title = r"$" + tl + "$"
+    ltitle = ""
     cmap = "planck"
 
-    return title, ticks, unit, cmap, logscale, scale
+    return title, ltitle, ticks, unit, cmap, logscale, scale
 
 
 def get_signallabel(x):
@@ -824,6 +823,14 @@ def get_sizes(size):
         sizes.append(18.0)
     return sizes
 
+def get_ticks(m, percentile):
+    vmin = np.percentile(m, 100.0-percentile)
+    vmax = np.percentile(m, percentile)
+
+    vmin = 0.0 if abs(vmin) < 1e-5 else vmin
+    vmax = 0.0 if abs(vmax) < 1e-5 else vmax
+    return vmin, vmax
+
 
 def fmt(x, pos):
     """
@@ -842,7 +849,6 @@ def fmt(x, pos):
         return fr"${x:.1f}$"
     else:
         return fr"${x:.2f}$"
-
 
 def cm2inch(cm):
     return cm * 0.393701

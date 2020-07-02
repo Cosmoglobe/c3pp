@@ -125,7 +125,7 @@ def get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types):
             max=None,
             maxchain=maxchain,
             output="map",
-            fwhm=fwhm,
+            fwhm=0.0,
             nside=nside,
             command=np.mean,
         )
@@ -149,7 +149,7 @@ def get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types):
             max=None,
             maxchain=maxchain,
             output="map",
-            fwhm=fwhm,
+            fwhm=0.0,
             nside=nside,
             command=np.std,
         )
@@ -190,7 +190,7 @@ def get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types):
             max=None,
             maxchain=maxchain,
             output="map",
-            fwhm=fwhm,
+            fwhm=0.0,
             nside=nside,
             command=np.mean,
         )
@@ -214,7 +214,7 @@ def get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types):
             max=None,
             maxchain=maxchain,
             output="map",
-            fwhm=fwhm,
+            fwhm=0.0,
             nside=nside,
             command=np.std,
         )
@@ -242,12 +242,12 @@ def get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types):
         )
         nu_p_mean = h5handler(
             input=chain,
-            dataset="ame/nu_p_alm",
+            dataset="ame/nu_p_map",
             min=burnin,
             max=None,
             maxchain=maxchain,
             output="map",
-            fwhm=fwhm,
+            fwhm=0.0,
             nside=nside,
             command=np.mean,
         )
@@ -266,12 +266,12 @@ def get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types):
         )
         nu_p_stddev = h5handler(
             input=chain,
-            dataset="ame/nu_p_alm",
+            dataset="ame/nu_p_map",
             min=burnin,
             max=None,
             maxchain=maxchain,
             output="map",
-            fwhm=fwhm,
+            fwhm=0.0,
             nside=nside,
             command=np.std,
         )

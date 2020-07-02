@@ -30,6 +30,7 @@ setuptools.setup(
         'matplotlib',
         'numba',
         'pathlib',
+        'braceexpand',
     ],
     python_requires=">=3.6",
 )

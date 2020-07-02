@@ -50,7 +50,6 @@ def mean(
 
     h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.mean)
 
-
 @commands.command()
 @click.argument("input", type=click.STRING)
 @click.argument("dataset", type=click.STRING)
@@ -176,6 +175,12 @@ def stddev(
     help="Set title (Upper right), has LaTeX functionality. Ex. $A_{s}$.",
 )
 @click.option(
+    "-ltitle",
+    default=None,
+    type=click.STRING,
+    help="Set title (Upper left), has LaTeX functionality. Ex. $A_{s}$.",
+)
+@click.option(
     "-unit",
     default=None,
     type=click.STRING,
@@ -210,6 +215,7 @@ def plot(
     pdf,
     cmap,
     title,
+    ltitle,
     unit,
     scale,
     verbose,
@@ -249,6 +255,7 @@ def plot(
         pdf,
         cmap,
         title,
+        ltitle,
         unit,
         scale,
         verbose,
@@ -353,6 +360,12 @@ def plot(
     help="Set title (Upper right), has LaTeX functionality. Ex. $A_{s}$.",
 )
 @click.option(
+    "-ltitle",
+    default=None,
+    type=click.STRING,
+    help="Set title (Upper left), has LaTeX functionality. Ex. $A_{s}$.",
+)
+@click.option(
     "-unit",
     default=None,
     type=click.STRING,
@@ -388,6 +401,7 @@ def ploth5(
     pdf,
     cmap,
     title,
+    ltitle,
     unit,
     scale,
     verbose,
@@ -430,6 +444,7 @@ def ploth5(
         pdf,
         cmap,
         title,
+        ltitle,
         unit,
         scale,
         verbose,
@@ -638,20 +653,20 @@ def alm2fits(input, dataset, nside, lmax, fwhm):
 
 
 @commands.command()
-@click.argument("mask", type=click.STRING)
 @click.argument("procver", type=click.STRING)
+@click.option("-mask", type=click.Path(exists=True), help="Mask for calculating cmb")
 @click.option("-skipfreqmaps", is_flag=True, help="Don't output freqmaps")
 @click.option("-skipcmb", is_flag=True, help="Don't output cmb")
 @click.option("-skipsynch", is_flag=True, help="Don't output synch")
 @click.option("-skipame", is_flag=True, help="Don't output ame")
 @click.option("-skipff", is_flag=True, help="Don't output ff")
 @click.pass_context
-def plotrelease(ctx, mask, procver, skipfreqmaps, skipcmb, skipsynch, skipame, skipff):
+def plotrelease(ctx, procver, mask, skipfreqmaps, skipcmb, skipsynch, skipame, skipff):
     """
     \b
     Plots all release files\n
     """
-    if not skipcmb:
+    if not skipcmb and mask:
         # CMB I no dip
         ctx.invoke(
             plot,
@@ -750,16 +765,11 @@ def plotrelease(ctx, mask, procver, skipfreqmaps, skipcmb, skipsynch, skipame, s
 
 
 @commands.command()
-@click.argument("chain", type=click.STRING)
-@click.argument("burnin1", type=click.INT)
-@click.argument("chain_resamp", type=click.STRING)
-@click.argument("burnin2", type=click.INT)
-@click.argument("chain_resamp_nocls", type=click.STRING)
+@click.argument("chain", type=click.Path(exists=True), nargs=-1)
+@click.argument("burnin", type=click.INT)
 @click.argument("procver", type=click.STRING)
-@click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]")
-@click.option("-skipcopy1", is_flag=True, help="Don't copy full .h5 file")
-@click.option("-skipcopy2", is_flag=True, help="Don't copy Cl .h5 file")
-@click.option("-skipcopy3", is_flag=True, help="Don't copy noCl .h5 file")
+@click.option("-resamp", type=click.Path(exists=True), help="Include resampled chain file")
+@click.option("-skipcopy", is_flag=True, help="Don't copy full .h5 file")
 @click.option("-skipfreqmaps", is_flag=True, help="Don't output freqmaps")
 @click.option("-skipame", is_flag=True, help="Don't output ame")
 @click.option(
@@ -772,15 +782,10 @@ def plotrelease(ctx, mask, procver, skipfreqmaps, skipcmb, skipsynch, skipame, s
 def release(
     ctx,
     chain,
-    burnin1,
-    chain_resamp,
-    burnin2,
-    chain_resamp_nocls,
+    burnin,
     procver,
-    maxchain,
-    skipcopy1,
-    skipcopy2,
-    skipcopy3,
+    resamp,
+    skipcopy,
     skipfreqmaps,
     skipame,
     skipff,
@@ -790,13 +795,13 @@ def release(
 ):
     """
     Creates a release file-set on the BeyondPlanck format.\n
-    https://gitlab.com/BeyondPlanck/repo/-/wikis/BeyondPlanck-Release-Candidate-2\n
-    
+    https://gitlab.com/BeyondPlanck/repo/-/wikis/BeyondPlanck-Release-Candidate-2\n    
 
-    ex. c3pp release chains_hm1/chain_c0001.h5 30 chains_resamp/chain_c0001.h5 5 chains_resamp_nocl/chain_c0001.h5 bpr3 \n
-    Where there are different burnin variables for each of the two used hdf files. \n
+    ex. c3pp release chains_v1_c{1,2}/chain_c000{1,2}.h5 30 BP_r1 \n
+    Will output formatted files using all chains specified, \n
+    with a burnin of 30 to a directory called BP_r1
 
-    This function outputs the following files to the procver directory:\n
+    This function outputs the following files to the {procver} directory:\n
     BP_chain01_full_{procver}.h5\n
     BP_resamp_chain01_full_Cl_{procver}.h5\n
     BP_resamp_chain01_full_noCl_{procver}.h5\n
@@ -827,125 +832,115 @@ def release(
     print("{:#^80}".format(""))
     print(f"Creating directory {procver}")
     Path(procver).mkdir(parents=True, exist_ok=True)
-
+    chains = chain
+    maxchain=len(chains)
     """
     Copying chains files
     """
-    if not skipcopy1:
-        # Full-mission Gibbs chain file
-        print(f"Copying {chain} to {procver}/BP_resamp_chain01_full_{procver}.h5")
-        shutil.copyfile(chain, f"{procver}/BP_chain01_full_{procver}.h5")
+    if not skipcopy:
+        # Commander3 parameter file for main chain
+        for i, chainfile in enumerate(chains,1):
+            path = os.path.split(chainfile)[0]
+            for file in os.listdir(path):
+                if file.startswith("param"):
+                    print(f"Copying {path}/{file} to {procver}/BP_param_full_c"+str(i).zfill(4)+".txt")
+                    shutil.copyfile(f"{path}/{file}", f"{procver}/BP_param_full_c"+str(i).zfill(4)+".txt")
 
-    if not skipcopy2:
-        # Resampled CMB-only full-mission Gibbs chain file with Cls (for BR estimator)
-        print(
-            f"Copying {chain_resamp} to {procver}/BP_resamp_chain01_full_Cl_{procver}.h5"
-        )
-        shutil.copyfile(
-            chain_resamp, f"{procver}/BP_resamp_chain01_full_Cl_{procver}.h5"
-        )
+            # Full-mission Gibbs chain file
+            print(f"Copying {chainfile} to {procver}/BP_resamp_c"+str(i).zfill(4)+f"_full_{procver}.h5")
+            shutil.copyfile(chainfile, f"{procver}/BP_c"+str(i).zfill(4)+f"_full_{procver}.h5")
 
-    if not skipcopy3:
-        # Resampled CMB-only full-mission Gibbs chain file without Cls (for brute-force likelihood)
-        print(
-            f"Copying {chain_resamp_nocls} to {procver}/BP_resamp_chain01_full_noCl_{procver}.h5"
-        )
-        shutil.copyfile(
-            chain_resamp_nocls, f"{procver}/BP_resamp_chain01_full_noCl_{procver}.h5"
-        )
+    if resamp:
+        # Commander3 parameter file for main chain
+        for i, chainfile in enumerate([resamp],1):
+            # Commander3 parameter file for CMB resampling chain with Cls (for BR)
+            path = os.path.split(chainfile)[0]
+            for file in os.listdir(path):
+                if file.startswith("param"):
+                    print(f"Copying {path}/{file} to {procver}/BP_param_resamp_Cl_c"+str(i).zfill(4)+".txt")
+                    shutil.copyfile(f"{path}/{file}", f"{procver}/BP_param_resamp_Cl_c"+str(i).zfill(4)+".txt")
 
-    """
-    Copying parameter files
-    """
+            # Resampled CMB-only full-mission Gibbs chain file with Cls (for BR estimator)
+            print(
+                f"Copying {resamp} to {procver}/BP_resamp_c"+str(i).zfill(4)+f"_full_Cl_{procver}.h5"
+            )
+            shutil.copyfile(
+                resamp, f"{procver}/BP_resamp_c"+str(i).zfill(4)+f"_full_Cl_{procver}.h5"
+            )
 
-    # Commander3 parameter file for main chain
-    path = os.path.split(chain)[0]
-    for file in os.listdir(path):
-        if file.startswith("param"):
-            print(f"Copying {path}/{file} to {procver}/BP_param_full_v1.txt")
-            shutil.copyfile(f"{path}/{file}", f"{procver}/BP_param_full_v1.txt")
 
-    # Commander3 parameter file for CMB resampling chain with Cls (for BR)
-    path = os.path.split(chain_resamp)[0]
-    for file in os.listdir(path):
-        if file.startswith("param"):
-            print(f"Copying {path}/{file} to {procver}/BP_param_resamp_Cl_v1.txt")
-            shutil.copyfile(f"{path}/{file}", f"{procver}/BP_param_resamp_Cl_v1.txt")
-
-    # Commander3 parameter file for CMB resampling chain without Cls (for brute-force likelihood)
-    path = os.path.split(chain_resamp_nocls)[0]
-    for file in os.listdir(path):
-        if file.startswith("param"):
-            print(f"Copying {path}/{file} to {procver}/BP_param_resamp_noCl_v1.txt")
-            shutil.copyfile(f"{path}/{file}", f"{procver}/BP_param_resamp_noCl_v1.txt")
 
     """
     IQU mean, IQU stdev, (Masks for cmb)
     Run mean and stddev from min to max sample (Choose min manually or start at 1?)
     """
+    chain=f"{procver}/BP_c0001_full_{procver}.h5"
     if not skipfreqmaps:
-        # Full-mission 30 GHz IQU frequency map
-        # BP_030_IQU_full_n0512_{procver}.fits
-        format_fits(
-            chain=chain,
-            extname="FREQMAP",
-            types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS",],
-            units=["uK", "uK", "uK", "uK", "uK", "uK",],
-            nside=512,
-            burnin=burnin1,
-            maxchain=maxchain,
-            polar=True,
-            component="030",
-            fwhm=0.0,
-            nu_ref_t="30.0 GHz",
-            nu_ref_p="30.0 GHz",
-            procver=procver,
-            filename=f"BP_030_IQU_full_n0512_{procver}.fits",
-            bndctr=30,
-            restfreq=28.456,
-            bndwid=9.899,
-        )
-        # Full-mission 44 GHz IQU frequency map
-        format_fits(
-            chain=chain,
-            extname="FREQMAP",
-            types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS",],
-            units=["uK", "uK", "uK", "uK", "uK", "uK",],
-            nside=512,
-            burnin=burnin1,
-            maxchain=maxchain,
-            polar=True,
-            component="044",
-            fwhm=0.0,
-            nu_ref_t="44.0 GHz",
-            nu_ref_p="44.0 GHz",
-            procver=procver,
-            filename=f"BP_044_IQU_full_n0512_{procver}.fits",
-            bndctr=44,
-            restfreq=44.121,
-            bndwid=10.719,
-        )
-        # Full-mission 70 GHz IQU frequency map
-        format_fits(
-            chain=chain,
-            extname="FREQMAP",
-            types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS",],
-            units=["uK", "uK", "uK", "uK", "uK", "uK",],
-            nside=1024,
-            burnin=burnin1,
-            maxchain=maxchain,
-            polar=True,
-            component="070",
-            fwhm=0.0,
-            nu_ref_t="70.0 GHz",
-            nu_ref_p="70.0 GHz",
-            procver=procver,
-            filename=f"BP_070_IQU_full_n1024_{procver}.fits",
-            bndctr=70,
-            restfreq=70.467,
-            bndwid=14.909,
-        )
-
+        try:
+            # Full-mission 30 GHz IQU frequency map
+            # BP_030_IQU_full_n0512_{procver}.fits
+            format_fits(
+                chain=chain,
+                extname="FREQMAP",
+                types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS",],
+                units=["uK", "uK", "uK", "uK", "uK", "uK",],
+                nside=512,
+                burnin=burnin,
+                maxchain=maxchain,
+                polar=True,
+                component="030",
+                fwhm=0.0,
+                nu_ref_t="30.0 GHz",
+                nu_ref_p="30.0 GHz",
+                procver=procver,
+                filename=f"BP_030_IQU_full_n0512_{procver}.fits",
+                bndctr=30,
+                restfreq=28.456,
+                bndwid=9.899,
+            )
+            # Full-mission 44 GHz IQU frequency map
+            format_fits(
+                chain=chain,
+                extname="FREQMAP",
+                types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS",],
+                units=["uK", "uK", "uK", "uK", "uK", "uK",],
+                nside=512,
+                burnin=burnin,
+                maxchain=maxchain,
+                polar=True,
+                component="044",
+                fwhm=0.0,
+                nu_ref_t="44.0 GHz",
+                nu_ref_p="44.0 GHz",
+                procver=procver,
+                filename=f"BP_044_IQU_full_n0512_{procver}.fits",
+                bndctr=44,
+                restfreq=44.121,
+                bndwid=10.719,
+            )
+            # Full-mission 70 GHz IQU frequency map
+            format_fits(
+                chain=chain,
+                extname="FREQMAP",
+                types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS",],
+                units=["uK", "uK", "uK", "uK", "uK", "uK",],
+                nside=1024,
+                burnin=burnin,
+                maxchain=maxchain,
+                polar=True,
+                component="070",
+                fwhm=0.0,
+                nu_ref_t="70.0 GHz",
+                nu_ref_p="70.0 GHz",
+                procver=procver,
+                filename=f"BP_070_IQU_full_n1024_{procver}.fits",
+                bndctr=70,
+                restfreq=70.467,
+                bndwid=14.909,
+            )
+        except Exception as e:
+            print(e)
+            print("Continuing...")
         """
         # Full-mission 70 GHz IQU frequency map
         format_fits(
@@ -954,7 +949,7 @@ def release(
             types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS",],
             units=["uK", "uK", "uK", "uK", "uK", "uK",],
             nside=1024,
-            burnin=burnin1,
+            burnin=burnin,
             maxchain=maxchain,
             polar=True,
             component="070ds1",
@@ -974,7 +969,7 @@ def release(
             types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS",],
             units=["uK", "uK", "uK", "uK", "uK", "uK",],
             nside=1024,
-            burnin=burnin1,
+            burnin=burnin,
             maxchain=maxchain,
             polar=True,
             component="070ds2",
@@ -994,7 +989,7 @@ def release(
             types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS",],
             units=["uK", "uK", "uK", "uK", "uK", "uK",],
             nside=1024,
-            burnin=burnin1,
+            burnin=burnin,
             maxchain=maxchain,
             polar=True,
             component="070ds3",
@@ -1014,133 +1009,155 @@ def release(
     """
     # Full-mission CMB IQU map
     if not skipcmb:
-        format_fits(
-            chain_resamp,
-            extname="COMP-MAP-CMB",
-            types=[
-                "I_MEAN",
-                "Q_MEAN",
-                "U_MEAN",
-                "I_RMS",
-                "Q_RMS",
-                "U_RMS",
-                "mask1",
-                "mask2",
-            ],
-            units=["uK_cmb", "uK_cmb", "uK_cmb", "uK", "uK", "uK", "NONE", "NONE",],
-            nside=1024,
-            burnin=burnin2,
-            maxchain=maxchain,
-            polar=True,
-            component="CMB",
-            fwhm=0.0,
-            nu_ref_t="NONE",
-            nu_ref_p="NONE",
-            procver=procver,
-            filename=f"BP_cmb_IQU_full_n1024_{procver}.fits",
-            bndctr=None,
-            restfreq=None,
-            bndwid=None,
-        )
+        fname=f"{procver}/BP_resamp_c0001_full_Cl_{procver}.h5" if resamp else chain
+        try:
+           format_fits(
+               fname,
+               extname="COMP-MAP-CMB",
+               types=[
+                   "I_MEAN",
+                   "Q_MEAN",
+                   "U_MEAN",
+                   "I_RMS",
+                   "Q_RMS",
+                   "U_RMS",
+                   "mask1",
+                   "mask2",
+               ],
+               units=["uK_cmb", "uK_cmb", "uK_cmb", "uK", "uK", "uK", "NONE", "NONE",],
+               nside=1024,
+               burnin=burnin,
+               maxchain=maxchain,
+               polar=True,
+               component="CMB",
+               fwhm=0.0,
+               nu_ref_t="NONE",
+               nu_ref_p="NONE",
+               procver=procver,
+               filename=f"BP_cmb_IQU_full_n1024_{procver}.fits",
+               bndctr=None,
+               restfreq=None,
+               bndwid=None,
+           )
+        except Exception as e:
+            print(e)
+            print("Continuing...")
 
     if not skipff:
-        # Full-mission free-free I map
-        format_fits(
-            chain,
-            extname="COMP-MAP-FREE-FREE",
-            types=["I_MEAN", "TE_MEAN", "I_RMS", "TE_RMS",],
-            units=["uK_RJ", "K", "uK_RJ", "K",],
-            nside=1024,
-            burnin=burnin1,
-            maxchain=maxchain,
-            polar=False,
-            component="FREE-FREE",
-            fwhm=75.0,
-            nu_ref_t="40.0 GHz",
-            nu_ref_p="40.0 GHz",
-            procver=procver,
-            filename=f"BP_freefree_I_full_n1024_{procver}.fits",
-            bndctr=None,
-            restfreq=None,
-            bndwid=None,
-        )
+        try:
+            # Full-mission free-free I map
+            format_fits(
+                chain,
+                extname="COMP-MAP-FREE-FREE",
+                types=["I_MEAN", "I_TE_MEAN", "I_RMS", "I_TE_RMS",],
+                units=["uK_RJ", "K", "uK_RJ", "K",],
+                nside=1024,
+                burnin=burnin,
+                maxchain=maxchain,
+                polar=False,
+                component="FREE-FREE",
+                fwhm=75.0,
+                nu_ref_t="40.0 GHz",
+                nu_ref_p="40.0 GHz",
+                procver=procver,
+                filename=f"BP_freefree_I_full_n1024_{procver}.fits",
+                bndctr=None,
+                restfreq=None,
+                bndwid=None,
+            )
+        except Exception as e:
+            print(e)
+            print("Continuing...")
+
 
     if not skipame:
-        # Full-mission AME I map
-        format_fits(
-            chain,
-            extname="COMP-MAP-AME",
-            types=["I_MEAN", "NU_P_MEAN", "I_RMS", "NU_P_RMS"],
-            units=["uK_RJ", "GHz", "uK_RJ", "GHz",],
-            nside=1024,
-            burnin=burnin1,
-            maxchain=maxchain,
-            polar=False,
-            component="AME",
-            fwhm=90.0,
-            nu_ref_t="22.0 GHz",
-            nu_ref_p="22.0 GHz",
-            procver=procver,
-            filename=f"BP_ame_I_full_n1024_{procver}.fits",
-            bndctr=None,
-            restfreq=None,
-            bndwid=None,
-        )
+        try:
+            # Full-mission AME I map
+            format_fits(
+                chain,
+                extname="COMP-MAP-AME",
+                types=["I_MEAN", "I_NU_P_MEAN", "I_RMS", "I_NU_P_RMS"],
+                units=["uK_RJ", "GHz", "uK_RJ", "GHz",],
+                nside=1024,
+                burnin=burnin,
+                maxchain=maxchain,
+                polar=False,
+                component="AME",
+                fwhm=90.0,
+                nu_ref_t="22.0 GHz",
+                nu_ref_p="22.0 GHz",
+                procver=procver,
+                filename=f"BP_ame_I_full_n1024_{procver}.fits",
+                bndctr=None,
+                restfreq=None,
+                bndwid=None,
+            )
+        except Exception as e:
+            print(e)
+            print("Continuing...")
+
+
 
     if not skipsynch:
-        # Full-mission synchrotron IQU map
-        format_fits(
-            chain,
-            extname="COMP-MAP-SYNCHROTRON",
-            types=[
-                "I_MEAN",
-                "Q_MEAN",
-                "U_MEAN",
-                "BETA_MEAN",
-                "BETA_P_MEAN",
-                "I_RMS",
-                "Q_RMS",
-                "U_RMS",
-                "BETA_RMS",
-                "BETA_P_RMS",
-            ],
-            units=[
-                "uK_RJ",
-                "uK_RJ",
-                "uK_RJ",
-                "NONE",
-                "NONE",
-                "uK",
-                "uK",
-                "uK",
-                "NONE",
-                "NONE",
-            ],
-            nside=1024,
-            burnin=burnin1,
-            maxchain=maxchain,
-            polar=True,
-            component="SYNCHROTRON",
-            fwhm=60.0,
-            nu_ref_t="0.408 GHz",
-            nu_ref_p="30.0 GHz",
-            procver=procver,
-            filename=f"BP_synch_IQU_full_n1024_{procver}.fits",
-            bndctr=None,
-            restfreq=None,
-            bndwid=None,
-        )
+        try:
+            # Full-mission synchrotron IQU map
+            format_fits(
+                chain,
+                extname="COMP-MAP-SYNCHROTRON",
+                types=[
+                    "I_MEAN",
+                    "Q_MEAN",
+                    "U_MEAN",
+                    "I_BETA_MEAN",
+                    "QU_BETA_MEAN",
+                    "I_RMS",
+                    "Q_RMS",
+                    "U_RMS",
+                    "I_BETA_RMS",
+                    "QU_BETA_RMS",
+                ],
+                units=[
+                    "uK_RJ",
+                    "uK_RJ",
+                    "uK_RJ",
+                    "NONE",
+                    "NONE",
+                    "uK",
+                    "uK",
+                    "uK",
+                    "NONE",
+                    "NONE",
+                ],
+                nside=1024,
+                burnin=burnin,
+                maxchain=maxchain,
+                polar=True,
+                component="SYNCHROTRON",
+                fwhm=0.0,#60.0,
+                nu_ref_t="0.408 GHz",
+                nu_ref_p="30.0 GHz",
+                procver=procver,
+                filename=f"BP_synch_IQU_full_n1024_{procver}.fits",
+                bndctr=None,
+                restfreq=None,
+                bndwid=None,
+            )
+        except Exception as e:
+            print(e)
+            print("Continuing...")
+
+
     """ As implemented by Simone
     """
-    if not skipbr:
+    if not skipbr and resamp:
         # Gaussianized TT Blackwell-Rao input file
         print()
         print("{:-^50}".format("CMB GBR"))
         ctx.invoke(
             sigma_l2fits,
-            filename=chain_resamp,
+            filename=resamp,
             nchains=1,
-            burnin=burnin2,
+            burnin=burnin,
             path="cmb/sigma_l",
             outname=f"{procver}/BP_cmb_GBRlike_{procver}.fits",
             save=True,

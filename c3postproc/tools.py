@@ -91,7 +91,7 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command):
     dats = []
     maxnone = True if max == None else False  # set length of keys for maxchains>1
     for c in range(1, maxchain + 1):
-        filename = f"{input[:-7]}{str(c).zfill(4)}.h5"
+        filename = input.replace("c0001","c"+str(c).zfill(4))
         with h5py.File(filename, "r") as f:
             if maxnone:
                 # If no max is specified, chose last sample
