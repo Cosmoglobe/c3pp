@@ -13,34 +13,7 @@ from astropy.io import fits
 print("Importtime:", (time.time() - totaltime))
 
 
-def Plotter(
-    input,
-    dataset,
-    nside,
-    auto,
-    min,
-    max,
-    minmax,
-    rng,
-    colorbar,
-    lmax,
-    fwhm,
-    mask,
-    mfill,
-    sig,
-    remove_dipole,
-    logscale,
-    size,
-    white_background,
-    darkmode,
-    pdf,
-    cmap,
-    title,
-    ltitle,
-    unit,
-    scale,
-    verbose,
-):
+def Plotter(input, dataset, nside, auto, min, max, minmax, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, verbose,):
     rcParams["backend"] = "pdf" if pdf else "Agg"
     rcParams["legend.fancybox"] = True
     rcParams["lines.linewidth"] = 2
@@ -57,14 +30,10 @@ def Plotter(
         rcParams["xtick.color"] = "white"  # color of the tick labels
         rcParams["ytick.color"] = "white"  # color of the tick labels
         rcParams["grid.color"] = "white"  # grid color
-        rcParams[
-            "legend.facecolor"
-        ] = "inherit"  # legend background color (when 'inherit' uses axes.facecolor)
-        rcParams[
-            "legend.edgecolor"
-        ] = "white"  # legend edge color (when 'inherit' uses axes.edgecolor)
+        rcParams["legend.facecolor"] = "inherit"  # legend background color (when 'inherit' uses axes.facecolor)
+        rcParams["legend.edgecolor"] = "white"  # legend edge color (when 'inherit' uses axes.edgecolor)
 
-    rc("text.latex", preamble=r"\usepackage{sfmath}")
+    rc("text.latex", preamble=r"\usepackage{sfmath}",)
 
     # Which signal to plot
     print("----------------------------------")
@@ -82,14 +51,12 @@ def Plotter(
         # Get maps from alm data in .h5
         if dataset.endswith("alm"):
             print("Converting alms to map")
-            maps, nsid, lmax, fwhm, outfile = alm2fits_tool(
-                input, dataset, nside, lmax, fwhm, save=False
-            )
+            (maps, nsid, lmax, fwhm, outfile,) = alm2fits_tool(input, dataset, nside, lmax, fwhm, save=False,)
 
         # Get maps from map data in .h5
         elif dataset.endswith("map"):
             print("Reading map from h5")
-            maps, nsid, lmax, outfile = h5map2fits(input, dataset, save=False)
+            (maps, nsid, lmax, outfile,) = h5map2fits(input, dataset, save=False)
 
         # Found no data specified kind in .h5
         else:
@@ -105,7 +72,7 @@ def Plotter(
 
         try:
             if input.endswith(".fits"):
-                map, header = hp.read_map(input, field=polt, verbose=False, h=True)
+                map, header = hp.read_map(input, field=polt, verbose=False, h=True,)
                 header = dict(header)
                 try:
                     signal_label = header[f"TTYPE{polt+1}"]
@@ -127,7 +94,7 @@ def Plotter(
         ############
         if fwhm > 0 and input.endswith(".fits"):
             print(f"Smoothing fits map to {fwhm} degrees fwhm")
-            m = hp.smoothing(m, fwhm=arcmin2rad(fwhm), lmax=lmax)
+            m = hp.smoothing(m, fwhm=arcmin2rad(fwhm), lmax=lmax,)
 
         ############
         # UD_GRADE #
@@ -178,17 +145,24 @@ def Plotter(
 
         # ttl, unt and cmb are temporary variables for title, unit and colormap
         if auto:
-            ttl, lttl, ticks, unt, cmp, lgscale, scale = get_params(
-                m, outfile, polt, signal_label,
-            )
+            (_title, ticks, cmp, lgscale, scale,) = get_params(m, outfile, polt, signal_label,)
+            if _title["stddev"]:
+                ttl =  _title["param"] + r"$_{\mathrm{" + _title["comp"] + "}}^{\sigma}$" 
+            elif _title["mean"]:
+                ttl = r"$\langle$" + _title["param"] + r"$\rangle$" + r"$_{\mathrm{" + _title["comp"] + "}}^{ }$" 
+            else:
+                ttl =  _title["param"] + r"$_{\mathrm{" + _title["comp"] + "}}^{ }$" 
+            lttl = r"$" + _title["sig"] +"$"
+            unt = _title["unit"]
         else:
             ttl = ""
+            lttl = ""
             unt = ""
             rng = "auto"
             ticks = [False, False]
             cmp = "planck"
             lgscale = False
-        
+
         # Scale map
         m *= scale
 
@@ -227,7 +201,7 @@ def Plotter(
         # Upper left title
         if not ltitle:
             ltitle = lttl
-            
+
         # Unit under colorbar
         if not unit:
             unit = unt
@@ -253,16 +227,16 @@ def Plotter(
 
             ticks = []
             for i in ticklabels:
-                if i>0:
+                if i > 0:
                     ticks.append(np.log10(i))
-                elif i<0:
+                elif i < 0:
                     ticks.append(-np.log10(abs(i)))
                 else:
                     ticks.append(i)
 
             m = np.maximum(np.minimum(m, ticks[-1]), ticks[0])
 
-            print("Logscale", (time.time() - starttime)) if verbose else None
+            print("Logscale", (time.time() - starttime),) if verbose else None
 
         ######################
         #### COLOR SETUP #####
@@ -348,22 +322,13 @@ def Plotter(
                 fontsize = 7
             else:
                 fontsize = 6
-
-            fig = plt.figure(figsize=(cm2inch(width), cm2inch(height)))
-
+            
+            fig = plt.figure(figsize=(cm2inch(width), cm2inch(height),))
             ax = fig.add_subplot(111, projection="mollweide")
 
             # rasterized makes the map bitmap while the labels remain vectorial
             # flip longitude to the astro convention
-            image = plt.pcolormesh(
-                longitude[::-1],
-                latitude,
-                grid_map,
-                vmin=ticks[0],
-                vmax=ticks[-1],
-                rasterized=True,
-                cmap=cmap,
-            )
+            image = plt.pcolormesh(longitude[::-1], latitude, grid_map, vmin=ticks[0], vmax=ticks[-1], rasterized=True, cmap=cmap,)
             # graticule
             ax.set_longitude_grid(60)
             ax.xaxis.set_major_formatter(ThetaFormatterShiftPi(60))
@@ -371,7 +336,7 @@ def Plotter(
             if width < 10:
                 ax.set_latitude_grid(45)
                 ax.set_longitude_grid_ends(90)
-
+            
             ################
             ### COLORBAR ###
             ################
@@ -379,27 +344,18 @@ def Plotter(
                 # colorbar
                 from matplotlib.ticker import FuncFormatter
 
-                cb = fig.colorbar(
-                    image,
-                    orientation="horizontal",
-                    shrink=0.3,
-                    pad=0.08,
-                    ticks=ticks,
-                    format=FuncFormatter(fmt),
-                )
+                cb = fig.colorbar(image, orientation="horizontal", shrink=0.3, pad=0.08, ticks=ticks, format=FuncFormatter(fmt),)
 
                 # Format tick labels
                 print(ticklabels)
-                ticklabels = [fmt(i,1) for i in ticklabels]
+                ticklabels = [fmt(i, 1) for i in ticklabels]
                 cb.ax.set_xticklabels(ticklabels)
-                
+
                 cb.ax.xaxis.set_label_text(unit)
                 cb.ax.xaxis.label.set_size(fontsize)
                 # cb.ax.minorticks_on()
 
-                cb.ax.tick_params(
-                    which="both", axis="x", direction="in", labelsize=fontsize
-                )
+                cb.ax.tick_params(which="both", axis="x", direction="in", labelsize=fontsize,)
                 cb.ax.xaxis.labelpad = 4  # -11
                 # workaround for issue with viewers, see colorbar docstring
                 cb.solids.set_edgecolor("face")
@@ -415,25 +371,20 @@ def Plotter(
             ###################
             ## RIGHT TITLE ####
             ###################
-            plt.text(
-                6.0, 1.3, r"%s" % title, ha="center", va="center", fontsize=fontsize,
-            )
+            plt.text(6.0, 1.3, r"%s" % title, ha="center", va="center", fontsize=fontsize,)
 
-            #############
+            ##################
             ## LEFT TITLE ####
-            #############
-            plt.text(
-                -6.0, 1.3, r"%s" % ltitle, ha="center", va="center", fontsize=fontsize,
-            )
+            ##################
+            plt.text(-6.0, 1.3, r"%s" % ltitle, ha="center", va="center", fontsize=fontsize,)
 
             ##############
             #### SAVE ####
             ##############
             plt.tight_layout()
             filetype = "pdf" if pdf else "png"
-            tp = (
-                False if white_background else True
-            )  # Turn on transparency unless told otherwise
+            # Turn on transparency unless told otherwise
+            tp = False if white_background else True  
 
             ##############
             ## filename ##
@@ -461,21 +412,16 @@ def Plotter(
             fn += f".{filetype}"
 
             starttime = time.time()
-            plt.savefig(
-                fn,
-                bbox_inches="tight",
-                pad_inches=0.02,
-                transparent=tp,
-                format=filetype,
-            )
-            print("Savefig", (time.time() - starttime)) if verbose else None
+            plt.savefig(fn, bbox_inches="tight", pad_inches=0.02, transparent=tp, format=filetype,)
+            print("Savefig", (time.time() - starttime),) if verbose else None
 
             plt.close()
-            print("Totaltime:", (time.time() - totaltime)) if verbose else None
+            print("Totaltime:", (time.time() - totaltime),) if verbose else None
 
         min = tempmin
         max = tempmax
         title = temptitle
+        ltitle = temptitle
         unit = tempunit
         logscale = templogscale
         cmap = tempcmap
@@ -489,184 +435,152 @@ def get_params(m, outfile, polt, signal_label):
     # If tag is found in output file, use template
     cmb_tags = ["cmb", "BP_cmb"]
     chisq_tags = ["chisq"]
-    synch_tags = ["synch_c", "synch_amp", "BP_synch"]
-    dust_tags = ["dust_c", "dust_amp", "BP_dust"]
-    ame_tags = ["ame_c", "ame_amp", "ame1_c", "ame1_amp", "BP_ame"]
-    ff_tags = ["ff_c", "ff_amp", "BP_freefree"]
+    synch_tags = ["synch",]
+    dust_tags = ["dust",]
+    ame_tags = [ "ame_","ame1","ame2",]
+    ff_tags = ["ff_", "freefree",]
     co10_tags = ["co10", "co-100"]
     co21_tags = ["co21", "co-217"]
     co32_tags = ["co32", "co-353"]
     hcn_tags = ["hcn"]
-    ame_nup_tags = [
-        "ame_nup",
-        "ame_nu_p",
-        "ame1_nup",
-        "ame1_nu_p",
-    ]
-    dust_T_tags = ["dust_T", "dust_Td"]
-    dust_beta_tags = ["dust_beta"]
-    synch_beta_tags = ["synch_beta"]
-    ff_Te_tags = ["ff_T_e", "ff_Te"]
-    ff_EM_tags = ["ff_EM"]
+    ame_nup_tags = ["_nup","_nu_p", "_NU_P",]
+    dust_T_tags = ["_T_", "Td"]
+    dust_beta_tags = ["beta","BETA",]
+    synch_beta_tags = ["beta", "BETA",]
+    ff_Te_tags = ["T_e", "_Te", "_TE_", "_T_E",]
+    ff_EM_tags = ["_EM"]
     res_tags = ["residual_", "res_"]
     tod_tags = ["Smap"]
     freqmap_tags = ["BP_030", "BP_044", "BP_070"]
     ignore_tags = ["radio_"]
 
     # Simple signal label from pol index
+    title = {}
     sl = signal_label.split("_")[0]
-    ltitle = ""
-    scale = 1.0 # Scale map? Default no
+    title["sig"] = sl
+    title["unit"] = ""
+    scale = 1.0  # Scale map? Default no
     startcolor = "black"
     endcolor = "white"
     cmap = "planck"  # Default cmap
-    
 
     #######################
-    # SPECTRAL INDEX MAPS #
-    #######################
-    if (
-        tag_lookup(ame_nup_tags, outfile)
-        or tag_lookup(ame_tags, outfile)
-        and sidx_tag_lookup(["NU_P_MEAN"], signal_label)
-    ):
-        print("Plotting AME nu_p")
-
-        ticks = [17, 23]
-        unit = "GHz"
-        title = r"$\nu_{peak}$"
-    elif (
-        tag_lookup(dust_T_tags, outfile)
-        or tag_lookup(dust_tags, outfile)
-        and sidx_tag_lookup(["T_MEAN"], signal_label)
-    ):
-        print("Plotting Thermal dust Td")
-
-        ticks = [14, 30]
-        unit = r"$\mathrm{K}$"
-        title = r"$" + sl + "$ " + r"$T_d$ "
-    elif (
-        tag_lookup(dust_beta_tags, outfile)
-        or tag_lookup(dust_tags, outfile)
-        and sidx_tag_lookup(["BETA_MEAN", "BETA_P_MEAN"], signal_label)
-    ):
-        print("Plotting Thermal dust beta")
-        ticks = [1.3, 1.8]
-        unit = ""
-        title = r"$" + sl + "$ " + r"$\beta_d$ "
-    elif (
-        tag_lookup(synch_beta_tags, outfile)
-        or tag_lookup(synch_tags, outfile)
-        and sidx_tag_lookup(["BETA_MEAN", "BETA_P_MEAN"], signal_label)
-    ):
-        print("Plotting Synchrotron beta")
-        ticks = [-3.2, -3.0]
-        unit = ""
-        title = r"$" + sl + "$ " + r"$\beta_s$ "
-    elif (
-        tag_lookup(ff_Te_tags, outfile)
-        or tag_lookup(ff_tags, outfile)
-        and sidx_tag_lookup(["TE_MEAN"], signal_label)
-    ):
-        print("Plotting freefree T_e")
-
-        ticks = [5000, 8000]
-        unit = r"$\mathrm{K}$"
-        title = r"$T_{e}$"
-
-    elif tag_lookup(ff_EM_tags, outfile):
-        print("Plotting freefree EM MIN AND MAX VALUES UPDATE!")
-
-        vmin, vmax = get_ticks(m, 97.5)
-
-        ticks = [vmin, vmax]
-
-        unit = r"$\mathrm{K}$"
-        title = r"$T_{e}$"
-
-    #######################
-    #### AMPLITUDE MAPS ###
+    #### Component maps ###
     #######################
 
-    elif tag_lookup(cmb_tags, outfile,):
-
+    # ------ CMB ------
+    if tag_lookup(cmb_tags, outfile,):
         print(f"Plotting CMB signal {sl}")
-
+        title["unit"]  = r"$\mu\mathrm{K}_{\mathrm{CMB}}$"
+        title["comp"]  = "cmb" 
+        title["param"] = r"$A$"
         if polt % 3 > 0:
             ticks = [-2, 0, 2]
         else:
             ticks = [-300, 0, 300]
-
-        unit = r"$\mu\mathrm{K}_{\mathrm{CMB}}$"
-        title = r"$" + sl + "$" + r"$_{\mathrm{CMB}}$"
-
+    # ------ Chisq ------
     elif tag_lookup(chisq_tags, outfile):
-
+        title["unit"]  = ""
+        title["comp"]  = ""
+        title["param"] = r"$\chi^2$"
         if polt % 3 > 0:
             ticks = [0, 32]
         else:
             ticks = [0, 76]
-
         print("Plotting chisq with vmax = " + str(ticks[-1]) + " " + sl)
-
-        unit = ""
-        title = r"$\chi^2$ " + sl
         cmap = col.LinearSegmentedColormap.from_list("BkWh", ["black", "white"])
 
+    # ------ SYNCH ------
     elif tag_lookup(synch_tags, outfile):
-        print(f"Plotting Synchrotron {sl}")
-        title = r"$" + sl + "$" + r"$_{\mathrm{synch.}}$ "
-        if polt % 3 > 0:
-            # BP uses 30 GHz ref freq for pol
-
-            ticks = [-50, 0, 50]
-            logscale = True
-            unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
+        title["comp"] = "s"
+        if tag_lookup(synch_beta_tags, outfile+signal_label,):
+            print("Plotting Synchrotron beta")
+            ticks = [-3.2, -3.1, -3.0]
+            title["unit"]  = ""
+            title["param"] = r"$\beta$"
         else:
-            # BP uses 408 MHz GHz ref freq
-            #scale = 1e-6
-            ticks = [10, 30, 100, 300]
-            logscale = True
-            unit = r"$\mathrm{K}_{\mathrm{RJ}}$"
+            print(f"Plotting Synchrotron {sl}")
+            title["param"] = r"$A$"
+            if polt % 3 > 0:
+                # BP uses 30 GHz ref freq for pol
+                ticks = [-50, 0, 50]
+                logscale = True
+                title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
+            else:
+                # BP uses 408 MHz GHz ref freq
+                # scale = 1e-6
+                ticks = [50, 100, 200, 400]
+                logscale = True
+                title["unit"] = r"$\mathrm{K}_{\mathrm{RJ}}$"
 
+    # ------ FREE-FREE ------
     elif tag_lookup(ff_tags, outfile):
-        print("Plotting freefree")
-
-        ticks = [0, 100, 10000]
-        unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
-        title = r"$" + sl + "$" + r"$_{\mathrm{free-free}}$"
-        logscale = True
-
-    elif tag_lookup(dust_tags, outfile):
-        print("Plotting Thermal dust" + " " + sl)
-
-        if polt % 3 > 0:
-            ticks = [-100, 0, 100]
-            logscale = True
-
-            col1 = "deepskyblue"
-            col2 = "blue"
-            col3 = "firebrick"
-            col4 = "darkorange"
-            cmap = col.LinearSegmentedColormap.from_list(
-                "BlBkRd", [endcolor, col1, col2, startcolor, col3, col4, endcolor],
-            )
-
+        title["comp"]  = "ff" 
+        if tag_lookup(ff_Te_tags, outfile+signal_label,):
+            print("Plotting freefree T_e")
+            ticks = [5000, 8000]
+            title["unit"]  = r"$\mathrm{K}$"
+            title["param"] = r"$T_{e}$"
+        elif tag_lookup(ff_EM_tags, outfile+signal_label,):
+            print("Plotting freefree EM MIN AND MAX VALUES UPDATE!")
+            vmin, vmax = get_ticks(m, 97.5)
+            ticks = [vmin, vmax]
+            title["unit"]  = r"$\mathrm{K}$"
+            title["param"] = r"$T_{e}$"
         else:
-            ticks = [0, 100, 10000]
+            print("Plotting freefree")
+            title["param"] = r"$A$"
+            ticks = [20, 200, 2000]
+            title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
             logscale = True
-            cmap = plt.get_cmap("gist_heat")
 
-        unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
-        title = r"$" + sl + "$" + r"$_{\mathrm{d}}$ "
-
+    # ------ AME ------
     elif tag_lookup(ame_tags, outfile):
-        print("Plotting AME")
+        title["comp"]  = "ame"
+        if tag_lookup(ame_nup_tags, outfile+signal_label,):
+            print("Plotting AME nu_p")
+            ticks = [17, 23]
+            title["unit"]  = "GHz"
+            title["param"] = r"$\nu_{p}$"
+        else:
+            print("Plotting AME")
+            title["param"] = r"$A$"
+            title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
+            ticks = [30, 300, 3000]
+            logscale = True
 
-        ticks = [0, 100, 10000]
-        unit = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
-        title = r"$" + sl + "$" + r"$_{\mathrm{ame}}$"
-        logscale = True
+    # ------ THERMAL DUST ------
+    elif tag_lookup(dust_tags, outfile):
+        title["comp"]  = "d"
+        if tag_lookup(dust_T_tags, outfile+signal_label,):
+            print("Plotting Thermal dust Td")
+            ticks = [14, 30]
+            title["unit"]  = r"$\mathrm{K}$"
+            title["param"] = r"$T$"
+        elif tag_lookup(dust_beta_tags, outfile+signal_label,):
+            print("Plotting Thermal dust beta")
+            ticks = [1.3, 1.8]
+            title["unit"]  = ""
+            title["param"] = r"$\beta$"
+        else:
+            print("Plotting Thermal dust" + " " + sl)
+            title["param"] = r"$A$"
+            title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
+
+            if polt % 3 > 0:
+                ticks = [-100, 0, 100]
+                logscale = True
+
+                col1 = "deepskyblue"
+                col2 = "blue"
+                col3 = "firebrick"
+                col4 = "darkorange"
+                cmap = col.LinearSegmentedColormap.from_list("BlBkRd", [endcolor, col1, col2, startcolor, col3, col4, endcolor,],)
+
+            else:
+                ticks = [30, 300, 3000]
+                logscale = True
+                cmap = plt.get_cmap("gist_heat")
 
     #######################
     ## LINE EMISSION MAPS #
@@ -674,34 +588,39 @@ def get_params(m, outfile, polt, signal_label):
 
     elif tag_lookup(co10_tags, outfile):
         print("Plotting CO10")
-
+        title["comp"] = "co10"
+        title["param"] = r"$A$"
+        title["unit"] = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
+        
         ticks = [0, 10, 100]
-        unit = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
-        title = r"$" + sl + "$" + r"$_{\mathrm{CO10}}$"
+
         logscale = True
 
     elif tag_lookup(co21_tags, outfile):
         print("Plotting CO21")
-
+        title["comp"] = "co21"
+        title["param"] =r"$A$"
+        title["unit"] = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
         ticks = [0, 10, 100]
-        unit = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
-        title = r"$" + sl + "$" + r"$_{\mathrm{CO21}}$"
+
         logscale = True
 
     elif tag_lookup(co32_tags, outfile):
         print("Plotting 32")
+        title["comp"] = "co32"
+        title["param"] = r"$A$"
 
         ticks = [0, 10, 100]
-        unit = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
-        title = r"$" + sl + "$" + r"$_{\mathrm{CO32}}$"
+        title["unit"] = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
         logscale = True
 
     elif tag_lookup(hcn_tags, outfile):
         print("Plotting HCN")
+        title["comp"] = "hcn"
+        title["param"] = r"$A$"
 
         ticks = [0.01, 100]
-        unit = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
-        title = r"$" + sl + "$" + r"$_{\mathrm{HCN}}$"
+        title["unit"] = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
         logscale = True
 
     #################
@@ -710,40 +629,37 @@ def get_params(m, outfile, polt, signal_label):
 
     elif tag_lookup(res_tags, outfile):
         from re import findall
-
         print("Plotting residual map" + " " + sl)
 
         if "res_" in outfile:
             tit = str(findall(r"res_(.*?)_", outfile)[0])
         else:
             tit = str(findall(r"residual_(.*?)_", outfile)[0])
-
-        title = fr"{tit} " + r"  $" + sl + "$"
-
+        title["comp"] = fr"{tit}"
+        title["param"] = r"$res$"
         ticks = [-10, 0, 10]
-        unit = r"$\mu\mathrm{K}$"
+        title["unit"] = r"$\mu\mathrm{K}$"
 
         if "545" in outfile:
             ticks = [-100, 0, 100]
-            unit = r"$\mathrm{MJy/sr}$"
+            title["unit"] = r"$\mathrm{MJy/sr}$"
         elif "857" in outfile:
             ticks = [-0.05, 0, 0.05]
-            unit = r"$\mathrm{MJy/sr}$"
+            title["unit"] = r"$\mathrm{MJy/sr}$"
 
     ############
     # TOD MAPS #
     ############
-
     elif tag_lookup(tod_tags, outfile):
         from re import findall
 
         print("Plotting Smap map" + " " + sl)
 
         tit = str(findall(r"tod_(.*?)_Smap", outfile)[0])
-        title = fr"{tit} " + r"  $" + sl + "$"
-
+        title["comp"] = fr"{tit}"
+        title["param"] = r"$smap$"
         ticks = [-0.2, 0, 0.2]
-        unit = r"$\mu\mathrm{K}$"
+        title["unit"] = r"$\mu\mathrm{K}$"
 
     ############
     # FREQMAPS #
@@ -751,24 +667,21 @@ def get_params(m, outfile, polt, signal_label):
 
     elif tag_lookup(freqmap_tags, outfile):
         from re import findall
-
         print("Plotting Frequency map" + " " + sl)
 
         vmin, vmax = get_ticks(m, 97.5)
         ticks = [vmin, 0.0, vmax]
 
-        unit = r"$\mu\mathrm{K}$"
+        title["unit"] = r"$\mu\mathrm{K}$"
         tit = str(findall(r"BP_(.*?)_", outfile)[0])
-        tl =  sl + "_{"+fr"{tit}"+"}"
-        title = r"$" + tl + "$"
-        
+        title["comp"] = fr"{tit}"
+        title["param"] = r"$A$"
+
     ############################
     # Not idenified or ignored #
     ############################
     elif tag_lookup(ignore_tags, outfile):
-        print(
-            f'{outfile} is on the ignore list, under tags {ignore_tags}. Remove from "ignore_tags" in plotter.py. Breaking.'
-        )
+        print(f'{outfile} is on the ignore list, under tags {ignore_tags}. Remove from "ignore_tags" in plotter.py. Breaking.')
         sys.exit()
     else:
         # Run map autoset
@@ -777,30 +690,30 @@ def get_params(m, outfile, polt, signal_label):
     # If signal is an RMS map, add tag.
     if signal_label.endswith("RMS"):
         print(f"Plotting RMS signal {signal_label}")
-        ltitle = "RMS"
+        title["stddev"] = True
         vmin, vmax = get_ticks(m, 97.5)
-        logscale=False
-        ticks = [vmin, vmax]        
-        unit = ""
+        logscale = False
+        vmin = 0
+        ticks = [vmin, vmax]
         cmap = "planck"
         scale = 1.0
+    else:
+        title["stddev"] = False
 
-    return title, ltitle, ticks, unit, cmap, logscale, scale
+    title["mean"] = True if signal_label.endswith("MEAN") else False
+    title["comp"] = title["comp"].lstrip('0')    
+
+    return (title, ticks, cmap, logscale, scale,)
 
 
 def not_identified(m, signal_label, logscale):
     print("Map not recognized, plotting with min and max values")
+    title["comp"] = signal_label.split("_")[-1]
     scale = 1.0
     vmin, vmax = get_ticks(m, 97.5)
     ticks = [vmin, vmax]
-
-    unit = ""
-    tl = signal_label.split("_")[0] + "_{" + signal_label.split("_")[-1] + "}"
-    title = r"$" + tl + "$"
-    ltitle = ""
     cmap = "planck"
-
-    return title, ltitle, ticks, unit, cmap, logscale, scale
+    return (title, ticks, cmap, logscale, scale,)
 
 
 def get_signallabel(x):
@@ -823,8 +736,9 @@ def get_sizes(size):
         sizes.append(18.0)
     return sizes
 
+
 def get_ticks(m, percentile):
-    vmin = np.percentile(m, 100.0-percentile)
+    vmin = np.percentile(m, 100.0 - percentile)
     vmax = np.percentile(m, percentile)
 
     vmin = 0.0 if abs(vmin) < 1e-5 else vmin
@@ -850,13 +764,9 @@ def fmt(x, pos):
     else:
         return fr"${x:.2f}$"
 
+
 def cm2inch(cm):
     return cm * 0.393701
-
-
-def sidx_tag_lookup(tags, signal_label):
-    return any(e in signal_label for e in tags)
-
 
 def tag_lookup(tags, outfile):
     return any(e in outfile for e in tags)

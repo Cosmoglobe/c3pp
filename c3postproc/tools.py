@@ -28,9 +28,7 @@ def unpack_alms(maps, lmax):
                 j_real = l ** 2 + l + m
                 j_comp = l ** 2 + l - m
 
-                alms[sig, i] = complex(maps[sig, j_real], maps[sig, j_comp]) / np.sqrt(
-                    2.0
-                )
+                alms[sig, i] = complex(maps[sig, j_real], maps[sig, j_comp],) / np.sqrt(2.0)
 
                 i += 1
     return alms
@@ -47,7 +45,9 @@ def alm2fits_tool(input, dataset, nside, lmax, fwhm, save=True):
     if lmax:
         # Check if chosen lmax is compatible with data
         if lmax > lmax_h5:
-            print("lmax larger than data allows: ", lmax_h5)
+            print(
+                "lmax larger than data allows: ", lmax_h5,
+            )
             print("Please chose a value smaller than this")
     else:
         # Set lmax to default value
@@ -57,19 +57,21 @@ def alm2fits_tool(input, dataset, nside, lmax, fwhm, save=True):
     alms_unpacked = unpack_alms(alms, lmax)  # Unpack alms
 
     print("Making map from alms")
-    maps = hp.sphtfunc.alm2map(
-        alms_unpacked, nside, lmax=lmax, mmax=mmax, fwhm=arcmin2rad(fwhm), pixwin=True
-    )
+    maps = hp.sphtfunc.alm2map(alms_unpacked, nside, lmax=lmax, mmax=mmax, fwhm=arcmin2rad(fwhm), pixwin=True,)
 
     outfile = dataset.replace("/", "_")
     outfile = outfile.replace("_alm", "")
     if save:
         outfile += f"_{str(int(fwhm))}arcmin" if fwhm > 0.0 else ""
-        hp.write_map(outfile + f"_n{str(nside)}_lmax{lmax}.fits", maps, overwrite=True)
+        hp.write_map(
+            outfile + f"_n{str(nside)}_lmax{lmax}.fits", maps, overwrite=True,
+        )
     return maps, nside, lmax, fwhm, outfile
 
 
-def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command):
+def h5handler(
+    input, dataset, min, max, maxchain, output, fwhm, nside, command,
+):
     # Check if you want to output a map
     import h5py
     import healpy as hp
@@ -91,7 +93,7 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command):
     dats = []
     maxnone = True if max == None else False  # set length of keys for maxchains>1
     for c in range(1, maxchain + 1):
-        filename = input.replace("c0001","c"+str(c).zfill(4))
+        filename = input.replace("c0001", "c" + str(c).zfill(4))
         with h5py.File(filename, "r") as f:
             if maxnone:
                 # If no max is specified, chose last sample
@@ -145,16 +147,8 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command):
 
                 # If data is alm and calculating std. Bin to map and smooth first.
                 if type == "alm" and command == np.std and alm2map:
-                    print(
-                        f"#{sample} --- alm2map with {fwhm} arcmin, lmax {lmax_h5} ---"
-                    )
-                    data = hp.alm2map(
-                        data,
-                        nside=nside,
-                        lmax=lmax_h5,
-                        fwhm=arcmin2rad(fwhm),
-                        pixwin=True,
-                    )
+                    print(f"#{sample} --- alm2map with {fwhm} arcmin, lmax {lmax_h5} ---")
+                    data = hp.alm2map(data, nside=nside, lmax=lmax_h5, fwhm=arcmin2rad(fwhm), pixwin=True,)
 
                 # If data is map, smooth first.
                 elif type == "map" and fwhm > 0.0 and command == np.std:
@@ -172,9 +166,7 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command):
     # Smoothing afterwards when calculating mean
     if type == "alm" and command == np.mean and alm2map:
         print(f"# --- alm2map mean with {fwhm} arcmin, lmax {lmax_h5} ---")
-        outdata = hp.alm2map(
-            outdata, nside=nside, lmax=lmax_h5, fwhm=arcmin2rad(fwhm), pixwin=True,
-        )
+        outdata = hp.alm2map(outdata, nside=nside, lmax=lmax_h5, fwhm=arcmin2rad(fwhm), pixwin=True,)
 
     # Smoothing can be done after for np.mean
     if type == "map" and fwhm > 0.0 and command == np.mean:

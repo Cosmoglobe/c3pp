@@ -8,86 +8,31 @@ from c3postproc.tools import *
 
 
 def format_fits(
-    chain,
-    extname,
-    types,
-    units,
-    nside,
-    burnin,
-    maxchain,
-    polar,
-    component,
-    fwhm,
-    nu_ref_t,
-    nu_ref_p,
-    procver,
-    filename,
-    bndctr,
-    restfreq,
-    bndwid,
+    chain, extname, types, units, nside, burnin, maxchain, polar, component, fwhm, nu_ref_t, nu_ref_p, procver, filename, bndctr, restfreq, bndwid,
 ):
     print()
     print("{:#^80}".format(""))
     print("{:#^80}".format(f" Formatting and outputting {filename} "))
     print("{:#^80}".format(""))
 
-    header = get_header(
-        extname,
-        types,
-        units,
-        nside,
-        polar,
-        component,
-        fwhm,
-        nu_ref_t,
-        nu_ref_p,
-        procver,
-        filename,
-        bndctr,
-        restfreq,
-        bndwid,
-    )
-    dset = get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types)
+    header = get_header(extname, types, units, nside, polar, component, fwhm, nu_ref_t, nu_ref_p, procver, filename, bndctr, restfreq, bndwid,)
+    dset = get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types,)
 
     print(f"{procver}/{filename}", dset.shape)
     hp.write_map(
-        f"{procver}/{filename}",
-        dset,
-        column_names=types,
-        column_units=units,
-        coord="G",
-        overwrite=True,
-        extra_header=header,
+        f"{procver}/{filename}", dset, column_names=types, column_units=units, coord="G", overwrite=True, extra_header=header,
     )
 
 
-def get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types):
+def get_data(
+    chain, extname, component, burnin, maxchain, fwhm, nside, types,
+):
     if extname.endswith("CMB"):
         # Mean data
-        amp_mean = h5handler(
-            input=chain,
-            dataset="cmb/amp_alm",
-            min=burnin,
-            max=None,
-            maxchain=maxchain,
-            output="map",
-            fwhm=fwhm,
-            nside=nside,
-            command=np.mean,
-        )
+        amp_mean = h5handler(input=chain, dataset="cmb/amp_alm", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=fwhm, nside=nside, command=np.mean,)
 
         # stddev data
-        amp_stddev = h5handler(
-            input=chain,
-            dataset="cmb/amp_alm",
-            min=burnin,
-            max=None,
-            maxchain=maxchain,
-            output="map",
-            fwhm=fwhm,
-            nside=nside,
-            command=np.std,
-        )
+        amp_stddev = h5handler(input=chain, dataset="cmb/amp_alm", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=fwhm, nside=nside, command=np.std,)
 
         # Masks
         mask1 = np.zeros((hp.nside2npix(nside)))
@@ -107,52 +52,12 @@ def get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types):
 
     elif extname.endswith("SYNCHROTRON"):
         # Mean data
-        amp_mean = h5handler(
-            input=chain,
-            dataset="synch/amp_alm",
-            min=burnin,
-            max=None,
-            maxchain=maxchain,
-            output="map",
-            fwhm=fwhm,
-            nside=nside,
-            command=np.mean,
-        )
-        beta_mean = h5handler(
-            input=chain,
-            dataset="synch/beta_map",
-            min=burnin,
-            max=None,
-            maxchain=maxchain,
-            output="map",
-            fwhm=0.0,
-            nside=nside,
-            command=np.mean,
-        )
+        amp_mean = h5handler(input=chain, dataset="synch/amp_alm", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=fwhm, nside=nside, command=np.mean,)
+        beta_mean = h5handler(input=chain, dataset="synch/beta_map", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=0.0, nside=nside, command=np.mean,)
 
         # stddev data
-        amp_stddev = h5handler(
-            input=chain,
-            dataset="synch/amp_alm",
-            min=burnin,
-            max=None,
-            maxchain=maxchain,
-            output="map",
-            fwhm=fwhm,
-            nside=nside,
-            command=np.std,
-        )
-        beta_stddev = h5handler(
-            input=chain,
-            dataset="synch/beta_map",
-            min=burnin,
-            max=None,
-            maxchain=maxchain,
-            output="map",
-            fwhm=0.0,
-            nside=nside,
-            command=np.std,
-        )
+        amp_stddev = h5handler(input=chain, dataset="synch/amp_alm", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=fwhm, nside=nside, command=np.std,)
+        beta_stddev = h5handler(input=chain, dataset="synch/beta_map", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=0.0, nside=nside, command=np.std,)
 
         dset = np.zeros((len(types), hp.nside2npix(nside)))
 
@@ -172,52 +77,12 @@ def get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types):
 
     elif extname.endswith("FREE-FREE"):
         # Mean data
-        amp_mean = h5handler(
-            input=chain,
-            dataset="ff/amp_alm",
-            min=burnin,
-            max=None,
-            maxchain=maxchain,
-            output="map",
-            fwhm=fwhm,
-            nside=nside,
-            command=np.mean,
-        )
-        Te_mean = h5handler(
-            input=chain,
-            dataset="ff/Te_map",
-            min=burnin,
-            max=None,
-            maxchain=maxchain,
-            output="map",
-            fwhm=0.0,
-            nside=nside,
-            command=np.mean,
-        )
+        amp_mean = h5handler(input=chain, dataset="ff/amp_alm", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=fwhm, nside=nside, command=np.mean,)
+        Te_mean = h5handler(input=chain, dataset="ff/Te_map", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=0.0, nside=nside, command=np.mean,)
 
         # stddev data
-        amp_stddev = h5handler(
-            input=chain,
-            dataset="ff/amp_alm",
-            min=burnin,
-            max=None,
-            maxchain=maxchain,
-            output="map",
-            fwhm=fwhm,
-            nside=nside,
-            command=np.std,
-        )
-        Te_stddev = h5handler(
-            input=chain,
-            dataset="ff/Te_map",
-            min=burnin,
-            max=None,
-            maxchain=maxchain,
-            output="map",
-            fwhm=0.0,
-            nside=nside,
-            command=np.std,
-        )
+        amp_stddev = h5handler(input=chain, dataset="ff/amp_alm", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=fwhm, nside=nside, command=np.std,)
+        Te_stddev = h5handler(input=chain, dataset="ff/Te_map", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=0.0, nside=nside, command=np.std,)
 
         dset = np.zeros((len(types), hp.nside2npix(nside)))
 
@@ -229,52 +94,12 @@ def get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types):
 
     elif extname.endswith("AME"):
         # Mean data
-        amp_mean = h5handler(
-            input=chain,
-            dataset="ame/amp_alm",
-            min=burnin,
-            max=None,
-            maxchain=maxchain,
-            output="map",
-            fwhm=fwhm,
-            nside=nside,
-            command=np.mean,
-        )
-        nu_p_mean = h5handler(
-            input=chain,
-            dataset="ame/nu_p_map",
-            min=burnin,
-            max=None,
-            maxchain=maxchain,
-            output="map",
-            fwhm=0.0,
-            nside=nside,
-            command=np.mean,
-        )
+        amp_mean = h5handler(input=chain, dataset="ame/amp_alm", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=fwhm, nside=nside, command=np.mean,)
+        nu_p_mean = h5handler(input=chain, dataset="ame/nu_p_map", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=0.0, nside=nside, command=np.mean,)
 
         # stddev data
-        amp_stddev = h5handler(
-            input=chain,
-            dataset="ame/amp_alm",
-            min=burnin,
-            max=None,
-            maxchain=maxchain,
-            output="map",
-            fwhm=fwhm,
-            nside=nside,
-            command=np.std,
-        )
-        nu_p_stddev = h5handler(
-            input=chain,
-            dataset="ame/nu_p_map",
-            min=burnin,
-            max=None,
-            maxchain=maxchain,
-            output="map",
-            fwhm=0.0,
-            nside=nside,
-            command=np.std,
-        )
+        amp_stddev = h5handler(input=chain, dataset="ame/amp_alm", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=fwhm, nside=nside, command=np.std,)
+        nu_p_stddev = h5handler(input=chain, dataset="ame/nu_p_map", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=0.0, nside=nside, command=np.std,)
 
         dset = np.zeros((len(types), hp.nside2npix(nside)))
 
@@ -286,30 +111,10 @@ def get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types):
 
     if extname.endswith("FREQMAP"):
         # Mean data
-        amp_mean = h5handler(
-            input=chain,
-            dataset=f"tod/{component}/map",
-            min=burnin,
-            max=None,
-            maxchain=maxchain,
-            output="map",
-            fwhm=fwhm,
-            nside=nside,
-            command=np.mean,
-        )
+        amp_mean = h5handler(input=chain, dataset=f"tod/{component}/map", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=fwhm, nside=nside, command=np.mean,)
 
         # stddev data
-        amp_stddev = h5handler(
-            input=chain,
-            dataset=f"tod/{component}/map",
-            min=burnin,
-            max=None,
-            maxchain=maxchain,
-            output="map",
-            fwhm=fwhm,
-            nside=nside,
-            command=np.std,
-        )
+        amp_stddev = h5handler(input=chain, dataset=f"tod/{component}/map", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=fwhm, nside=nside, command=np.std,)
 
         # Masks
 
@@ -328,30 +133,17 @@ def get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types):
 
 
 def get_header(
-    extname,
-    types,
-    units,
-    nside,
-    polar,
-    component,
-    fwhm,
-    nu_ref_t,
-    nu_ref_p,
-    procver,
-    filename,
-    bndctr,
-    restfreq,
-    bndwid,
+    extname, types, units, nside, polar, component, fwhm, nu_ref_t, nu_ref_p, procver, filename, bndctr, restfreq, bndwid,
 ):
     stamp = f'Written {time.strftime("%c")}'
 
     header = []
-    header.append(("DATE", stamp, "Time and date of creation."))
-    header.append(("PIXTYPE", "HEALPIX", "HEALPIX pixelisation."))
+    header.append(("DATE", stamp, "Time and date of creation.",))
+    header.append(("PIXTYPE", "HEALPIX", "HEALPIX pixelisation.",))
     header.append(("COORDSYS", "GALACTIC"))
     header.append(("POLAR", polar))
-    header.append(("BAD_DATA", hp.UNSEEN, "HEALPIX UNSEEN value."))
-    header.append(("METHOD", "COMMANDER", "COMMANDER sampling framework"))
+    header.append(("BAD_DATA", hp.UNSEEN, "HEALPIX UNSEEN value.",))
+    header.append(("METHOD", "COMMANDER", "COMMANDER sampling framework",))
     header.append(("AST-COMP", component))
     if extname == "FREQMAP":
         header.append(("FREQ", nu_ref_t))
@@ -364,7 +156,7 @@ def get_header(
     header.append(("FILENAME", filename))
     if extname == "FREQMAP":
         # TODO are these correct?
-        header.append(("BNDCTR", bndctr, "Formal Band Center"))
-        header.append(("RESTFREQ", restfreq, "Effective Central Frequency"))
-        header.append(("BNDWID", bndwid, "Effective Bandwidth"))
+        header.append(("BNDCTR", bndctr, "Formal Band Center",))
+        header.append(("RESTFREQ", restfreq, "Effective Central Frequency",))
+        header.append(("BNDWID", bndwid, "Effective Bandwidth",))
     return header
