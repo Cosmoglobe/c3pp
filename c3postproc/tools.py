@@ -8,7 +8,7 @@ import numpy as np
 
 @numba.njit(cache=True, fastmath=True)  # Speeding up by a lot!
 def unpack_alms(maps, lmax):
-    print("Unpacking alms")
+    #print("Unpacking alms")
     mmax = lmax
     nmaps = len(maps)
     # Nalms is length of target alms
@@ -69,16 +69,15 @@ def alm2fits_tool(input, dataset, nside, lmax, fwhm, save=True):
     return maps, nside, lmax, fwhm, outfile
 
 
-def h5handler(
-    input, dataset, min, max, maxchain, output, fwhm, nside, command,
-):
+def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command,):
     # Check if you want to output a map
     import h5py
     import healpy as hp
+    from tqdm import tqdm
 
     print()
-    print("{:-^50}".format(f" {dataset} calculating {command.__name__} "))
-    print("{:-^50}".format(f" nside {nside}, {fwhm} arcmin smoothing "))
+    print("{:-^48}".format(f" {dataset} calculating {command.__name__} "))
+    print("{:-^48}".format(f" nside {nside}, {fwhm} arcmin smoothing "))
 
     if dataset.endswith("map"):
         type = "map"
@@ -99,9 +98,9 @@ def h5handler(
                 # If no max is specified, chose last sample
                 max = len(f.keys()) - 1
 
-            print("{:-^50}".format(f" Samples {min} to {max} chain {c}"))
+            print("{:-^48}".format(f" Samples {min} to {max} chain {c}"))
 
-            for sample in range(min, max + 1):
+            for sample in tqdm(range(min, max + 1), ncols=80):
                 # Identify dataset
                 # alm, map or (sigma_l, which is recognized as l)
 
@@ -113,7 +112,7 @@ def h5handler(
 
                 # Sets tag with type
                 tag = f"{s}/{dataset}"
-                print(f"Reading c{str(c).zfill(4)} {tag}")
+                #print(f"Reading c{str(c).zfill(4)} {tag}")
 
                 # Check if map is available, if not, use alms.
                 # If alms is already chosen, no problem
@@ -147,13 +146,13 @@ def h5handler(
 
                 # If data is alm and calculating std. Bin to map and smooth first.
                 if type == "alm" and command == np.std and alm2map:
-                    print(f"#{sample} --- alm2map with {fwhm} arcmin, lmax {lmax_h5} ---")
-                    data = hp.alm2map(data, nside=nside, lmax=lmax_h5, fwhm=arcmin2rad(fwhm), pixwin=True,)
+                    #print(f"#{sample} --- alm2map with {fwhm} arcmin, lmax {lmax_h5} ---")
+                    data = hp.alm2map(data, nside=nside, lmax=lmax_h5, fwhm=arcmin2rad(fwhm), pixwin=True,verbose=False,)
 
                 # If data is map, smooth first.
                 elif type == "map" and fwhm > 0.0 and command == np.std:
-                    print(f"#{sample} --- Smoothing map ---")
-                    data = hp.sphtfunc.smoothing(data, fwhm=arcmin2rad(fwhm),)
+                    #print(f"#{sample} --- Smoothing map ---")
+                    data = hp.sphtfunc.smoothing(data, fwhm=arcmin2rad(fwhm),verbose=False,)
 
                 # Append sample to list
                 dats.append(data)
@@ -165,13 +164,13 @@ def h5handler(
 
     # Smoothing afterwards when calculating mean
     if type == "alm" and command == np.mean and alm2map:
-        print(f"# --- alm2map mean with {fwhm} arcmin, lmax {lmax_h5} ---")
-        outdata = hp.alm2map(outdata, nside=nside, lmax=lmax_h5, fwhm=arcmin2rad(fwhm), pixwin=True,)
+        #print(f"# --- alm2map mean with {fwhm} arcmin, lmax {lmax_h5} ---")
+        outdata = hp.alm2map(outdata, nside=nside, lmax=lmax_h5, fwhm=arcmin2rad(fwhm), pixwin=True,verbose=False,)
 
     # Smoothing can be done after for np.mean
     if type == "map" and fwhm > 0.0 and command == np.mean:
-        print(f"--- Smoothing mean map with {fwhm} arcmin,---")
-        outdata = hp.sphtfunc.smoothing(outdata, fwhm=arcmin2rad(fwhm))
+        #print(f"--- Smoothing mean map with {fwhm} arcmin,---")
+        outdata = hp.sphtfunc.smoothing(outdata, fwhm=arcmin2rad(fwhm), verbose=False,)
 
     # Outputs fits map if output name is .fits
     if output.endswith(".fits"):

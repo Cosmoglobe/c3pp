@@ -69,7 +69,7 @@ def Plotter(input, dataset, nside, auto, min, max, minmax, rng, colorbar, lmax, 
     for polt in sig:
         print("----------------------------------")
         signal_label = get_signallabel(polt)
-
+        
         try:
             if input.endswith(".fits"):
                 map, header = hp.read_map(input, field=polt, verbose=False, h=True,)

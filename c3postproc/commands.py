@@ -71,7 +71,7 @@ def stddev(input, dataset, output, min, max, maxchain, fwhm, nside,):
 
 
 @commands.command()
-@click.argument("input", type=click.STRING)
+@click.argument("input", type=click.Path(exists=True), nargs=-1,)
 @click.option("-nside", type=click.INT, help="nside for optional ud_grade.",)
 @click.option("-auto", is_flag=True, help="Automatically sets all plotting parameters.",)
 @click.option("-min", default=False, help="Min value of colorbar, overrides autodetector.",)
@@ -442,7 +442,7 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
                     shutil.copyfile(f"{path}/{file}", f"{procver}/BP_param_full_c" + str(i).zfill(4) + ".txt",)
 
             # Full-mission Gibbs chain file
-            print(f"Copying {chainfile} to {procver}/BP_resamp_c" + str(i).zfill(4) + f"_full_{procver}.h5")
+            print(f"Copying {chainfile} to {procver}/BP_c" + str(i).zfill(4) + f"_full_{procver}.h5")
             shutil.copyfile(chainfile, f"{procver}/BP_c" + str(i).zfill(4) + f"_full_{procver}.h5",)
 
     if resamp:
