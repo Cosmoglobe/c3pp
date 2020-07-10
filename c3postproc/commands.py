@@ -330,8 +330,9 @@ def alm2fits(input, dataset, nside, lmax, fwhm):
 @click.option("-skipsynch", is_flag=True, help="Don't output synch",)
 @click.option("-skipame", is_flag=True, help="Don't output ame",)
 @click.option("-skipff", is_flag=True, help="Don't output ff",)
+@click.option("-skipdiff", is_flag=True, help="Creates diff maps to dx12 and npipe")
 @click.pass_context
-def plotrelease(ctx, procver, mask, pdf, skipfreqmaps, skipcmb, skipsynch, skipame, skipff,):
+def plotrelease(ctx, procver, mask, pdf, skipfreqmaps, skipcmb, skipsynch, skipame, skipff, skipdiff,):
     """
     \b
     Plots all release files\n
@@ -340,30 +341,36 @@ def plotrelease(ctx, procver, mask, pdf, skipfreqmaps, skipcmb, skipsynch, skipa
         # CMB I no dip
         ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", colorbar=True, auto=True, remove_dipole=mask, pdf=pdf,)
 
-        # CMB QU and IQU rms
-        ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", colorbar=True, auto=True, sig=[1, 2, 3, 4, 5], pdf=pdf,)
+        # CMB QU and IQU rms, and P_mean, P_rms
+        ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", colorbar=True, auto=True, sig=[1, 2, 3, 4, 5, 6, 7], pdf=pdf,)
 
     if not skipfreqmaps:
         # 030 GHz IQU
         ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[0,], pdf=pdf, range=3400,)
-        ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[3], pdf=pdf, min=0.0, max=20.0)
+        ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[4,], pdf=pdf, min=0.0, max=20.0)
         ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[1, 2,], pdf=pdf, fwhm=60.0, range=30,)
-        ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[4,5,], pdf=pdf, fwhm=60.0,min=0.0, max=20.0)
+        ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[3,], pdf=pdf, fwhm=60.0, min=0.0, max=100,)
+        ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[5, 6,], pdf=pdf, fwhm=60.0,min=0.0, max=20.0)
+        ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[7,], pdf=pdf, fwhm=60.0,min=0.0, max=40.0)
 
         # 044 GHz IQU
         ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[0,], pdf=pdf, range=3400,)
-        ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[3], pdf=pdf, min=0.0, max=20.0)
+        ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[4,], pdf=pdf, min=0.0, max=20.0)
         ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[1, 2,], pdf=pdf, fwhm=60.0, range=30,)
-        ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[4,5,], pdf=pdf, fwhm=60.0, min=0.0, max=20.0)
+        ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[3,], pdf=pdf, fwhm=60.0, min=0.0, max=100,)
+        ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[5, 6,], pdf=pdf, fwhm=60.0,min=0.0, max=20.0)
+        ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[7,], pdf=pdf, fwhm=60.0, min=0.0, max=40.0)
         # 070 GHz IQU
-        ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=True, auto=True, sig=[0,], pdf=pdf, range=3400)
-        ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=True, auto=True, sig=[3], pdf=pdf, min=0.0, max=20.0)
+        ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=True, auto=True, sig=[0,], pdf=pdf, range=3400,)
+        ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=True, auto=True, sig=[4,], pdf=pdf, min=0.0, max=20.0)
         ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=True, auto=True, sig=[1, 2,], pdf=pdf, fwhm=60.0, range=30,)
-        ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=True, auto=True, sig=[4,5,], pdf=pdf, fwhm=60.0, min=0.0, max=20.0)
+        ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=True, auto=True, sig=[3,], pdf=pdf, fwhm=60.0, min=0.0, max=100,)
+        ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=True, auto=True, sig=[5, 6,], pdf=pdf, fwhm=60.0,min=0.0, max=20.0)
+        ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=True, auto=True, sig=[7,], pdf=pdf, fwhm=60.0,min=0.0, max=40.0)
 
     if not skipsynch:
         # Synch IQU
-        ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", colorbar=True, auto=True, sig=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], pdf=pdf,)
+        ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", colorbar=True, auto=True, sig=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], pdf=pdf,)
 
     if not skipff:
         # freefree mean and rms
@@ -372,6 +379,23 @@ def plotrelease(ctx, procver, mask, pdf, skipfreqmaps, skipcmb, skipsynch, skipa
     if not skipame:
         # ame mean and rms
         ctx.invoke(plot, input=f"BP_ame_I_full_n1024_{procver}.fits", colorbar=True, auto=True, sig=[0, 1, 2, 3], pdf=pdf,)
+
+    if not skipdiff:
+        ctx.invoke(plot, input=f"BP_030_diff_npipe_{procver}.fits", colorbar=True, auto=True, sig=[0,], pdf=pdf, range=10)
+        ctx.invoke(plot, input=f"BP_030_diff_npipe_{procver}.fits", colorbar=True, auto=True, sig=[1, 2,], pdf=pdf, range=2)
+        ctx.invoke(plot, input=f"BP_030_diff_dx12_{procver}.fits",  colorbar=True, auto=True, sig=[0,], pdf=pdf, range=10)
+        ctx.invoke(plot, input=f"BP_030_diff_dx12_{procver}.fits",  colorbar=True, auto=True, sig=[1, 2,], pdf=pdf, range=2)
+
+        ctx.invoke(plot, input=f"BP_044_diff_npipe_{procver}.fits", colorbar=True, auto=True, sig=[0,], pdf=pdf, range=10)
+        ctx.invoke(plot, input=f"BP_044_diff_npipe_{procver}.fits", colorbar=True, auto=True, sig=[1, 2,], pdf=pdf, range=2)
+        ctx.invoke(plot, input=f"BP_044_diff_dx12_{procver}.fits",  colorbar=True, auto=True, sig=[0,], pdf=pdf, range=10)
+        ctx.invoke(plot, input=f"BP_044_diff_dx12_{procver}.fits",  colorbar=True, auto=True, sig=[1, 2,], pdf=pdf, range=2)
+
+        ctx.invoke(plot, input=f"BP_070_diff_npipe_{procver}.fits", colorbar=True, auto=True, sig=[0,], pdf=pdf, range=10)
+        ctx.invoke(plot, input=f"BP_070_diff_npipe_{procver}.fits", colorbar=True, auto=True, sig=[1, 2,], pdf=pdf, range=2)
+        ctx.invoke(plot, input=f"BP_070_diff_dx12_{procver}.fits",  colorbar=True, auto=True, sig=[0,], pdf=pdf, range=10)
+        ctx.invoke(plot, input=f"BP_070_diff_dx12_{procver}.fits",  colorbar=True, auto=True, sig=[1, 2,], pdf=pdf, range=2)
+
 
 
 @commands.command()
@@ -386,8 +410,9 @@ def plotrelease(ctx, procver, mask, pdf, skipfreqmaps, skipcmb, skipsynch, skipa
 @click.option("-skipcmb", is_flag=True, help="Don't output cmb",)
 @click.option("-skipsynch", is_flag=True, help="Don't output synchrotron",)
 @click.option("-skipbr", is_flag=True, help="Don't output BR",)
+@click.option("-skipdiff", is_flag=True, help="Creates diff maps to dx12 and npipe")
 @click.pass_context
-def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame, skipff, skipcmb, skipsynch, skipbr,):
+def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame, skipff, skipcmb, skipsynch, skipbr, skipdiff,):
     """
     Creates a release file-set on the BeyondPlanck format.\n
     https://gitlab.com/BeyondPlanck/repo/-/wikis/BeyondPlanck-Release-Candidate-2\n    
@@ -471,8 +496,8 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
             format_fits(
                 chain=chain,
                 extname="FREQMAP",
-                types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS",],
-                units=["uK", "uK", "uK", "uK", "uK", "uK",],
+                types=["I_MEAN", "Q_MEAN", "U_MEAN", "P_MEAN", "I_RMS", "Q_RMS", "U_RMS", "P_RMS",],
+                units=["uK", "uK", "uK", "uK", "uK", "uK", "uK", "uK",],
                 nside=512,
                 burnin=burnin,
                 maxchain=maxchain,
@@ -491,8 +516,8 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
             format_fits(
                 chain=chain,
                 extname="FREQMAP",
-                types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS",],
-                units=["uK", "uK", "uK", "uK", "uK", "uK",],
+                types=["I_MEAN", "Q_MEAN", "U_MEAN", "P_MEAN", "I_RMS", "Q_RMS", "U_RMS", "P_RMS",],
+                units=["uK", "uK", "uK", "uK", "uK", "uK", "uK", "uK",],
                 nside=512,
                 burnin=burnin,
                 maxchain=maxchain,
@@ -511,8 +536,8 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
             format_fits(
                 chain=chain,
                 extname="FREQMAP",
-                types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS",],
-                units=["uK", "uK", "uK", "uK", "uK", "uK",],
+                types=["I_MEAN", "Q_MEAN", "U_MEAN", "P_MEAN", "I_RMS", "Q_RMS", "U_RMS", "P_RMS",],
+                units=["uK", "uK", "uK", "uK", "uK", "uK", "uK", "uK",],
                 nside=1024,
                 burnin=burnin,
                 maxchain=maxchain,
@@ -527,71 +552,49 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
                 restfreq=70.467,
                 bndwid=14.909,
             )
+
+
         except Exception as e:
             print(e)
             print("Continuing...")
-        """
-        # Full-mission 70 GHz IQU frequency map
-        format_fits(
-            chain=chain,
-            extname="FREQMAP",
-            types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS",],
-            units=["uK", "uK", "uK", "uK", "uK", "uK",],
-            nside=1024,
-            burnin=burnin,
-            maxchain=maxchain,
-            polar=True,
-            component="070ds1",
-            fwhm=0.0,
-            nu_ref_t="70.0 GHz",
-            nu_ref_p="70.0 GHz",
-            procver=procver,
-            filename=f"BP_070ds1_IQU_full_n1024_{procver}.fits",
-            bndctr=70,
-            restfreq=70.467,
-            bndwid=14.909,
-        )
-        # Full-mission 70 GHz IQU frequency map
-        format_fits(
-            chain=chain,
-            extname="FREQMAP",
-            types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS",],
-            units=["uK", "uK", "uK", "uK", "uK", "uK",],
-            nside=1024,
-            burnin=burnin,
-            maxchain=maxchain,
-            polar=True,
-            component="070ds2",
-            fwhm=0.0,
-            nu_ref_t="70.0 GHz",
-            nu_ref_p="70.0 GHz",
-            procver=procver,
-            filename=f"BP_070ds2_IQU_full_n1024_{procver}.fits",
-            bndctr=70,
-            restfreq=70.467,
-            bndwid=14.909,
-        )
-        # Full-mission 70 GHz ds3 IQU frequency map
-        format_fits(
-            chain=chain,
-            extname="FREQMAP",
-            types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS",],
-            units=["uK", "uK", "uK", "uK", "uK", "uK",],
-            nside=1024,
-            burnin=burnin,
-            maxchain=maxchain,
-            polar=True,
-            component="070ds3",
-            fwhm=0.0,
-            nu_ref_t="70.0 GHz",
-            nu_ref_p="70.0 GHz",
-            procver=procver,
-            filename=f"BP_070ds3_IQU_full_n1024_{procver}.fits",
-            bndctr=70,
-            restfreq=70.467,
-            bndwid=14.909,
-        )
-        """
+
+    
+    if not skipdiff:
+        import healpy as hp
+        try:
+            print("Creating frequency difference maps")
+            path_dx12 = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/dx12"
+            path_npipe = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/npipe"
+            maps_dx12 = ["30ghz_2018_n1024_dip.fits","44ghz_2018_n1024_dip.fits","70ghz_2018_n1024_dip.fits"]
+            maps_npipe = ["npipe6v20_030_map_uK.fits", "npipe6v20_044_map_uK.fits", "npipe6v20_070_map_uK.fits",]
+            maps_BP = [f"BP_030_IQU_full_n0512_{procver}.fits", f"BP_044_IQU_full_n0512_{procver}.fits", f"BP_070_IQU_full_n1024_{procver}.fits",]
+
+            for i, freq in enumerate(["030", "044", "070",]):
+                map_BP    = hp.read_map(f"{procver}/{maps_BP[i]}", field=(0,1,2), verbose=False,)
+                map_npipe = hp.read_map(f"{path_npipe}/{maps_npipe[i]}", field=(0,1,2), verbose=False,)
+                map_dx12  = hp.read_map(f"{path_dx12}/{maps_dx12[i]}", field=(0,1,2), verbose=False,)
+                
+                # Smooth to 60 arcmin
+                map_BP = hp.smoothing(map_BP, fwhm=arcmin2rad(60.0))
+                map_npipe = hp.smoothing(map_npipe, fwhm=arcmin2rad(60.0))
+                map_dx12 = hp.smoothing(map_dx12, fwhm=arcmin2rad(60.0))
+
+                #ud_grade 30 and 44ghz
+                if i<2:
+                    map_npipe = hp.ud_grade(map_npipe, nside_out=512,)
+                    map_dx12 = hp.ud_grade(map_dx12, nside_out=512,)
+
+                # Remove dipoles
+                map_BP -= np.mean(map_BP,axis=1).reshape(-1,1)
+                map_npipe -= np.mean(map_npipe,axis=1).reshape(-1,1)
+                map_dx12 -= np.mean(map_dx12,axis=1).reshape(-1,1)
+
+                hp.write_map(f"{procver}/BP_{freq}_diff_npipe_{procver}.fits", np.array(map_BP-map_npipe), overwrite=True, column_names=["I_DIFF", "Q_DIFF", "U_DIFF"])
+                hp.write_map(f"{procver}/BP_{freq}_diff_dx12_{procver}.fits", np.array(map_BP-map_dx12), overwrite=True, column_names=["I_DIFF", "Q_DIFF", "U_DIFF"])
+
+        except Exception as e:
+            print(e)
+            print("Continuing...")
 
     """
     FOREGROUND MAPS
@@ -603,7 +606,7 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
             format_fits(
                 fname,
                 extname="COMP-MAP-CMB",
-                types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS", "mask1", "mask2",],
+                types=["I_MEAN", "Q_MEAN", "U_MEAN", "P_MEAN", "I_RMS", "Q_RMS", "U_RMS", "P_RMS", "mask1", "mask2",],
                 units=["uK_cmb", "uK_cmb", "uK_cmb", "uK", "uK", "uK", "NONE", "NONE",],
                 nside=1024,
                 burnin=burnin,
@@ -681,8 +684,8 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
             format_fits(
                 chain,
                 extname="COMP-MAP-SYNCHROTRON",
-                types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_BETA_MEAN", "QU_BETA_MEAN", "I_RMS", "Q_RMS", "U_RMS", "I_BETA_RMS", "QU_BETA_RMS",],
-                units=["uK_RJ", "uK_RJ", "uK_RJ", "NONE", "NONE", "uK", "uK", "uK", "NONE", "NONE",],
+                types=["I_MEAN", "Q_MEAN", "U_MEAN", "P_MEAN", "I_BETA_MEAN", "QU_BETA_MEAN", "I_RMS", "Q_RMS", "U_RMS", "P_RMS", "I_BETA_RMS", "QU_BETA_RMS",],
+                units=["uK_RJ", "uK_RJ", "uK_RJ", "uK_RJ", "NONE", "NONE", "uK_RJ","uK_RJ","uK_RJ","uK_RJ", "NONE", "NONE",],
                 nside=1024,
                 burnin=burnin,
                 maxchain=maxchain,

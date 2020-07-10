@@ -146,13 +146,27 @@ def Plotter(input, dataset, nside, auto, min, max, minmax, rng, colorbar, lmax, 
         # ttl, unt and cmb are temporary variables for title, unit and colormap
         if auto:
             (_title, ticks, cmp, lgscale, scale,) = get_params(m, outfile, polt, signal_label,)
+
+            # Title
             if _title["stddev"]:
                 ttl =  _title["param"] + r"$_{\mathrm{" + _title["comp"] + "}}^{\sigma}$" 
             elif _title["mean"]:
                 ttl = r"$\langle$" + _title["param"] + r"$\rangle$" + r"$_{\mathrm{" + _title["comp"] + "}}^{ }$" 
+            elif _title["diff"]:
+                ttl = r"$\Delta$ " + _title["param"] + r"$_{\mathrm{" + _title["comp"] + "}}^{" + _title["diff_label"] + "}$" 
             else:
                 ttl =  _title["param"] + r"$_{\mathrm{" + _title["comp"] + "}}^{ }$" 
+
+            # Left signal label
             lttl = r"$" + _title["sig"] +"$"
+            if lttl == "$I$":
+                lttl = "$T$"
+            elif lttl == "$QU$":
+                lttl= "$P$"
+            elif lttl == "$P$":
+                ticks *= 2
+
+            # Unit
             unt = _title["unit"]
         else:
             ttl = ""
@@ -182,6 +196,8 @@ def Plotter(input, dataset, nside, auto, min, max, minmax, rng, colorbar, lmax, 
                 rng = float(rng)
                 min = -rng
                 max = rng
+            
+            ticks = [min, 0.0, max]
 
         # If min and max have been specified, set.
         if min is not False:
@@ -438,7 +454,7 @@ def get_params(m, outfile, polt, signal_label):
     synch_tags = ["synch",]
     dust_tags = ["dust",]
     ame_tags = [ "ame_","ame1","ame2",]
-    ff_tags = ["ff_", "freefree",]
+    ff_tags = ["_ff_", "freefree",]
     co10_tags = ["co10", "co-100"]
     co21_tags = ["co21", "co-217"]
     co32_tags = ["co32", "co-353"]
@@ -504,6 +520,7 @@ def get_params(m, outfile, polt, signal_label):
             if polt % 3 > 0:
                 # BP uses 30 GHz ref freq for pol
                 ticks = [-50, 0, 50]
+                if title["sig"] == "P": ticks = [0, 10, 100]
                 logscale = True
                 title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
             else:
@@ -699,6 +716,17 @@ def get_params(m, outfile, polt, signal_label):
         scale = 1.0
     else:
         title["stddev"] = False
+
+    if tag_lookup(["diff"], outfile):
+        if tag_lookup(["dx12"], outfile):
+            title["diff_label"] = "\mathrm{2018}"
+        elif tag_lookup(["npipe"], outfile):
+            title["diff_label"] = "\mathrm{NPIPE}"
+        else:
+            title["diff_label"] = ""
+        title["diff"] = True 
+    else:
+        title["diff"] = False
 
     title["mean"] = True if signal_label.endswith("MEAN") else False
     title["comp"] = title["comp"].lstrip('0')    

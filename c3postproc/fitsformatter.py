@@ -7,9 +7,7 @@ import fitsio
 from c3postproc.tools import *
 
 
-def format_fits(
-    chain, extname, types, units, nside, burnin, maxchain, polar, component, fwhm, nu_ref_t, nu_ref_p, procver, filename, bndctr, restfreq, bndwid,
-):
+def format_fits(chain, extname, types, units, nside, burnin, maxchain, polar, component, fwhm, nu_ref_t, nu_ref_p, procver, filename, bndctr, restfreq, bndwid,):
     print()
     print("{:#^80}".format(""))
     print("{:#^80}".format(f" Formatting and outputting {filename} "))
@@ -19,14 +17,10 @@ def format_fits(
     dset = get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types,)
 
     print(f"{procver}/{filename}", dset.shape)
-    hp.write_map(
-        f"{procver}/{filename}", dset, column_names=types, column_units=units, coord="G", overwrite=True, extra_header=header,
-    )
+    hp.write_map(f"{procver}/{filename}", dset, column_names=types, column_units=units, coord="G", overwrite=True, extra_header=header,)
 
 
-def get_data(
-    chain, extname, component, burnin, maxchain, fwhm, nside, types,
-):
+def get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types,):
     if extname.endswith("CMB"):
         # Mean data
         amp_mean = h5handler(input=chain, dataset="cmb/amp_alm", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=fwhm, nside=nside, command=np.mean,)
@@ -42,13 +36,15 @@ def get_data(
         dset[0] = amp_mean[0, :]
         dset[1] = amp_mean[1, :]
         dset[2] = amp_mean[2, :]
+        dset[3] = np.sqrt(amp_mean[1, :]**2 + amp_mean[2, :]**2)
 
-        dset[3] = amp_stddev[0, :]
-        dset[4] = amp_stddev[1, :]
-        dset[5] = amp_stddev[2, :]
+        dset[4] = amp_stddev[0, :]
+        dset[5] = amp_stddev[1, :]
+        dset[6] = amp_stddev[2, :]
+        dset[7] = np.sqrt(amp_stddev[1, :]**2 + amp_stddev[2, :]**2)
 
-        dset[6] = mask1
-        dset[7] = mask2
+        dset[8] = mask1
+        dset[9] = mask2
 
     elif extname.endswith("SYNCHROTRON"):
         # Mean data
@@ -64,16 +60,18 @@ def get_data(
         dset[0] = amp_mean[0, :]
         dset[1] = amp_mean[1, :]
         dset[2] = amp_mean[2, :]
+        dset[3] = np.sqrt(amp_mean[1, :]**2 + amp_mean[2, :]**2)
 
-        dset[3] = beta_mean[0, :]
-        dset[4] = beta_mean[1, :]
+        dset[4] = beta_mean[0, :]
+        dset[5] = beta_mean[1, :]
 
-        dset[5] = amp_stddev[0, :]
-        dset[6] = amp_stddev[1, :]
-        dset[7] = amp_stddev[2, :]
+        dset[6] = amp_stddev[0, :]
+        dset[7] = amp_stddev[1, :]
+        dset[8] = amp_stddev[2, :]
+        dset[9] = np.sqrt(amp_stddev[1, :]**2 + amp_stddev[2, :]**2)
 
-        dset[8] = beta_stddev[0, :]
-        dset[9] = beta_stddev[1, :]
+        dset[10] = beta_stddev[0, :]
+        dset[11] = beta_stddev[1, :]
 
     elif extname.endswith("FREE-FREE"):
         # Mean data
@@ -123,18 +121,18 @@ def get_data(
         dset[0] = amp_mean[0, :]
         dset[1] = amp_mean[1, :]
         dset[2] = amp_mean[2, :]
+        dset[3] = np.sqrt(amp_mean[1, :]**2 + amp_mean[2, :]**2)
+        
+        dset[4] = amp_stddev[0, :]
+        dset[5] = amp_stddev[1, :]
+        dset[6] = amp_stddev[2, :]
+        dset[7] = np.sqrt(amp_stddev[1, :]**2 + amp_stddev[2, :]**2)
 
-        dset[3] = amp_stddev[0, :]
-        dset[4] = amp_stddev[1, :]
-        dset[5] = amp_stddev[2, :]
-
-    print(f"Shape of dset {dset.shape}")
+    #print(f"Shape of dset {dset.shape}")
     return dset
 
 
-def get_header(
-    extname, types, units, nside, polar, component, fwhm, nu_ref_t, nu_ref_p, procver, filename, bndctr, restfreq, bndwid,
-):
+def get_header(extname, types, units, nside, polar, component, fwhm, nu_ref_t, nu_ref_p, procver, filename, bndctr, restfreq, bndwid,):
     stamp = f'Written {time.strftime("%c")}'
 
     header = []
