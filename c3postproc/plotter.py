@@ -37,6 +37,7 @@ def Plotter(input, dataset, nside, auto, min, max, minmax, rng, colorbar, lmax, 
 
     # Which signal to plot
     print("----------------------------------")
+    if len(input)==1: input = input[0]
     print("Plotting " + input)
 
     #######################
