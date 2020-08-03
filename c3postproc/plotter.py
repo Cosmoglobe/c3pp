@@ -163,8 +163,8 @@ def Plotter(input, dataset, nside, auto, min, max, minmax, rng, colorbar, lmax, 
                 lttl = "$T$"
             elif lttl == "$QU$":
                 lttl= "$P$"
-            elif lttl == "$P$":
-                ticks *= 2
+            #elif lttl == "$P$":
+            #    ticks *= 2
 
             # Unit
             unt = _title["unit"]
@@ -199,12 +199,15 @@ def Plotter(input, dataset, nside, auto, min, max, minmax, rng, colorbar, lmax, 
             
             ticks = [min, 0.0, max]
 
-        # If min and max have been specified, set.
-        if min is not False:
-            ticks[0] = float(min)
+        else: 
+            # If min and max have been specified, set.
+            if min is not False:
+                ticks[0] = float(min)
 
-        if max is not False:
-            ticks[-1] = float(max)
+            if max is not False:
+                ticks[-1] = float(max)
+
+
 
         ##########################
         #### Plotting Params #####
@@ -490,7 +493,7 @@ def get_params(m, outfile, polt, signal_label):
         title["unit"]  = r"$\mu\mathrm{K}_{\mathrm{CMB}}$"
         title["comp"]  = "cmb" 
         title["param"] = r"$A$"
-        if polt % 3 > 0:
+        if sl == "Q" or sl == "U" or sl == "QU" or sl=="P":
             ticks = [-2, 0, 2]
         else:
             ticks = [-300, 0, 300]
@@ -499,7 +502,7 @@ def get_params(m, outfile, polt, signal_label):
         title["unit"]  = ""
         title["comp"]  = ""
         title["param"] = r"$\chi^2$"
-        if polt % 3 > 0:
+        if sl == "Q" or sl == "U" or sl == "QU" or sl=="P":
             ticks = [0, 32]
         else:
             ticks = [0, 76]
@@ -517,7 +520,7 @@ def get_params(m, outfile, polt, signal_label):
         else:
             print(f"Plotting Synchrotron {sl}")
             title["param"] = r"$A$"
-            if polt % 3 > 0:
+            if sl == "Q" or sl == "U" or sl == "QU" or sl=="P":
                 # BP uses 30 GHz ref freq for pol
                 ticks = [-50, 0, 50]
                 if title["sig"] == "P": ticks = [0, 10, 100]
@@ -584,7 +587,7 @@ def get_params(m, outfile, polt, signal_label):
             title["param"] = r"$A$"
             title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
 
-            if polt % 3 > 0:
+            if sl == "Q" or sl == "U" or sl == "QU" or sl=="P":
                 ticks = [-100, 0, 100]
                 logscale = True
 
@@ -687,7 +690,7 @@ def get_params(m, outfile, polt, signal_label):
         print("Plotting Frequency map" + " " + sl)
 
         vmin, vmax = get_ticks(m, 97.5)
-        ticks = [vmin, 0.0, vmax]
+        ticks = [vmin, vmax]
 
         title["unit"] = r"$\mu\mathrm{K}$"
         tit = str(findall(r"BP_(.*?)_", outfile)[0])

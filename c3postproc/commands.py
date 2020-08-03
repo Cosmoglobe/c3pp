@@ -325,6 +325,7 @@ def alm2fits(input, dataset, nside, lmax, fwhm):
 @click.argument("procver", type=click.STRING)
 @click.option("-mask", type=click.Path(exists=True), help="Mask for calculating cmb",)
 @click.option("-pdf", is_flag=True, help="output as pdf")
+@click.option("-nocolorbar", "-nobar", is_flag=True, help='plots without colorbar',)
 @click.option("-skipfreqmaps", is_flag=True, help="Don't output freqmaps",)
 @click.option("-skipcmb", is_flag=True, help="Don't output cmb",)
 @click.option("-skipsynch", is_flag=True, help="Don't output synch",)
@@ -332,69 +333,72 @@ def alm2fits(input, dataset, nside, lmax, fwhm):
 @click.option("-skipff", is_flag=True, help="Don't output ff",)
 @click.option("-skipdiff", is_flag=True, help="Creates diff maps to dx12 and npipe")
 @click.pass_context
-def plotrelease(ctx, procver, mask, pdf, skipfreqmaps, skipcmb, skipsynch, skipame, skipff, skipdiff,):
+def plotrelease(ctx, procver, mask, pdf, nocolorbar, skipfreqmaps, skipcmb, skipsynch, skipame, skipff, skipdiff,):
     """
     \b
     Plots all release files\n
     """
+    colorbar=False if nocolorbar else True
+        
     if not skipcmb and mask:
         # CMB I no dip
-        ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", colorbar=True, auto=True, remove_dipole=mask, pdf=pdf,)
+        ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", colorbar=colorbar, auto=True, remove_dipole=mask, pdf=pdf,)
 
         # CMB QU and IQU rms, and P_mean, P_rms
-        ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", colorbar=True, auto=True, sig=[1, 2, 3, 4, 5, 6, 7], pdf=pdf,)
+        ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", colorbar=colorbar, auto=True, sig=[1, 2, 3, 4, 5, 6, 7], pdf=pdf,)
 
     if not skipfreqmaps:
         # 030 GHz IQU
-        ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[0,], pdf=pdf, range=3400,)
-        ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[4,], pdf=pdf, min=0.0, max=20.0)
-        ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[1, 2,], pdf=pdf, fwhm=60.0, range=30,)
-        ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[3,], pdf=pdf, fwhm=60.0, min=0.0, max=100,)
-        ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[5, 6,], pdf=pdf, fwhm=60.0,min=0.0, max=20.0)
-        ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[7,], pdf=pdf, fwhm=60.0,min=0.0, max=40.0)
+        ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=3400,)
+        ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", colorbar=colorbar, auto=True, sig=[4,], pdf=pdf, min=0.0, max=20.0)
+        ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, fwhm=60.0, range=30,)
+        ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", colorbar=colorbar, auto=True, sig=[3,], pdf=pdf, fwhm=60.0, min=0.0, max=100,)
+        ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", colorbar=colorbar, auto=True, sig=[5, 6,], pdf=pdf, fwhm=60.0,min=0.0, max=20.0)
+        ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", colorbar=colorbar, auto=True, sig=[7,], pdf=pdf, fwhm=60.0,min=0.0, max=40.0)
 
         # 044 GHz IQU
-        ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[0,], pdf=pdf, range=3400,)
-        ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[4,], pdf=pdf, min=0.0, max=20.0)
-        ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[1, 2,], pdf=pdf, fwhm=60.0, range=30,)
-        ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[3,], pdf=pdf, fwhm=60.0, min=0.0, max=100,)
-        ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[5, 6,], pdf=pdf, fwhm=60.0,min=0.0, max=20.0)
-        ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", colorbar=True, auto=True, sig=[7,], pdf=pdf, fwhm=60.0, min=0.0, max=40.0)
+        ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=3400,)
+        ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", colorbar=colorbar, auto=True, sig=[4,], pdf=pdf, min=0.0, max=20.0)
+        ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, fwhm=60.0, range=30,)
+        ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", colorbar=colorbar, auto=True, sig=[3,], pdf=pdf, fwhm=60.0, min=0.0, max=100,)
+        ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", colorbar=colorbar, auto=True, sig=[5, 6,], pdf=pdf, fwhm=60.0,min=0.0, max=20.0)
+        ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", colorbar=colorbar, auto=True, sig=[7,], pdf=pdf, fwhm=60.0, min=0.0, max=40.0)
         # 070 GHz IQU
-        ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=True, auto=True, sig=[0,], pdf=pdf, range=3400,)
-        ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=True, auto=True, sig=[4,], pdf=pdf, min=0.0, max=20.0)
-        ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=True, auto=True, sig=[1, 2,], pdf=pdf, fwhm=60.0, range=30,)
-        ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=True, auto=True, sig=[3,], pdf=pdf, fwhm=60.0, min=0.0, max=100,)
-        ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=True, auto=True, sig=[5, 6,], pdf=pdf, fwhm=60.0,min=0.0, max=20.0)
-        ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=True, auto=True, sig=[7,], pdf=pdf, fwhm=60.0,min=0.0, max=40.0)
+        ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=3400,)
+        ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=colorbar, auto=True, sig=[4,], pdf=pdf, min=0.0, max=20.0)
+        ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, fwhm=60.0, range=30,)
+        ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=colorbar, auto=True, sig=[3,], pdf=pdf, fwhm=60.0, min=0.0, max=200,)
+        ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=colorbar, auto=True, sig=[5, 6,], pdf=pdf, fwhm=60.0,min=0.0, max=20.0)
+        ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=colorbar, auto=True, sig=[7,], pdf=pdf, fwhm=60.0,min=0.0, max=40.0)
 
     if not skipsynch:
         # Synch IQU
-        ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", colorbar=True, auto=True, sig=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], pdf=pdf,)
+        ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", colorbar=colorbar, auto=True, sig=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], pdf=pdf,)
 
     if not skipff:
         # freefree mean and rms
-        ctx.invoke(plot, input=f"BP_freefree_I_full_n1024_{procver}.fits", colorbar=True, auto=True, sig=[0, 1, 2, 3], pdf=pdf,)
+        ctx.invoke(plot, input=f"BP_freefree_I_full_n1024_{procver}.fits", colorbar=colorbar, auto=True, sig=[0, 1, 2, 3], pdf=pdf,)
 
     if not skipame:
         # ame mean and rms
-        ctx.invoke(plot, input=f"BP_ame_I_full_n1024_{procver}.fits", colorbar=True, auto=True, sig=[0, 1, 2, 3], pdf=pdf,)
+        ctx.invoke(plot, input=f"BP_ame_I_full_n1024_{procver}.fits", colorbar=colorbar, auto=True, sig=[0, 1, 2, 3], pdf=pdf,)
 
     if not skipdiff:
-        ctx.invoke(plot, input=f"BP_030_diff_npipe_{procver}.fits", colorbar=True, auto=True, sig=[0,], pdf=pdf, range=10)
-        ctx.invoke(plot, input=f"BP_030_diff_npipe_{procver}.fits", colorbar=True, auto=True, sig=[1, 2,], pdf=pdf, range=2)
-        ctx.invoke(plot, input=f"BP_030_diff_dx12_{procver}.fits",  colorbar=True, auto=True, sig=[0,], pdf=pdf, range=10)
-        ctx.invoke(plot, input=f"BP_030_diff_dx12_{procver}.fits",  colorbar=True, auto=True, sig=[1, 2,], pdf=pdf, range=2)
+        # Plot difference to npipe and dx12
+        ctx.invoke(plot, input=f"BP_030_diff_npipe_{procver}.fits", colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=10)
+        ctx.invoke(plot, input=f"BP_030_diff_npipe_{procver}.fits", colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, range=4)
+        ctx.invoke(plot, input=f"BP_030_diff_dx12_{procver}.fits",  colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=10)
+        ctx.invoke(plot, input=f"BP_030_diff_dx12_{procver}.fits",  colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, range=4)
 
-        ctx.invoke(plot, input=f"BP_044_diff_npipe_{procver}.fits", colorbar=True, auto=True, sig=[0,], pdf=pdf, range=10)
-        ctx.invoke(plot, input=f"BP_044_diff_npipe_{procver}.fits", colorbar=True, auto=True, sig=[1, 2,], pdf=pdf, range=2)
-        ctx.invoke(plot, input=f"BP_044_diff_dx12_{procver}.fits",  colorbar=True, auto=True, sig=[0,], pdf=pdf, range=10)
-        ctx.invoke(plot, input=f"BP_044_diff_dx12_{procver}.fits",  colorbar=True, auto=True, sig=[1, 2,], pdf=pdf, range=2)
+        ctx.invoke(plot, input=f"BP_044_diff_npipe_{procver}.fits", colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=10)
+        ctx.invoke(plot, input=f"BP_044_diff_npipe_{procver}.fits", colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, range=4)
+        ctx.invoke(plot, input=f"BP_044_diff_dx12_{procver}.fits",  colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=10)
+        ctx.invoke(plot, input=f"BP_044_diff_dx12_{procver}.fits",  colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, range=4)
 
-        ctx.invoke(plot, input=f"BP_070_diff_npipe_{procver}.fits", colorbar=True, auto=True, sig=[0,], pdf=pdf, range=10)
-        ctx.invoke(plot, input=f"BP_070_diff_npipe_{procver}.fits", colorbar=True, auto=True, sig=[1, 2,], pdf=pdf, range=2)
-        ctx.invoke(plot, input=f"BP_070_diff_dx12_{procver}.fits",  colorbar=True, auto=True, sig=[0,], pdf=pdf, range=10)
-        ctx.invoke(plot, input=f"BP_070_diff_dx12_{procver}.fits",  colorbar=True, auto=True, sig=[1, 2,], pdf=pdf, range=2)
+        ctx.invoke(plot, input=f"BP_070_diff_npipe_{procver}.fits", colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=10)
+        ctx.invoke(plot, input=f"BP_070_diff_npipe_{procver}.fits", colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, range=4)
+        ctx.invoke(plot, input=f"BP_070_diff_dx12_{procver}.fits",  colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=10)
+        ctx.invoke(plot, input=f"BP_070_diff_dx12_{procver}.fits",  colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, range=4)
 
 
 
