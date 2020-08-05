@@ -36,25 +36,44 @@ def crosspec(input1, input2, output, beam1, beam2,):
     This function calculates a powerspectrum from polspice using this path:
     /mn/stornext/u3/trygvels/PolSpice_v03-03-02/
     """
+    import sys
     sys.path.append("/mn/stornext/u3/trygvels/PolSpice_v03-03-02/")
     from ispice import ispice
 
     lmax = 6000
     fwhm = 0
     #mask = "dx12_v3_common_mask_pol_005a_2048_v2.fits"
-    ispice(input1,
-           output,
-           nlmax=lmax,
-           beam_file1=beam1,
-           beam_file2=beam2,
-           mapfile2=input2,
-           #weightfile1=mask,
-           #weightfile2=mask,
-           polarization="YES",
-           subav="YES",
-           subdipole="YES",
-           symmetric_cl="YES",
-       )
+    if beam1 and beam2:
+        ispice(input1,
+               clout=output,
+               nlmax=lmax,
+               beam_file1=beam1,
+               beam_file2=beam2,
+               mapfile2=input2,
+               #weightfile1=mask,
+               #weightfile2=mask,
+               fits_out="NO",
+               polarization="YES",
+               subav="YES",
+               subdipole="YES",
+               symmetric_cl="YES",
+           )
+    else:
+
+        ispice(input1,
+               clout=output,
+               nlmax=lmax,
+               beam1=0.0,
+               beam2=0.0,
+               mapfile2=input2,
+               #weightfile1=mask,
+               #weightfile2=mask,
+               fits_out="NO",
+               polarization="YES",
+               subav="YES",
+               subdipole="YES",
+               symmetric_cl="YES",
+           )
 
 @commands.command()
 @click.argument("input", type=click.STRING)
@@ -74,9 +93,10 @@ def specplot(input,):
         'grid.linewidth': 0.5,
     }
     sns.set_style(custom_style)
-    
-    lmax=350
-    
+    sns.despine(top=True, right=True, left=True, bottom=True)    
+    lmax = 350
+
+
     ell, ee, bb, eb = np.loadtxt(input, usecols=(0,2,3,6), skiprows=3, max_rows=lmax, unpack=True)
                                  
     ee = ee*(ell*(ell+1)/(2*np.pi))
@@ -89,16 +109,15 @@ def specplot(input,):
     plt.semilogx(ell, bb, label="BB")
     #plt.semilogx(ell, eb, label="EB")
 	
-    sns.despine(top=True, right=True)
     plt.axhline(y=0, color="black", linestyle='--', zorder=5, linewidth=0.5)
     plt.yscale('log')
     plt.ylabel(r"$D_l$ [$\mu K^2$]")
     plt.xlabel(r'Multipole moment, $l$')
-    plt.xlim(0,lmax)
+    #plt.xlim(0,lmax)
     #plt.ylim(0.1,150)
     ax.axes.xaxis.grid()
     plt.legend()
-    plt.savefig(f'{input}_powspec.png')
+    plt.savefig(f'{input}_powspec.pdf', dpi=300)
     plt.show()
 
 @commands.command()
@@ -309,7 +328,7 @@ def traceplot(filename, max, min, nbins):
     sns.despine(top=True, right=True, left=True, bottom=True)
 
     plt.xlim(min, max)
-    plt.savefig(filename.replace(".dat","_traceplot.png"), dpi=300)
+    plt.savefig(filename.replace(".dat","_traceplot.pdf"), dpi=300)
     plt.show()
 
 @commands.command()
