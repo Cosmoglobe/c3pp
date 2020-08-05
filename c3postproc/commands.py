@@ -299,7 +299,6 @@ def traceplot(filename, max, min, nbins):
         linestyle = '-'
         linewidth = 2
         fontweight = 'normal'
-        color = cmap(i)#float(i-1)/len(positions))
         if column == "Mean":
             color="grey"
             linewidth = 4
@@ -308,7 +307,7 @@ def traceplot(filename, max, min, nbins):
             color = "black"
             linestyle = '--'
         else:
-            color = c
+            color = cmap(c)#float(i-1)/len(positions))
             c += 1
         # Plot each line separatly so we can be explicit about color
         ax = df.plot(x=x, y=column, legend=False, ax=ax, color=color, linestyle=linestyle, linewidth=linewidth)
