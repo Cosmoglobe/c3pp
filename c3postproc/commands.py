@@ -93,7 +93,7 @@ def specplot(input,):
         'grid.linewidth': 0.5,
     }
     sns.set_style(custom_style)
-    sns.despine(top=True, right=True, left=True, bottom=True)    
+
     lmax = 350
 
 
@@ -105,19 +105,20 @@ def specplot(input,):
 	
     f, ax = plt.subplots(figsize=(12,8))
 	
-    plt.semilogx(ell, ee, label="EE")
-    plt.semilogx(ell, bb, label="BB")
+    plt.semilogx(ell, ee, linewidth=2, label="EE")
+    plt.semilogx(ell, bb, linewidth=2, label="BB")
     #plt.semilogx(ell, eb, label="EB")
 	
     plt.axhline(y=0, color="black", linestyle='--', zorder=5, linewidth=0.5)
     plt.yscale('log')
     plt.ylabel(r"$D_l$ [$\mu K^2$]")
     plt.xlabel(r'Multipole moment, $l$')
+    sns.despine(top=True, right=True, left=True, bottom=True)
     #plt.xlim(0,lmax)
     #plt.ylim(0.1,150)
-    ax.axes.xaxis.grid()
-    plt.legend()
-    plt.savefig(f'{input}_powspec.pdf', dpi=300)
+    #ax.axes.xaxis.grid()
+    plt.legend(frameon=False)
+    plt.savefig(input.replace(".dat",".pdf"), dpi=300)
     plt.show()
 
 @commands.command()
@@ -288,11 +289,12 @@ def traceplot(filename, max, min, nbins):
     y.append('Mean')
 
     f, ax = plt.subplots(figsize=(16,8))
-    cmap = plt.cm.get_cmap('tab10',10)# len(y))
+    cmap = plt.cm.get_cmap('tab10')# len(y))
 
     # Reduce points
     df = df.groupby(np.arange(len(df))//nbins).mean()
     positions = legend_positions(df, y)
+    c = 0
     for i, (column, position) in enumerate(positions.items()):
         linestyle = '-'
         linewidth = 2
@@ -305,7 +307,9 @@ def traceplot(filename, max, min, nbins):
         if i == 0:
             color = "black"
             linestyle = '--'
-
+        else:
+            color = c
+            c += 1
         # Plot each line separatly so we can be explicit about color
         ax = df.plot(x=x, y=column, legend=False, ax=ax, color=color, linestyle=linestyle, linewidth=linewidth)
 
