@@ -26,6 +26,82 @@ def printheader(input,):
 
 
 @commands.command()
+@click.argument("input1", type=click.STRING)
+@click.argument("input2", type=click.STRING)
+@click.argument("output", type=click.STRING)
+@click.option("-beam1", type=click.STRING, help="Optional beam file for input 1",)
+@click.option("-beam2", type=click.STRING, help="Optional beam file for input 2",)
+def crosspec(input1, input2, output, beam1, beam2,):
+    """
+    This function calculates a powerspectrum from polspice using this path:
+    /mn/stornext/u3/trygvels/PolSpice_v03-03-02/
+    """
+    sys.path.append("/mn/stornext/u3/trygvels/PolSpice_v03-03-02/")
+    from ispice import ispice
+
+    lmax = 6000
+    fwhm = 0
+    #mask = "dx12_v3_common_mask_pol_005a_2048_v2.fits"
+    ispice(input1,
+           output,
+           nlmax=lmax,
+           beam_file1=beam1,
+           beam_file2=beam2,
+           mapfile2=input2,
+           #weightfile1=mask,
+           #weightfile2=mask,
+           polarization="YES",
+           subav="YES",
+           subdipole="YES",
+           symmetric_cl="YES",
+       )
+
+@commands.command()
+@click.argument("input", type=click.STRING)
+def specplot(input,):
+    """
+    This function plots the file output by the Crosspec function.
+    """
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import seaborn as sns
+
+    sns.set_context("notebook", font_scale=1.2, rc={"lines.linewidth": 1.2})
+    sns.set_style("whitegrid")
+    custom_style = {
+        'grid.color': '0.8',
+        'grid.linestyle': '--',
+        'grid.linewidth': 0.5,
+    }
+    sns.set_style(custom_style)
+    
+    lmax=350
+    
+    ell, ee, bb, eb = np.loadtxt(input, usecols=(0,2,3,6), skiprows=3, max_rows=lmax, unpack=True)
+                                 
+    ee = ee*(ell*(ell+1)/(2*np.pi))
+    bb = bb*(ell*(ell+1)/(2*np.pi))
+    eb = eb*(ell*(ell+1)/(2*np.pi))
+	
+    f, ax = plt.subplots(figsize=(12,8))
+	
+    plt.semilogx(ell, ee, label="EE")
+    plt.semilogx(ell, bb, label="BB")
+    #plt.semilogx(ell, eb, label="EB")
+	
+    sns.despine(top=True, right=True)
+    plt.axhline(y=0, color="black", linestyle='--', zorder=5, linewidth=0.5)
+    plt.yscale('log')
+    plt.ylabel(r"$D_l$ [$\mu K^2$]")
+    plt.xlabel(r'Multipole moment, $l$')
+    plt.xlim(0,lmax)
+    #plt.ylim(0.1,150)
+    ax.axes.xaxis.grid()
+    plt.legend()
+    plt.savefig(f'{input}_powspec.png')
+    plt.show()
+
+@commands.command()
 @click.argument("input", type=click.STRING)
 @click.argument("dataset", type=click.STRING)
 @click.argument("output", type=click.STRING)
