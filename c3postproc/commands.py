@@ -10,6 +10,7 @@ def commands():
     pass
 
 
+
 @commands.command()
 @click.argument("input", type=click.STRING)
 def printheader(input,):
@@ -156,6 +157,84 @@ def ploth5(input, dataset, nside, auto, min, max, minmax, rng, colorbar, lmax, f
     from c3postproc.plotter import Plotter
     Plotter(input, dataset, nside, auto, min, max, minmax, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, verbose,)
 
+@commands.command()
+@click.argument('filename', type=click.STRING)
+@click.option('-min', default=0, help='Min sample of dataset (burnin)')
+@click.option('-max', default=1000, help='Max sample to inclue')
+@click.option('-nbins', default=1, help='Bins')
+def traceplot(filename, max, min, nbins):
+    """
+    This function plots a traceplot of samples from min to max with optional bins.
+    Useful to plot sample progression of spectral indexes.
+    """
+    import pandas as pd
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    sns.set_context("notebook", font_scale=1.2, rc={"lines.linewidth": 1.2})
+    sns.set_style("whitegrid")
+    custom_style = {
+        'grid.color': '0.8',
+        'grid.linestyle': '--',
+        'grid.linewidth': 0.5,
+    }
+    sns.set_style(custom_style)
+    df = pd.read_csv(filename, sep=r"\s+", usecols=[4,5,9,10,11,12,13], header=None, nrows=max)
+    prior=-3.0
+    stddev=0.05
+
+    x = 'MCMC Sample'
+    y = ['0 Prior', '1-4 High lat.', '5 NGS',
+         '6 Gal. center', '7 Fan region', '8 Gal. anti-center',
+         '9 Gum nebula']
+    df.columns = y
+    N = df.values.shape[0]
+    df['Mean'] = df.mean(axis=1)
+    df['MCMC Sample'] = range(N)
+    y.append('Mean')
+
+    f, ax = plt.subplots(figsize=(16,8))
+    cmap = plt.cm.get_cmap('tab10',10)# len(y))
+
+    # Reduce points
+    df = df.groupby(np.arange(len(df))//nbins).mean()
+    positions = legend_positions(df, y)
+    for i, (column, position) in enumerate(positions.items()):
+        linestyle = '-'
+        linewidth = 2
+        fontweight = 'normal'
+        color = cmap(i)#float(i-1)/len(positions))
+        if column == "Mean":
+            color="grey"
+            linewidth = 4
+            fontweight='bold'
+        if i == 0:
+            color = "black"
+            linestyle = '--'
+
+        # Plot each line separatly so we can be explicit about color
+        ax = df.plot(x=x, y=column, legend=False, ax=ax, color=color, linestyle=linestyle, linewidth=linewidth)
+
+        # Add the text to the right
+        plt.text(
+            df[x][df[column].last_valid_index()]+N*0.01,
+            position, column, fontsize=12,
+            color=color, fontweight=fontweight
+        )
+
+    if min:
+        plt.xticks(list(plt.xticks()[0]) + [min])
+
+    ax.set_ylabel('Region spectral index')
+
+    #ax.axes.xaxis.grid()
+    #ax.axes.yaxis.grid()
+    # Add percent signs
+    #ax.set_yticklabels(['{:3.0f}%'.format(x) for x in ax.get_yticks()])
+    sns.despine(top=True, right=True, left=True, bottom=True)
+
+    plt.xlim(min, max)
+    plt.savefig(filename.replace(".dat","_traceplot.png"), dpi=300)
+    plt.show()
 
 @commands.command()
 @click.argument("filename", type=click.STRING)
@@ -473,6 +552,14 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
             # Full-mission Gibbs chain file
             print(f"Copying {chainfile} to {procver}/BP_c" + str(i).zfill(4) + f"_full_{procver}.h5")
             shutil.copyfile(chainfile, f"{procver}/BP_c" + str(i).zfill(4) + f"_full_{procver}.h5",)
+
+     #if halfring:
+     #   # Copy halfring files
+     #   for i, chainfile in enumerate([halfring], 1):
+     #       # Copy halfring files
+     #       print(f"Copying {resamp} to {procver}/BP_halfring_c" + str(i).zfill(4) + f"_full_Cl_{procver}.h5")
+     #       shutil.copyfile(halfring, f"{procver}/BP_halfring_c" + str(i).zfill(4) + f"_full_Cl_{procver}.h5",)
+        
 
     if resamp:
         # Commander3 parameter file for main chain

@@ -183,3 +183,40 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command,)
 
 def arcmin2rad(arcmin):
     return arcmin * (2 * np.pi) / 21600
+
+def legend_positions(df, y):
+    """ Calculate position of labels to the right in plot... """
+    positions = {}
+    for column in y:
+        positions[column] = df[column].values[-1] - 0.005
+
+    def push():
+        """
+        ...by puting them to the last y value and
+        pushing until no overlap
+        """
+        collisions = 0
+        for column1, value1 in positions.items():
+            for column2, value2 in positions.items():
+                if column1 != column2:
+                    dist = abs(value1-value2)
+                    if dist < 0.0125:
+                        collisions += 1
+                        if value1 < value2:
+                            positions[column1] -= .0001
+                            positions[column2] += .0001
+                        else:
+                            positions[column1] += .0001
+                            positions[column2] -= .0001
+                            return True
+    while True:
+        pushed = push()
+        if not pushed:
+            break
+
+    return positions
+
+def forward(x):
+    return x/100
+def inverse(x):
+    return x*100

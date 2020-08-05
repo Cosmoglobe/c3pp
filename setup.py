@@ -8,7 +8,7 @@ scripts = [os.path.join("bin", script) for script in os.listdir("bin")]
 
 setuptools.setup(
     name="c3pp",  # Replace with your own username
-    version="1.4.1",
+    version="1.4.2",
     author="Trygve Leithe Svalheim",
     author_email="trygvels@astro.uio.no",
     description="A commander3 postprocessing tool",
@@ -31,6 +31,8 @@ setuptools.setup(
         'numba',
         'pathlib',
         'tqdm',
+        'pandas',
+        'seaborn',
     ],
     python_requires=">=3.6",
 )
