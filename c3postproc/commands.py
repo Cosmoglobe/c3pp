@@ -31,7 +31,8 @@ def printheader(input,):
 @click.argument("output", type=click.STRING)
 @click.option("-beam1", type=click.STRING, help="Optional beam file for input 1",)
 @click.option("-beam2", type=click.STRING, help="Optional beam file for input 2",)
-def crosspec(input1, input2, output, beam1, beam2,):
+@click.option("-mask", type=click.STRING, help="Mask",)
+def crosspec(input1, input2, output, beam1, beam2, mask,):
     """
     This function calculates a powerspectrum from polspice using this path:
     /mn/stornext/u3/trygvels/PolSpice_v03-03-02/
@@ -50,8 +51,8 @@ def crosspec(input1, input2, output, beam1, beam2,):
                beam_file1=beam1,
                beam_file2=beam2,
                mapfile2=input2,
-               #weightfile1=mask,
-               #weightfile2=mask,
+               maskfile1=mask,
+               maskfile2=mask,
                fits_out="NO",
                polarization="YES",
                subav="YES",
@@ -66,8 +67,8 @@ def crosspec(input1, input2, output, beam1, beam2,):
                beam1=0.0,
                beam2=0.0,
                mapfile2=input2,
-               #weightfile1=mask,
-               #weightfile2=mask,
+               maskfile1=mask,
+               maskfile2=mask,
                fits_out="NO",
                polarization="YES",
                subav="YES",
