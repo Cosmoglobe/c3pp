@@ -96,29 +96,33 @@ def specplot(input,):
     sns.set_style(custom_style)
 
     lmax = 350
-
-
     ell, ee, bb, eb = np.loadtxt(input, usecols=(0,2,3,6), skiprows=3, max_rows=lmax, unpack=True)
                                  
     ee = ee*(ell*(ell+1)/(2*np.pi))
     bb = bb*(ell*(ell+1)/(2*np.pi))
     eb = eb*(ell*(ell+1)/(2*np.pi))
 	
-    f, ax = plt.subplots(figsize=(12,8))
-	
-    plt.semilogx(ell, ee, linewidth=2, label="EE")
-    plt.semilogx(ell, bb, linewidth=2, label="BB")
+    f, (ax1, ax2) = plt.subplots(2, 1, figsize=(12,8), gridspec_kw={'height_ratios': [3, 1]}, sharex=True)
+
+    ax1.loglog(ell, ee, linewidth=2, label="EE")
+    ax1.loglog(ell, bb, linewidth=2, label="BB")
+    ax1.set_ylabel(r"$D_l$ [$\mu K^2$]")
+
+    ax2.semilogx(ell, bb/ee, linewidth=2, label="BB/EE")
+    ax2.set_ylabel(r"BB/EE")
+    ax2.set_xlabel(r'Multipole moment, $l$')
     #plt.semilogx(ell, eb, label="EB")
 	
-    plt.axhline(y=0, color="black", linestyle='--', zorder=5, linewidth=0.5)
-    plt.yscale('log')
-    plt.ylabel(r"$D_l$ [$\mu K^2$]")
-    plt.xlabel(r'Multipole moment, $l$')
-    sns.despine(top=True, right=True, left=True, bottom=True)
+    ax1.axhline(y=0, color="black", linestyle='--', zorder=5, linewidth=0.5)
+    sns.despine(top=True, right=True, left=False, bottom=False, ax=ax1)
+    sns.despine(top=True, right=True, left=False, bottom=False, ax=ax2)
     #plt.xlim(0,lmax)
-    #plt.ylim(0.1,150)
+    ax1.set_ylim(0.1,150)
+    ax2.set_ylim(-1,2.5)
     #ax.axes.xaxis.grid()
-    plt.legend(frameon=False)
+    ax1.legend(frameon=False)
+
+    plt.subplots_adjust(wspace=0, hspace=0.01)
     plt.savefig(input.replace(".dat",".pdf"), dpi=300)
     plt.show()
 
