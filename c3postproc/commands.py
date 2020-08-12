@@ -258,86 +258,6 @@ def ploth5(input, dataset, nside, auto, min, max, minmax, rng, colorbar, lmax, f
     from c3postproc.plotter import Plotter
     Plotter(input, dataset, nside, auto, min, max, minmax, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, verbose,)
 
-@commands.command()
-@click.argument('filename', type=click.STRING)
-@click.option('-min', default=0, help='Min sample of dataset (burnin)')
-@click.option('-max', default=1000, help='Max sample to inclue')
-@click.option('-nbins', default=1, help='Bins')
-def traceplot(filename, max, min, nbins):
-    """
-    This function plots a traceplot of samples from min to max with optional bins.
-    Useful to plot sample progression of spectral indexes.
-    """
-    import pandas as pd
-    import seaborn as sns
-    import matplotlib.pyplot as plt
-    sns.set_context("notebook", font_scale=1.2, rc={"lines.linewidth": 1.2})
-    sns.set_style("whitegrid")
-    custom_style = {
-        'grid.color': '0.8',
-        'grid.linestyle': '--',
-        'grid.linewidth': 0.5,
-    }
-    sns.set_style(custom_style)
-    df = pd.read_csv(filename, sep=r"\s+", usecols=[4,5,9,10,11,12,13], header=None, nrows=max)
-    prior=-3.0
-    stddev=0.05
-
-    x = 'MCMC Sample'
-    y = ['0 Prior', '1-4 High lat.', '5 NGS',
-         '6 Gal. center', '7 Fan region', '8 Gal. anti-center',
-         '9 Gum nebula']
-    df.columns = y
-    N = df.values.shape[0]
-    df['Mean'] = df.mean(axis=1)
-    df['MCMC Sample'] = range(N)
-    y.append('Mean')
-
-    f, ax = plt.subplots(figsize=(16,8))
-    cmap = plt.cm.get_cmap('tab10')# len(y))
-
-    # Reduce points
-    df = df.groupby(np.arange(len(df))//nbins).mean()
-    positions = legend_positions(df, y)
-    c = 0
-    for i, (column, position) in enumerate(positions.items()):
-        linestyle = '-'
-        linewidth = 2
-        fontweight = 'normal'
-        if column == "Mean":
-            color="grey"
-            linewidth = 4
-            fontweight='bold'
-        if i == 0:
-            color = "black"
-            linestyle = '--'
-        else:
-            color = cmap(c)#float(i-1)/len(positions))
-            c += 1
-        # Plot each line separatly so we can be explicit about color
-        ax = df.plot(x=x, y=column, legend=False, ax=ax, color=color, linestyle=linestyle, linewidth=linewidth)
-
-        # Add the text to the right
-        plt.text(
-            df[x][df[column].last_valid_index()]+N*0.01,
-            position, column, fontsize=12,
-            color=color, fontweight=fontweight
-        )
-
-    if min:
-        plt.xticks(list(plt.xticks()[0]) + [min])
-
-    ax.set_ylabel('Region spectral index')
-
-    #ax.axes.xaxis.grid()
-    #ax.axes.yaxis.grid()
-    # Add percent signs
-    #ax.set_yticklabels(['{:3.0f}%'.format(x) for x in ax.get_yticks()])
-    sns.despine(top=True, right=True, left=True, bottom=True)
-
-    plt.xlim(min, max)
-    plt.savefig(filename.replace(".dat","_traceplot.pdf"), dpi=300)
-    plt.show()
 
 @commands.command()
 @click.argument("filename", type=click.STRING)
@@ -948,32 +868,52 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
     # Best-fit LCDM CMB TT, TE, EE power spectrum
     # BP_cmb_bfLCDM_{procver}.txt
 
-"""
+
+@commands.command()
+@click.argument('filename', type=click.STRING)
+@click.option('-min', default=0, help='Min sample of dataset (burnin)')
+@click.option('-max', default=1000, help='Max sample to inclue')
+@click.option('-nbins', default=1, help='Bins')
+def traceplot(filename, max, min, nbins):
+    """
+    This function plots a traceplot of samples from min to max with optional bins.
+    Useful to plot sample progression of spectral indexes.
+    """
+    header = ['1-4 High lat.', '5 NGS',
+         '6 Gal. center', '7 Fan region', '8 Gal. anti-center',
+         '9 Gum nebula']
+    cols = [4,5,9,10,11,12,13]
+    df = pd.read_csv(filename, sep=r"\s+", usecols=cols, header=header, nrows=max)
+    x = 'MCMC Sample'
+    
+    traceplotter(df, cols, header, nbins, outname=filename.replace(".dat","_traceplot.pdf"))
+
 @commands.command()
 @click.argument("chainfile", type=click.STRING)
 @click.argument("dataset", type=click.STRING)
 @click.option('-burnin', default=0, help='Min sample of dataset (burnin)')
 @click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]",)
-def pixreg2trace(chainfile, dataset, burnin, )
-
+@click.option('-plot', is_flag=True, default=False, help= 'Plots trace')
+def pixreg2trace(chainfile, dataset, burnin, maxchain, plot,):
+    """
     Outputs the values of the pixel regions for each sample to a dat file.
     ex. pixreg2trace chain_c0001.h5 synch/beta_pixreg_val -burnin 30 -maxchain 4 
-
+    """
     
     # Check if you want to output a map
     import h5py
     import healpy as hp
     import pandas as pd
     from tqdm import tqdm
+    dats = []
     min_=burnin
     for c in range(1, maxchain + 1):
-        chainfile = input.replace("c0001", "c" + str(c).zfill(4))
+        chainfile = chainfile.replace("c0001", "c" + str(c).zfill(4))
         with h5py.File(chainfile, "r") as f:
             max_ = len(f.keys()) - 1
             print("{:-^48}".format(f" Samples {min_} to {max_} chain {c}"))
             for sample in tqdm(range(min_, max_ + 1), ncols=80):
                 # Identify dataset
-                # alm, map or (sigma_l, which is recognized as l)
                 # HDF dataset path formatting
                 s = str(sample).zfill(6)
                 # Sets tag with type
@@ -983,16 +923,97 @@ def pixreg2trace(chainfile, dataset, burnin, )
                 # If alms is already chosen, no problem
                 try:
                     data = f[tag][()]
-                if len(data[0]) == 0:
-                    print(f"WARNING! {tag} empty")
+                    if len(data[0]) == 0:
+                        print(f"WARNING! {tag} empty")
+                    dats.append(data)
                 except:
                     print(f"Found no dataset called {dataset}")
                     # Append sample to list
-                    dats.append(data)
+             
+
     sigs = ["T","P"]
-    df = pd.DataFrame.from_records(dats, columns=sigs);
-    #y = ['1 Top left', '2 Top right', '3 Bot left', '4 Bot right', '5 NGS', '6 Gal. center', '7 Fan region', '8 Gal. anti-center', '9 Gum nebula']
+    df = pd.DataFrame.from_records(dats, columns=sigs)
+    header = ['1 Top left', '2 Top right', '3 Bot. left', '4 Bot. right', '5 NGS',
+              '6 Gal. center', '7 Fan region', '8 Gal. anti-center',
+              '9 Gum nebula']
+
     for sig in sigs:
-        df = pd.DataFrame(df[sig].to_list())
-        df.to_csv(f'sampletrace_{sig}_{dataset}.csv')
-"""
+        df2 = pd.DataFrame(df[sig].to_list(), columns=header)
+        label = dataset.replace("/","-")
+        outname = f"sampletrace_{sig}_{label}"
+        df2.to_csv(f'{outname}.csv')
+    
+        if plot:
+            xlabel = 'Gibbs Sample'
+            combined_hilat = '1-4 High lat.'
+            df2 = df2.drop(columns=['1 Top left', '2 Top right', '3 Bot. left',])
+            df2 = df2.rename(columns={'4 Bot. right':combined_hilat})
+            header_ = [combined_hilat] + header[4:]
+            nbins = 1
+            traceplotter(df2, header_, xlabel, nbins, f"{outname}.pdf")
+
+def traceplotter(df, header, xlabel, nbins, outname):
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    sns.set_context("notebook", font_scale=1.2, rc={"lines.linewidth": 1.2})
+    sns.set_style("whitegrid")
+    custom_style = {
+        'grid.color': '0.8',
+        'grid.linestyle': '--',
+        'grid.linewidth': 0.5,
+    }
+    sns.set_style(custom_style)
+
+    prior=-3.0
+    stddev=0.05
+
+    #df.columns = y
+    N = df.values.shape[0]
+    df['Mean'] = df.mean(axis=1)
+    df[xlabel] = range(N)
+    header.append('Mean')
+
+    f, ax = plt.subplots(figsize=(16,8))
+    cmap = plt.cm.get_cmap('tab10')# len(y))
+
+    # Reduce points
+    if nbins>1:
+        df = df.groupby(np.arange(len(df))//nbins).mean()
+
+    positions = legend_positions(df, header)
+    c = 0
+    for i, (column, position) in enumerate(positions.items()):
+        linestyle = '-'
+        linewidth = 2
+        fontweight = 'normal'
+        if column == "Mean":
+            color="grey"
+            linewidth = 4
+            fontweight='bold'
+        else:
+            color = cmap(c)#float(i-1)/len(positions))
+            c += 1
+        # Plot each line separatly so we can be explicit about color
+        ax = df.plot(x=xlabel, y=column, legend=False, ax=ax, color=color, linestyle=linestyle, linewidth=linewidth)
+
+        # Add the text to the right
+        plt.text(
+            df[xlabel][df[column].last_valid_index()]+N*0.01,
+            position, column, fontsize=12,
+            color=color, fontweight=fontweight
+        )
+
+    #if min_:
+    #    plt.xticks(list(plt.xticks()[0]) + [min_])
+
+    ax.set_ylabel('Region spectral index')
+
+    #ax.axes.xaxis.grid()
+    #ax.axes.yaxis.grid()
+    # Add percent signs
+    #ax.set_yticklabels(['{:3.0f}%'.format(x) for x in ax.get_yticks()])
+    sns.despine(top=True, right=True, left=True, bottom=True)
+
+    #plt.xlim(min_, max_)
+    plt.savefig(outname, dpi=300)
+    plt.show()
