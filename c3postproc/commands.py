@@ -894,7 +894,8 @@ def traceplot(filename, max, min, nbins):
 @click.option('-burnin', default=0, help='Min sample of dataset (burnin)')
 @click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]",)
 @click.option('-plot', is_flag=True, default=False, help= 'Plots trace')
-def pixreg2trace(chainfile, dataset, burnin, maxchain, plot,):
+@click.option('-nbins', default=1, help='Bins for plotting')
+def pixreg2trace(chainfile, dataset, burnin, maxchain, plot, nbins,):
     """
     Outputs the values of the pixel regions for each sample to a dat file.
     ex. pixreg2trace chain_c0001.h5 synch/beta_pixreg_val -burnin 30 -maxchain 4 
@@ -949,7 +950,6 @@ def pixreg2trace(chainfile, dataset, burnin, maxchain, plot,):
             df2 = df2.drop(columns=['1 Top left', '2 Top right', '3 Bot. left',])
             df2 = df2.rename(columns={'4 Bot. right':combined_hilat})
             header_ = [combined_hilat] + header[4:]
-            nbins = 1
             traceplotter(df2, header_, xlabel, nbins, f"{outname}.pdf")
 
 def traceplotter(df, header, xlabel, nbins, outname):
