@@ -178,7 +178,7 @@ def stddev(input, dataset, output, min, max, maxchain, fwhm, nside,):
 @click.option("-auto", is_flag=True, help="Automatically sets all plotting parameters.",)
 @click.option("-min", default=False, help="Min value of colorbar, overrides autodetector.",)
 @click.option("-max", default=False, help="Max value of colorbar, overrides autodetector.",)
-@click.option("-mid", default=0.0, type=click.FLOAT, multiple=True, help="Max value of colorbar, overrides autodetector.",)
+@click.option("-mid", default=0.0, type=click.FLOAT, multiple=True, help='Adds tick values "-mid 2 -mid 4"',)
 @click.option("-range", default="auto", type=click.STRING, help='Color range. "-range auto" sets to 97.5 percentile of data., or "minmax" which sets to data min and max values.',)  # str until changed to float
 @click.option("-colorbar", "-bar", is_flag=True, help='Adds colorbar ("cb" in filename)',)
 @click.option("-lmax", default=None, type=click.FLOAT, help="This is automatically set from the h5 file. Only available for alm inputs.",)
