@@ -13,7 +13,7 @@ from astropy.io import fits
 print("Importtime:", (time.time() - totaltime))
 
 
-def Plotter(input, dataset, nside, auto, min, max, minmax, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, verbose,):
+def Plotter(input, dataset, nside, auto, min, max, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, verbose,):
     rcParams["backend"] = "pdf" if pdf else "Agg"
     rcParams["legend.fancybox"] = True
     rcParams["lines.linewidth"] = 2
@@ -37,8 +37,8 @@ def Plotter(input, dataset, nside, auto, min, max, minmax, rng, colorbar, lmax, 
 
     # Which signal to plot
     print("----------------------------------")
-    if len(input)==1: input = input[0]
-    print("Plotting " + input)
+    #if len(input)==1: input = input[0]
+    print("Plotting ", input)
 
     #######################
     ####   READ MAP   #####
@@ -73,7 +73,7 @@ def Plotter(input, dataset, nside, auto, min, max, minmax, rng, colorbar, lmax, 
         
         try:
             if input.endswith(".fits"):
-                map, header = hp.read_map(input, field=polt, verbose=False, h=True,)
+                map, header = hp.read_map(input, field=polt, verbose=False, h=True, dtype=None,)
                 header = dict(header)
                 try:
                     signal_label = header[f"TTYPE{polt+1}"]
@@ -173,7 +173,6 @@ def Plotter(input, dataset, nside, auto, min, max, minmax, rng, colorbar, lmax, 
             ttl = ""
             lttl = ""
             unt = ""
-            rng = "auto"
             ticks = [False, False]
             cmp = "planck"
             lgscale = False
@@ -182,6 +181,7 @@ def Plotter(input, dataset, nside, auto, min, max, minmax, rng, colorbar, lmax, 
         m *= scale
 
         # If range has been specified, set.
+        """
         if rng:
             if rng == "auto":
                 if minmax:
@@ -199,15 +199,41 @@ def Plotter(input, dataset, nside, auto, min, max, minmax, rng, colorbar, lmax, 
                 max = rng
             
             ticks = [min, 0.0, max]
-
+            print("hihi",rng)
         else: 
+            print("pre", ticks, min, max)
             # If min and max have been specified, set.
             if min is not False:
                 ticks[0] = float(min)
 
             if max is not False:
                 ticks[-1] = float(max)
+        """
+        # If min and max have been specified, set.
+        if rng == "auto":
+            print("Setting range from 97.5th percentile of data")
+            mn, mx = get_ticks(m, 97.5)
+        elif rng == "minmax":
+            print("Setting range from min to max of data")
+            mn = np.min(m)
+            mx = np.max(m)
+        elif float(rng)>0.0:
+            mn = -float(rng)
+            mx = float(rng)
+            ticks = [False, 0.0, False]
 
+        if min is False:
+            min = mn
+        else:
+            min = float(min)
+
+        if max is False:
+            max = mx
+        else:
+            max = float(max)   
+
+        ticks[0] = min
+        ticks[-1] = max
 
 
         ##########################
@@ -348,7 +374,7 @@ def Plotter(input, dataset, nside, auto, min, max, minmax, rng, colorbar, lmax, 
 
             # rasterized makes the map bitmap while the labels remain vectorial
             # flip longitude to the astro convention
-            image = plt.pcolormesh(longitude[::-1], latitude, grid_map, vmin=ticks[0], vmax=ticks[-1], rasterized=True, cmap=cmap,)
+            image = plt.pcolormesh(longitude[::-1], latitude, grid_map, vmin=ticks[0], vmax=ticks[-1], rasterized=True, cmap=cmap, shading='auto',)
             # graticule
             ax.set_longitude_grid(60)
             ax.xaxis.set_major_formatter(ThetaFormatterShiftPi(60))

@@ -173,13 +173,12 @@ def stddev(input, dataset, output, min, max, maxchain, fwhm, nside,):
 
 
 @commands.command()
-@click.argument("input", type=click.Path(exists=True), nargs=-1,)
+@click.argument("input", type=click.Path(exists=True))#, nargs=-1,)
 @click.option("-nside", type=click.INT, help="nside for optional ud_grade.",)
 @click.option("-auto", is_flag=True, help="Automatically sets all plotting parameters.",)
 @click.option("-min", default=False, help="Min value of colorbar, overrides autodetector.",)
 @click.option("-max", default=False, help="Max value of colorbar, overrides autodetector.",)
-@click.option("-minmax", is_flag=True, help="Toggle min max values to be min and max of data (As opposed to 97.5 percentile).",)
-@click.option("-range", default=None, type=click.STRING, help='Color range. "-range auto" sets to 97.5 percentile of data.',)  # str until changed to float
+@click.option("-range", default="auto", type=click.STRING, help='Color range. "-range auto" sets to 97.5 percentile of data., or "minmax" which sets to data min and max values.',)  # str until changed to float
 @click.option("-colorbar", "-bar", is_flag=True, help='Adds colorbar ("cb" in filename)',)
 @click.option("-lmax", default=None, type=click.FLOAT, help="This is automatically set from the h5 file. Only available for alm inputs.",)
 @click.option("-fwhm", default=0.0, type=click.FLOAT, help="FWHM of smoothing to apply to alm binning. Only available for alm inputs.",)
@@ -198,7 +197,7 @@ def stddev(input, dataset, output, min, max, maxchain, fwhm, nside,):
 @click.option("-unit", default=None, type=click.STRING, help="Set unit (Under color bar), has LaTeX functionality. Ex. $\mu$",)
 @click.option("-scale", default=1.0, type=click.FLOAT, help="Scale input map [ex. 1e-6 for muK to K]",)
 @click.option("-verbose", is_flag=True, help="Verbose mode")
-def plot(input, nside, auto, min, max, minmax, range, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, verbose,):
+def plot(input, nside, auto, min, max, range, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, verbose,):
     """
     \b
     Plots map from .fits.
@@ -211,7 +210,7 @@ def plot(input, nside, auto, min, max, minmax, range, colorbar, lmax, fwhm, mask
 
     from c3postproc.plotter import Plotter
 
-    Plotter(input, dataset, nside, auto, min, max, minmax, range, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, verbose,)
+    Plotter(input, dataset, nside, auto, min, max, range, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, verbose,)
 
 
 @commands.command()
@@ -489,6 +488,28 @@ def h5map2fits(filename, dataset, save=True):
         hp.write_map(outfile + f"_n{str(nside)}.fits", maps, overwrite=True,)
     return maps, nside, lmax, outfile
 
+@commands.command()
+@click.argument("filename", type=click.STRING)
+@click.argument("dataset", type=click.STRING)
+def h52fits(filename, dataset,):
+    """
+    Outputs a .h5 map to fits on the form 000001_cmb_amp_n1024.fits
+    """
+    import healpy as hp
+    import h5py
+
+    dataset, tag = dataset.rsplit("/", 1)
+
+    with h5py.File(filename, "r") as f:
+        maps = f[f"{dataset}/{tag}"][()]
+        lmax = f[f"{dataset}/amp_lmax"][()]  # Get lmax from h5
+
+    nside = hp.npix2nside(maps.shape[-1])
+    dataset = f"{dataset}/{tag}"
+    outfile = dataset.replace("/", "_")
+    outfile = outfile.replace("_map", "")
+    hp.write_map(outfile + f"_n{str(nside)}.fits", maps, overwrite=True,)
+    
 
 @commands.command()
 @click.argument("input", type=click.STRING)
@@ -925,3 +946,52 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
     """
     # Best-fit LCDM CMB TT, TE, EE power spectrum
     # BP_cmb_bfLCDM_{procver}.txt
+
+"""
+@commands.command()
+@click.argument("chainfile", type=click.STRING)
+@click.argument("dataset", type=click.STRING)
+@click.option('-burnin', default=0, help='Min sample of dataset (burnin)')
+@click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]",)
+def pixreg2trace(chainfile, dataset, burnin, )
+
+    Outputs the values of the pixel regions for each sample to a dat file.
+    ex. pixreg2trace chain_c0001.h5 synch/beta_pixreg_val -burnin 30 -maxchain 4 
+
+    
+    # Check if you want to output a map
+    import h5py
+    import healpy as hp
+    import pandas as pd
+    from tqdm import tqdm
+    min_=burnin
+    for c in range(1, maxchain + 1):
+        chainfile = input.replace("c0001", "c" + str(c).zfill(4))
+        with h5py.File(chainfile, "r") as f:
+            max_ = len(f.keys()) - 1
+            print("{:-^48}".format(f" Samples {min_} to {max_} chain {c}"))
+            for sample in tqdm(range(min_, max_ + 1), ncols=80):
+                # Identify dataset
+                # alm, map or (sigma_l, which is recognized as l)
+                # HDF dataset path formatting
+                s = str(sample).zfill(6)
+                # Sets tag with type
+                tag = f"{s}/{dataset}"
+                #print(f"Reading c{str(c).zfill(4)} {tag}")
+                # Check if map is available, if not, use alms.
+                # If alms is already chosen, no problem
+                try:
+                    data = f[tag][()]
+                if len(data[0]) == 0:
+                    print(f"WARNING! {tag} empty")
+                except:
+                    print(f"Found no dataset called {dataset}")
+                    # Append sample to list
+                    dats.append(data)
+    sigs = ["T","P"]
+    df = pd.DataFrame.from_records(dats, columns=sigs);
+    #y = ['1 Top left', '2 Top right', '3 Bot left', '4 Bot right', '5 NGS', '6 Gal. center', '7 Fan region', '8 Gal. anti-center', '9 Gum nebula']
+    for sig in sigs:
+        df = pd.DataFrame(df[sig].to_list())
+        df.to_csv(f'sampletrace_{sig}_{dataset}.csv')
+"""
