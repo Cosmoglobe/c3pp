@@ -178,6 +178,7 @@ def stddev(input, dataset, output, min, max, maxchain, fwhm, nside,):
 @click.option("-auto", is_flag=True, help="Automatically sets all plotting parameters.",)
 @click.option("-min", default=False, help="Min value of colorbar, overrides autodetector.",)
 @click.option("-max", default=False, help="Max value of colorbar, overrides autodetector.",)
+@click.option("-mid", default=0.0, type=click.FLOAT, multiple=True, help="Max value of colorbar, overrides autodetector.",)
 @click.option("-range", default="auto", type=click.STRING, help='Color range. "-range auto" sets to 97.5 percentile of data., or "minmax" which sets to data min and max values.',)  # str until changed to float
 @click.option("-colorbar", "-bar", is_flag=True, help='Adds colorbar ("cb" in filename)',)
 @click.option("-lmax", default=None, type=click.FLOAT, help="This is automatically set from the h5 file. Only available for alm inputs.",)
@@ -197,7 +198,7 @@ def stddev(input, dataset, output, min, max, maxchain, fwhm, nside,):
 @click.option("-unit", default=None, type=click.STRING, help="Set unit (Under color bar), has LaTeX functionality. Ex. $\mu$",)
 @click.option("-scale", default=1.0, type=click.FLOAT, help="Scale input map [ex. 1e-6 for muK to K]",)
 @click.option("-verbose", is_flag=True, help="Verbose mode")
-def plot(input, nside, auto, min, max, range, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, verbose,):
+def plot(input, nside, auto, min, max, mid, range, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, verbose,):
     """
     \b
     Plots map from .fits.
@@ -210,7 +211,7 @@ def plot(input, nside, auto, min, max, range, colorbar, lmax, fwhm, mask, mfill,
 
     from c3postproc.plotter import Plotter
 
-    Plotter(input, dataset, nside, auto, min, max, range, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, verbose,)
+    Plotter(input, dataset, nside, auto, min, max, mid, range, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, verbose,)
 
 
 @commands.command()

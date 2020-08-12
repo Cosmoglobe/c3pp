@@ -13,7 +13,7 @@ from astropy.io import fits
 print("Importtime:", (time.time() - totaltime))
 
 
-def Plotter(input, dataset, nside, auto, min, max, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, verbose,):
+def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, verbose,):
     rcParams["backend"] = "pdf" if pdf else "Agg"
     rcParams["legend.fancybox"] = True
     rcParams["lines.linewidth"] = 2
@@ -235,6 +235,9 @@ def Plotter(input, dataset, nside, auto, min, max, rng, colorbar, lmax, fwhm, ma
         ticks[0] = min
         ticks[-1] = max
 
+        if mid:
+            ticks = [min, *mid, max] 
+            
 
         ##########################
         #### Plotting Params #####
