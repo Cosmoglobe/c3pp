@@ -135,7 +135,9 @@ def specplot(input,):
 @click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]",)
 @click.option("-fwhm", default=0.0, help="FWHM in arcmin")
 @click.option("-nside", default=None, type=click.INT, help="Nside for alm binning",)
-def mean(input, dataset, output, min, max, maxchain, fwhm, nside,):
+@click.option("-lowmemory", is_flag=True, help="Compute using less memory, this may reduce computation speed.",)
+def mean(
+    input, dataset, output, min, max, maxchain, fwhm, nside, lowmemory):
     """
     Calculates the mean over sample range from .h5 file.\n
     ex. chains_c0001.h5 dust/amp_map 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40 -maxchain 3\n
@@ -146,7 +148,10 @@ def mean(input, dataset, output, min, max, maxchain, fwhm, nside,):
         click.echo("Please specify nside when handling alms.")
         sys.exit()
 
-    h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.mean,)
+    if (lowmemory):
+        h5handler_low(input, dataset, min, max, maxchain, output, fwhm, nside, lowmemory, False, np.mean)
+    else:
+        h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.mean)
 
 @commands.command()
 @click.argument("input", type=click.STRING)
@@ -157,7 +162,8 @@ def mean(input, dataset, output, min, max, maxchain, fwhm, nside,):
 @click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]",)
 @click.option("-fwhm", default=0.0, help="FWHM in arcmin")
 @click.option("-nside", default=None, type=click.INT, help="Nside for alm binning",)
-def stddev(input, dataset, output, min, max, maxchain, fwhm, nside,):
+@click.option("-lowmemory", is_flag=True, help="Compute using less memory, this may reduce computation speed.",)
+def stddev(input, dataset, output, min, max, maxchain, fwhm, nside, lowmemory,):
     """
     Calculates the stddev over sample range from .h5 file.\n
     ex. chains_c0001.h5 dust/amp_map 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40 -maxchain 3\n
@@ -169,7 +175,10 @@ def stddev(input, dataset, output, min, max, maxchain, fwhm, nside,):
         click.echo("Please specify nside when handling alms.")
         sys.exit()
 
-    h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.std,)
+    if (lowmemory):
+        h5handler_low(input, dataset, min, max, maxchain, output, fwhm, nside, lowmemory, False, np.std)
+    else:
+        h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.std,)
 
 
 @commands.command()
