@@ -90,7 +90,6 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command,)
         sys.exit()
 
     dats = []
-
     maxnone = True if max == None else False  # set length of keys for maxchains>1
     for c in range(1, maxchain + 1):
         filename = input.replace("c0001", "c" + str(c).zfill(4))
@@ -168,6 +167,7 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command,)
         #print(f"# --- alm2map mean with {fwhm} arcmin, lmax {lmax_h5} ---")
         outdata = hp.alm2map(outdata, nside=nside, lmax=lmax_h5, fwhm=arcmin2rad(fwhm), pixwin=True,verbose=False,)
 
+    # Smoothing can be done after for np.mean
     if type == "map" and fwhm > 0.0 and command == np.mean:
         #print(f"--- Smoothing mean map with {fwhm} arcmin,---")
         outdata = hp.sphtfunc.smoothing(outdata, fwhm=arcmin2rad(fwhm), verbose=False,)
@@ -183,158 +183,6 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command,)
 
 def arcmin2rad(arcmin):
     return arcmin * (2 * np.pi) / 21600
-
-def h5handler_low(input, dataset, min, max, maxchain, output, fwhm, nside, lowmem, return_mean, command):
-    # Check if you want to output a map
-    import h5py
-    import healpy as hp
-
-    if (lowmem and command == np.std): #need to compute mean first
-        mean_data = h5handler_low(input, dataset, min, max, maxchain, output, fwhm, nside, lowmem, True, np.mean)
-
-    print()
-    print("{:-^50}".format(f" {dataset} calculating {command.__name__} "))
-    print("{:-^50}".format(f" nside {nside}, {fwhm} arcmin smoothing "))
-
-    if dataset.endswith("map"):
-        type = "map"
-    elif dataset.endswith("alm"):
-        type = "alm"
-    elif dataset.endswith("sigma"):
-        type = "sigma"
-    else:
-        print(f"Type {type} not recognized")
-        sys.exit()
-
-    if (lowmem):
-        nsamp = 0 #track number of samples
-        first_samp = True #flag for first sample
-    else:
-        dats = []
-
-    maxnone = True if max == None else False  # set length of keys for maxchains>1
-    for c in range(1, maxchain + 1):
-        filename = f"{input[:-7]}{str(c).zfill(4)}.h5"
-        with h5py.File(filename, "r") as f:
-            if maxnone:
-                # If no max is specified, chose last sample
-                max = len(f.keys()) - 1
-
-            print("{:-^50}".format(f" Samples {min} to {max} chain {c}"))
-
-            for sample in range(min, max + 1):
-                # Identify dataset
-                # alm, map or (sigma_l, which is recognized as l)
-
-                # Unless output is ".fits" or "map", don't convert alms to map.
-                alm2map = True if output.endswith((".fits", "map")) else False
-
-                # HDF dataset path formatting
-                s = str(sample).zfill(6)
-
-                # Sets tag with type
-                tag = f"{s}/{dataset}"
-                print(f"Reading c{str(c).zfill(4)} {tag}")
-
-                # Check if map is available, if not, use alms.
-                # If alms is already chosen, no problem
-                try:
-                    data = f[tag][()]
-                    if len(data[0]) == 0:
-                        tag = f"{tag[:-3]}map"
-                        print(f"WARNING! No {type} data found, switching to map.")
-                        data = f[tag][()]
-                        type = "map"
-                except:
-                    print(f"Found no dataset called {dataset}")
-                    print(f"Trying alms instead {tag}")
-                    try:
-                        # Use alms instead (This takes longer and is not preferred)
-                        tag = f"{tag[:-3]}alm"
-                        type = "alm"
-                        data = f[tag][()]
-                    except:
-                        print("Dataset not found.")
-
-                # If data is alm, unpack.
-                if type == "alm":
-                    lmax_h5 = f[f"{tag[:-3]}lmax"][()]
-                    data = unpack_alms(data, lmax_h5)  # Unpack alms
-
-                if data.shape[0] == 1:
-                    # Make sure its interprated as I by healpy
-                    # For non-polarization data, (1,npix) is not accepted by healpy
-                    data = data.ravel()
-
-                # If data is alm and calculating std. Bin to map and smooth first.
-                if type == "alm" and command == np.std and alm2map:
-                    print(
-                        f"#{sample} --- alm2map with {fwhm} arcmin, lmax {lmax_h5} ---"
-                    )
-                    data = hp.alm2map(
-                        data,
-                        nside=nside,
-                        lmax=lmax_h5,
-                        fwhm=arcmin2rad(fwhm),
-                        pixwin=True,
-                    )
-
-                # If data is map, smooth first.
-                elif type == "map" and fwhm > 0.0 and command == np.std:
-                    print(f"#{sample} --- Smoothing map ---")
-                    data = hp.sphtfunc.smoothing(data, fwhm=arcmin2rad(fwhm),)
-
-                if (lowmem):
-                    if (first_samp):
-                        first_samp=False
-                        if (command==np.mean):
-                            dats=data.copy()
-                        elif (command==np.std):
-                            dats=(mean_data - data)**2
-                        else:
-                            print('     Unknown command {command}. Exiting')
-                            exit()
-                    else:
-                        if (command==np.mean):
-                            dats=dats+data
-                        elif (command==np.std):
-                            dats=dats+(mean_data - data)**2
-                    nsamp+=1
-                else:
-                    # Append sample to list
-                    dats.append(data)
-
-    if (lowmem):
-        if (command == np.mean):
-            outdata = dats/nsamp
-        elif (command == np.std):
-            outdata = np.sqrt(dats/nsamp)
-    else:
-        # Convert list to array
-        dats = np.array(dats)
-        # Calculate std or mean
-        outdata = command(dats, axis=0)
-
-    # Smoothing afterwards when calculating mean
-    if type == "alm" and command == np.mean and alm2map:
-        print(f"# --- alm2map mean with {fwhm} arcmin, lmax {lmax_h5} ---")
-        outdata = hp.alm2map(
-            outdata, nside=nside, lmax=lmax_h5, fwhm=arcmin2rad(fwhm), pixwin=True,
-        )
-
-    if type == "map" and fwhm > 0.0 and command == np.mean:
-        print(f"--- Smoothing mean map with {fwhm} arcmin,---")
-        outdata = hp.sphtfunc.smoothing(outdata, fwhm=arcmin2rad(fwhm))
-
-    # Outputs fits map if output name is .fits
-    if (return_mean and command == np.mean):
-        return outdata
-    elif output.endswith(".fits"):
-        hp.write_map(output, outdata, overwrite=True)
-    elif output.endswith(".dat"):
-        np.savetxt(output, outdata)
-    else:
-        return outdata
 
 def legend_positions(df, y):
     """ Calculate position of labels to the right in plot... """
