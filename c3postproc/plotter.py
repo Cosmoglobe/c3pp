@@ -6,6 +6,7 @@ import healpy as hp
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as col
+import matplotlib as mpl
 from matplotlib import rcParams, rc
 from c3postproc.tools import arcmin2rad
 from astropy.io import fits
@@ -40,6 +41,7 @@ def Plotter(
     scale,
     mid,
     verbose,
+    baronly,
 ):
     rcParams["backend"] = "pdf" if pdf else "Agg"
     rcParams["legend.fancybox"] = True
@@ -455,7 +457,7 @@ def Plotter(
             ## TITLE ####
             #############
             plt.text(
-                6.0, 1.3, r"%s"%(title), ha="center", va="center", fontsize=fontsize,
+                6.0, 1.3, r'%s'%(title), ha="center", va="center", fontsize=fontsize,
             )
 
             ##############
@@ -500,9 +502,53 @@ def Plotter(
                 transparent=tp,
                 format=filetype,
             )
+
+                
+
             print("Savefig", (time.time() - starttime)) if verbose else None
 
             plt.close()
+
+            if (baronly):
+                fig = plt.figure(figsize=(cm2inch(1.4*width), cm2inch(height)))
+                ax1 = fig.add_axes([0.05, 0.80, 0.7, 0.05])
+                norm = col.Normalize(vmin=ticks[0], vmax=ticks[-1])
+
+                cb = mpl.colorbar.ColorbarBase(
+                    ax1,
+                    cmap=cmap,
+                    orientation="horizontal",
+                    ticks=ticks,
+                    norm=norm,
+                    format=FuncFormatter(fmt),
+                )
+
+                # Format tick labels
+                if (not colorbar):
+                    ticklabels = [fmt(i,1) for i in ticklabels]
+                cb.ax.set_xticklabels(ticklabels)
+                
+                cb.ax.xaxis.set_label_text(unit)
+                cb.ax.xaxis.label.set_size(fontsize)
+                # cb.ax.minorticks_on()
+
+                cb.ax.tick_params(
+                    which="both", axis="x", direction="in", labelsize=fontsize
+                )
+                cb.ax.xaxis.labelpad = 4  # -11
+                # workaround for issue with viewers, see colorbar docstring
+                cb.solids.set_edgecolor("face")
+
+                fn = outfile + f"_only_colorbar_w{str(int(width))}"
+                fn += f".{filetype}"
+                plt.savefig(
+                    fn,
+                    bbox_inches="tight",
+                    pad_inches=0.02,
+                    transparent=tp,
+                    format=filetype,
+                )
+
             print("Totaltime:", (time.time() - totaltime)) if verbose else None
 
         min = tempmin

@@ -35,8 +35,13 @@ def printheader(input,):
 @click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]")
 @click.option("-fwhm", default=0.0, help="FWHM in arcmin")
 @click.option("-nside", default=None, type=click.INT, help="Nside for alm binning")
+@click.option(
+    "-lowmemory",
+    is_flag=True,
+    help="Compute using less memory, this may reduce computation speed.",
+)
 def mean(
-    input, dataset, output, min, max, maxchain, fwhm, nside,
+    input, dataset, output, min, max, maxchain, fwhm, nside, lowmemory
 ):
     """
     Calculates the mean over sample range from .h5 file.\n
@@ -48,7 +53,10 @@ def mean(
         click.echo("Please specify nside when handling alms.")
         sys.exit()
 
-    h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.mean)
+    if (lowmemory):
+        h5handler_low(input, dataset, min, max, maxchain, output, fwhm, nside, lowmemory, False, np.mean)
+    else:
+        h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.mean)
 
 
 @commands.command()
@@ -62,8 +70,13 @@ def mean(
 @click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]")
 @click.option("-fwhm", default=0.0, help="FWHM in arcmin")
 @click.option("-nside", default=None, type=click.INT, help="Nside for alm binning")
+@click.option(
+    "-lowmemory",
+    is_flag=True,
+    help="Compute using less memory, this may reduce computation speed.",
+)
 def stddev(
-    input, dataset, output, min, max, maxchain, fwhm, nside,
+    input, dataset, output, min, max, maxchain, fwhm, nside, lowmemory
 ):
     """
     Calculates the stddev over sample range from .h5 file.\n
@@ -76,7 +89,10 @@ def stddev(
         click.echo("Please specify nside when handling alms.")
         sys.exit()
 
-    h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.std)
+    if (lowmemory):
+        h5handler_low(input, dataset, min, max, maxchain, output, fwhm, nside, lowmemory, False, np.std)
+    else:
+        h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.std)
 
 
 @commands.command()
@@ -189,6 +205,7 @@ def stddev(
 )
 @click.option("-mid", default=None, type=click.STRING, multiple=True, help="Adds value as tick to colorbar, 'center' adds a tick to the center of min and max to the color bar. If logscale is used, this is calculated on a (semi-)logarithmic basis (also across 0.0). In logscale, if either |min| or |max| < 1 or 'center_bar' is given, the tick is assigned to the exact center of the bar, not the (semi-)logarithmic center.")
 @click.option("-verbose", is_flag=True, help="Verbose mode")
+@click.option("-baronly", is_flag=True, help="Additionally plot only the color bar")
 def plot(
     input,
     nside,
@@ -215,6 +232,7 @@ def plot(
     scale,
     mid,
     verbose,
+    baronly,
 ):
     """
     \b
@@ -255,6 +273,7 @@ def plot(
         scale,
         mid,
         verbose,
+        baronly,
     )
 
 
