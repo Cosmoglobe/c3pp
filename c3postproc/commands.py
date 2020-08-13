@@ -879,9 +879,9 @@ def traceplot(filename, max, min, nbins):
     This function plots a traceplot of samples from min to max with optional bins.
     Useful to plot sample progression of spectral indexes.
     """
-    header = ['1-4 High lat.', '5 NGS',
-         '6 Gal. center', '7 Fan region', '8 Gal. anti-center',
-         '9 Gum nebula']
+    header = ['High lat.', 'NGS',
+         'Gal. center', 'Fan region', 'Gal. anti-center',
+         'Gum nebula']
     cols = [4,5,9,10,11,12,13]
     df = pd.read_csv(filename, sep=r"\s+", usecols=cols, header=header, nrows=max)
     x = 'MCMC Sample'
@@ -909,10 +909,10 @@ def pixreg2trace(chainfile, dataset, burnin, maxchain, plot, nbins,):
     dats = []
     min_=burnin
     for c in range(1, maxchain + 1):
-        chainfile = chainfile.replace("c0001", "c" + str(c).zfill(4))
-        with h5py.File(chainfile, "r") as f:
+        chainfile_ = chainfile.replace("c0001", "c" + str(c).zfill(4))
+        with h5py.File(chainfile_, "r") as f:
             max_ = len(f.keys()) - 1
-            print("{:-^48}".format(f" Samples {min_} to {max_} chain {c}"))
+            print("{:-^48}".format(f" Samples {min_} to {max_} in {chainfile_} "))
             for sample in tqdm(range(min_, max_ + 1), ncols=80):
                 # Identify dataset
                 # HDF dataset path formatting
@@ -934,9 +934,9 @@ def pixreg2trace(chainfile, dataset, burnin, maxchain, plot, nbins,):
 
     sigs = ["T","P"]
     df = pd.DataFrame.from_records(dats, columns=sigs)
-    header = ['1 Top left', '2 Top right', '3 Bot. left', '4 Bot. right', '5 NGS',
-              '6 Gal. center', '7 Fan region', '8 Gal. anti-center',
-              '9 Gum nebula']
+    header = ['Top left', 'Top right', 'Bot. left', 'Bot. right', 'NGS',
+              'Gal. center', 'Fan region', 'Gal. anti-center',
+              'Gum nebula']
 
     for sig in sigs:
         df2 = pd.DataFrame(df[sig].to_list(), columns=header)
@@ -946,9 +946,9 @@ def pixreg2trace(chainfile, dataset, burnin, maxchain, plot, nbins,):
     
         if plot:
             xlabel = 'Gibbs Sample'
-            combined_hilat = '1-4 High lat.'
-            df2 = df2.drop(columns=['1 Top left', '2 Top right', '3 Bot. left',])
-            df2 = df2.rename(columns={'4 Bot. right':combined_hilat})
+            combined_hilat = 'High lat.'
+            df2 = df2.drop(columns=['Top left', 'Top right', 'Bot. left',])
+            df2 = df2.rename(columns={'Bot. right':combined_hilat})
             header_ = [combined_hilat] + header[4:]
             traceplotter(df2, header_, xlabel, nbins, f"{outname}.pdf")
 
@@ -976,6 +976,8 @@ def traceplotter(df, header, xlabel, nbins, outname):
     f, ax = plt.subplots(figsize=(16,8))
     cmap = plt.cm.get_cmap('tab10')# len(y))
 
+    means = df.mean()
+    stds = df.std()
     # Reduce points
     if nbins>1:
         df = df.groupby(np.arange(len(df))//nbins).mean()
@@ -996,10 +998,14 @@ def traceplotter(df, header, xlabel, nbins, outname):
         # Plot each line separatly so we can be explicit about color
         ax = df.plot(x=xlabel, y=column, legend=False, ax=ax, color=color, linestyle=linestyle, linewidth=linewidth)
 
+        label = rf'{column} {means[i]:.2f}$\pm${stds[i]:.2f}'
+        if len(label) > 24:
+            label = f'{column} \n' + fr'{means[i]:.2f}$\pm${stds[i]:.2f}'
+
         # Add the text to the right
         plt.text(
             df[xlabel][df[column].last_valid_index()]+N*0.01,
-            position, column, fontsize=12,
+            position, label, fontsize=12,
             color=color, fontweight=fontweight
         )
 

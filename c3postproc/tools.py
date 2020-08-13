@@ -98,7 +98,7 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command,)
                 # If no max is specified, chose last sample
                 max = len(f.keys()) - 1
 
-            print("{:-^48}".format(f" Samples {min} to {max} chain {c}"))
+            print("{:-^48}".format(f" Samples {min} to {max} in {filename}"))
 
             for sample in tqdm(range(min, max + 1), ncols=80):
                 # Identify dataset
@@ -200,7 +200,7 @@ def legend_positions(df, y):
             for column2, value2 in positions.items():
                 if column1 != column2:
                     dist = abs(value1-value2)
-                    if dist < 0.0125:
+                    if dist < 0.023:#0.0125:
                         collisions += 1
                         if value1 < value2:
                             positions[column1] -= .0001
