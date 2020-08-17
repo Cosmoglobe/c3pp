@@ -180,14 +180,14 @@ def h5handler_old(input, dataset, min, max, maxchain, output, fwhm, nside, comma
     else:
         return outdata
 
-def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, lowmem, return_mean, command):
+def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, zerospin, lowmem, return_mean, command):
     # Check if you want to output a map
     import h5py
     import healpy as hp
     from tqdm import tqdm
 
     if (lowmem and command == np.std): #need to compute mean first
-        mean_data = h5handler_low(input, dataset, min, max, maxchain, output, fwhm, nside, lowmem, True, np.mean)
+        mean_data = h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, zerospin, lowmem, True, np.mean)
 
     print()
     print("{:-^50}".format(f" {dataset} calculating {command.__name__} "))
@@ -210,6 +210,7 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, lowmem, r
         dats = []
 
     maxnone = True if max == None else False  # set length of keys for maxchains>1
+    pol = True if zerospin == False else False  # treat maps as TQU maps (polarization)
     for c in range(1, maxchain + 1):
         filename = input.replace("c0001", "c" + str(c).zfill(4))
         with h5py.File(filename, "r") as f:
@@ -266,12 +267,12 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, lowmem, r
                 # If data is alm and calculating std. Bin to map and smooth first.
                 if type == "alm" and command == np.std and alm2map:
                     #print(f"#{sample} --- alm2map with {fwhm} arcmin, lmax {lmax_h5} ---")
-                    data = hp.alm2map(data, nside=nside, lmax=lmax_h5, fwhm=arcmin2rad(fwhm), pixwin=True,verbose=False,)
+                    data = hp.alm2map(data, nside=nside, lmax=lmax_h5, fwhm=arcmin2rad(fwhm), pixwin=True,verbose=False,pol=pol,)
 
                 # If data is map, smooth first.
                 elif type == "map" and fwhm > 0.0 and command == np.std:
                     #print(f"#{sample} --- Smoothing map ---")
-                    data = hp.sphtfunc.smoothing(data, fwhm=arcmin2rad(fwhm),verbose=False,)
+                    data = hp.sphtfunc.smoothing(data, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol,)
 
                 if (lowmem):
                     if (first_samp):
@@ -308,12 +309,12 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, lowmem, r
     if type == "alm" and command == np.mean and alm2map:
         print(f"# --- alm2map mean with {fwhm} arcmin, lmax {lmax_h5} ---")
         outdata = hp.alm2map(
-            outdata, nside=nside, lmax=lmax_h5, fwhm=arcmin2rad(fwhm), pixwin=True,
+            outdata, nside=nside, lmax=lmax_h5, fwhm=arcmin2rad(fwhm), pixwin=True, pol=pol,
         )
 
     if type == "map" and fwhm > 0.0 and command == np.mean:
         print(f"--- Smoothing mean map with {fwhm} arcmin,---")
-        outdata = hp.sphtfunc.smoothing(outdata, fwhm=arcmin2rad(fwhm))
+        outdata = hp.sphtfunc.smoothing(outdata, fwhm=arcmin2rad(fwhm), pol=pol,)
 
     # Outputs fits map if output name is .fits
     if (return_mean and command == np.mean):
@@ -365,98 +366,128 @@ def forward(x):
 def inverse(x):
     return x*100
 
-def res_handler(input, dataset, min, max, maxchain, output, fwhm, nside, lowmem, return_mean, command):
+def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, lowmem, return_mean, command):
     # Check if you want to output a map
-    import h5py
     import healpy as hp
     from tqdm import tqdm
+    import os
+
+    if (not input.endswith(".fits")):
+        print("Input file must be a '.fits'-file")
+        exit()
 
     if (lowmem and command == np.std): #need to compute mean first
-        mean_data = h5handler_low(input, dataset, min, max, maxchain, output, fwhm, nside, lowmem, True, np.mean)
+        mean_data = fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, lowmem, True, np.mean)
 
+    aline=input.split('/')
+    dataset=aline[-1]
     print()
     print("{:-^50}".format(f" {dataset} calculating {command.__name__} "))
-    print("{:-^50}".format(f" nside {nside}, {fwhm} arcmin smoothing "))
-
-    if dataset.endswith("map"):
-        type = "map"
-    elif dataset.endswith("alm"):
-        type = "alm"
-    elif dataset.endswith("sigma"):
-        type = "sigma"
+    if (nside == None):
+        print("{:-^50}".format(f" {fwhm} arcmin smoothing "))
     else:
-        print(f"Type {type} not recognized")
-        sys.exit()
+        print("{:-^50}".format(f" nside {nside}, {fwhm} arcmin smoothing "))
 
-    if (lowmem):
-        nsamp = 0 #track number of samples
-        first_samp = True #flag for first sample
-    else:
+    type = 'map'
+
+    if (not lowmem):
         dats = []
 
+    nsamp = 0 #track number of samples
+    first_samp = True #flag for first sample
+
     maxnone = True if max == None else False  # set length of keys for maxchains>1
+    pol = True if zerospin == False else False  # treat maps as TQU maps (polarization)
     for c in range(1, maxchain + 1):
         filename = input.replace("c0001", "c" + str(c).zfill(4))
-        with h5py.File(filename, "r") as f:
-            if maxnone:
-                # If no max is specified, chose last sample
-                max = len(f.keys()) - 1
+        temp=filename.split('.fits')
+        basefile=temp[0]
+        basefile=basefile[:-6]
+        filename = basefile+str(min).zfill(6)+'.fits'
+        if (not '_k'+str(min).zfill(6)+'.fits' in filename):
+            print("INPUT file name must end with '_k<6-digit-sample>.fits' ")
+            exit()
 
-            print("{:-^48}".format(f" Samples {min} to {max} in {filename}"))
+        if maxnone:
+            # If no max is specified, find last sample of chain
+            # Assume residual file of convention res_label_c0001_k000234.fits, 
+            # i.e. final numbers of file are sample number
+            max_found = False
+            siter=min
+            while (not max_found):
+                filename = basefile+str(siter).zfill(6)+'.fits'
 
-            for sample in tqdm(range(min, max + 1), ncols=80):
-                # Identify dataset
-                # alm, map or (sigma_l, which is recognized as l)
+                if (os.path.isfile(filename)):
+                    siter += 1
+                else:
+                    max_found = True
+                    max = siter - 1
 
-                # Unless output is ".fits" or "map", don't convert alms to map.
-                alm2map = True if output.endswith((".fits", "map")) else False
+        print("{:-^48}".format(f" Samples {min} to {max} in {filename}"))
 
-                # HDF dataset path formatting
+        for sample in tqdm(range(min, max + 1), ncols=80):
+                # dataset sample formatting
                 s = str(sample).zfill(6)
+                
+                filename = basefile+s+'.fits'
+                
+                if (first_samp):
+                    # Check which fields the input maps have
+                    data, header = hp.fitsfunc.read_map(filename,verbose=False,h=True,dtype=np.float64)
+                    nfields = 0
+                    for par in header:
+                        if (par[0] == 'TFIELDS'):
+                            nfields = par[1]
+                            break
+                    if (nfields == 0):
+                        print('No fields/maps in input file')
+                        exit()
+                    elif (nfields == 1):
+                        fields=(0)
+                    elif (nfields == 2):
+                        fields=(0,1)
+                    elif (nfields == 3):
+                        fields=(0,1,2)
 
-                # Sets tag with type
-                tag = f"{s}/{dataset}"
-                #print(f"Reading c{str(c).zfill(4)} {tag}")
+                    nest = False
+                    for par in header:
+                        if (par[0] == 'ORDERING'):
+                            if (not par[1] == 'RING'):
+                                nest = True
+                            break
 
-                # Check if map is available, if not, use alms.
-                # If alms is already chosen, no problem
-                try:
-                    data = f[tag][()]
-                    if len(data[0]) == 0:
-                        tag = f"{tag[:-3]}map"
-                        print(f"WARNING! No {type} data found, switching to map.")
-                        data = f[tag][()]
-                        type = "map"
-                except:
-                    print(f"Found no dataset called {dataset}")
-                    print(f"Trying alms instead {tag}")
-                    try:
-                        # Use alms instead (This takes longer and is not preferred)
-                        tag = f"{tag[:-3]}alm"
-                        type = "alm"
-                        data = f[tag][()]
-                    except:
-                        print("Dataset not found.")
+                    nest = False
+                    for par in header:
+                        if (par[0] == 'NSIDE'):
+                            nside_map = par[1]
+                            break
 
-                # If data is alm, unpack.
-                if type == "alm":
-                    lmax_h5 = f[f"{tag[:-3]}lmax"][()]
-                    data = unpack_alms(data, lmax_h5)  # Unpack alms
+
+                    if (not nside == None):
+                        if (nside > nside_map):
+                            print('   Specified nside larger than that of the input maps')
+                            print('   Not up-grading the maps')
+                            print('')
+
+                data = hp.fitsfunc.read_map(filename,verbose=False,h=False, nest=nest, dtype=np.float64)
+                
+                if (nest): #need to reorder to ring-ordering
+                    data = hp.pixelfunc.reorder(data,n2r=True)
+
+                # degrading if relevant
+                if (not nside == None):
+                    if (nside < nside_map):
+                        data=hp.pixelfunc.ud_grade(data,nside) #ordering=ring by default
 
                 if data.shape[0] == 1:
                     # Make sure its interprated as I by healpy
                     # For non-polarization data, (1,npix) is not accepted by healpy
                     data = data.ravel()
 
-                # If data is alm and calculating std. Bin to map and smooth first.
-                if type == "alm" and command == np.std and alm2map:
-                    #print(f"#{sample} --- alm2map with {fwhm} arcmin, lmax {lmax_h5} ---")
-                    data = hp.alm2map(data, nside=nside, lmax=lmax_h5, fwhm=arcmin2rad(fwhm), pixwin=True,verbose=False,)
-
-                # If data is map, smooth first.
-                elif type == "map" and fwhm > 0.0 and command == np.std:
+                # If smoothing applied and calculating stddev, smooth first.
+                if fwhm > 0.0 and command == np.std:
                     #print(f"#{sample} --- Smoothing map ---")
-                    data = hp.sphtfunc.smoothing(data, fwhm=arcmin2rad(fwhm),verbose=False,)
+                    data = hp.sphtfunc.smoothing(data, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol)
 
                 if (lowmem):
                     if (first_samp):
@@ -490,15 +521,9 @@ def res_handler(input, dataset, min, max, maxchain, output, fwhm, nside, lowmem,
         outdata = command(dats, axis=0)
 
     # Smoothing afterwards when calculating mean
-    if type == "alm" and command == np.mean and alm2map:
-        print(f"# --- alm2map mean with {fwhm} arcmin, lmax {lmax_h5} ---")
-        outdata = hp.alm2map(
-            outdata, nside=nside, lmax=lmax_h5, fwhm=arcmin2rad(fwhm), pixwin=True,
-        )
-
-    if type == "map" and fwhm > 0.0 and command == np.mean:
+    if fwhm > 0.0 and command == np.mean:
         print(f"--- Smoothing mean map with {fwhm} arcmin,---")
-        outdata = hp.sphtfunc.smoothing(outdata, fwhm=arcmin2rad(fwhm))
+        outdata = hp.sphtfunc.smoothing(outdata, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol)
 
     # Outputs fits map if output name is .fits
     if (return_mean and command == np.mean):
