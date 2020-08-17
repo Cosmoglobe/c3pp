@@ -148,10 +148,8 @@ def mean(
         click.echo("Please specify nside when handling alms.")
         sys.exit()
 
-    if (lowmemory):
-        h5handler_low(input, dataset, min, max, maxchain, output, fwhm, nside, lowmemory, False, np.mean)
-    else:
-        h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.mean)
+    h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, lowmemory, False, np.mean)
+    #h5handler_old(input, dataset, min, max, maxchain, output, fwhm, nside, np.mean)
 
 @commands.command()
 @click.argument("input", type=click.STRING)
@@ -175,10 +173,8 @@ def stddev(input, dataset, output, min, max, maxchain, fwhm, nside, lowmemory,):
         click.echo("Please specify nside when handling alms.")
         sys.exit()
 
-    if (lowmemory):
-        h5handler_low(input, dataset, min, max, maxchain, output, fwhm, nside, lowmemory, False, np.std)
-    else:
-        h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.std,)
+    h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, lowmemory, False, np.std)
+    #h5handler_old(input, dataset, min, max, maxchain, output, fwhm, nside, np.std,)
 
 
 @commands.command()
