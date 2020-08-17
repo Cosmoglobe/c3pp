@@ -187,16 +187,17 @@ def stddev(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, lo
 @click.option("-fwhm", default=0.0, help="FWHM in arcmin")
 @click.option("-nside", default=None, type=click.INT, help="Nside for down-grading maps before calculation",)
 @click.option("-zerospin", is_flag=True, help="If smoothing, treat maps as zero-spin maps.",)
+@click.option("-missing", is_flag=True, help="If files are missing, drop them. Else, exit computation",)
 @click.option("-lowmemory", is_flag=True, help="Compute using less memory, this may reduce computation speed.",)
 def fits_mean(
-    input, output, min, max, maxchain, fwhm, nside, zerospin, lowmemory):
+    input, output, min, max, maxchain, fwhm, nside, zerospin, drop_missing, lowmemory):
     """
     Calculates the mean over sample range from fits-files.\n
     ex. res_030_c0001_k000020.fits res_030_20-100_mean_40arcmin.fits -min 20 -max 100 -fwhm 40 -maxchain 3\n
     If output name is set to .dat, data will not be converted to map.
     """
 
-    fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, lowmemory, False, np.mean)
+    fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, lowmemory, drop_missing, False, np.mean)
 
 @commands.command()
 @click.argument("input", type=click.STRING)
@@ -207,16 +208,17 @@ def fits_mean(
 @click.option("-fwhm", default=0.0, help="FWHM in arcmin")
 @click.option("-nside", default=None, type=click.INT, help="Nside for down-grading maps before calculation",)
 @click.option("-zerospin", is_flag=True, help="If smoothing, treat maps as zero-spin maps.",)
+@click.option("-missing", is_flag=True, help="If files are missing, drop them. Else, exit computation",)
 @click.option("-lowmemory", is_flag=True, help="Compute using less memory, this may reduce computation speed.",)
 def fits_stddev(
-    input, output, min, max, maxchain, fwhm, nside, zerospin, lowmemory):
+    input, output, min, max, maxchain, fwhm, nside, zerospin, drop_missing, lowmemory):
     """
     Calculates the standard deviation over sample range from fits-files.\n
     ex. res_030_c0001_k000020.fits res_030_20-100_mean_40arcmin.fits -min 20 -max 100 -fwhm 40 -maxchain 3\n
     If output name is set to .dat, data will not be converted to map.
     """
 
-    fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, lowmemory, False, np.std)
+    fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_missing, lowmemory, False, np.std)
 
 @commands.command()
 @click.argument("input", type=click.Path(exists=True))#, nargs=-1,)

@@ -366,7 +366,7 @@ def forward(x):
 def inverse(x):
     return x*100
 
-def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, lowmem, return_mean, command):
+def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_missing, lowmem, return_mean, command):
     # Check if you want to output a map
     import healpy as hp
     from tqdm import tqdm
@@ -377,7 +377,7 @@ def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, lowme
         exit()
 
     if (lowmem and command == np.std): #need to compute mean first
-        mean_data = fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, lowmem, True, np.mean)
+        mean_data = fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_missing, lowmem, True, np.mean)
 
     aline=input.split('/')
     dataset=aline[-1]
@@ -423,6 +423,24 @@ def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, lowme
                     max_found = True
                     max = siter - 1
 
+        else:
+            if (first_samp):
+                for chiter in range(1,maxchain + 1):
+                    temp = input.replace("c0001", "c" + str(c).zfill(4))
+                    temp=filename.split('.fits')
+                    temp=temp[0]
+                    temp=temp[:-6]
+                    for siter in range(min,max+1):
+                        tempf = temp+str(siter).zfill(6)+'.fits'
+                        
+                        if (os.path.isfile(tempf)):
+                            siter += 1
+                        else:
+                            print('chain {c}, sample {siter} missing')
+                            if (not drop_missing):
+                                exit()
+
+
         print("{:-^48}".format(f" Samples {min} to {max} in {filename}"))
 
         for sample in tqdm(range(min, max + 1), ncols=80):
@@ -433,6 +451,12 @@ def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, lowme
                 
                 if (first_samp):
                     # Check which fields the input maps have
+                    if (not os.path.isfile(filename)):
+                        if (not drop_missing):
+                            exit()
+                        else:
+                            continue
+
                     data, header = hp.fitsfunc.read_map(filename,verbose=False,h=True,dtype=np.float64)
                     nfields = 0
                     for par in header:
@@ -468,6 +492,12 @@ def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, lowme
                             print('   Specified nside larger than that of the input maps')
                             print('   Not up-grading the maps')
                             print('')
+
+                if (not os.path.isfile(filename)):
+                    if (not drop_missing):
+                        exit()
+                    else:
+                        continue
 
                 data = hp.fitsfunc.read_map(filename,verbose=False,h=False, nest=nest, dtype=np.float64)
                 
