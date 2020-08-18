@@ -63,9 +63,7 @@ def alm2fits_tool(input, dataset, nside, lmax, fwhm, save=True):
     outfile = outfile.replace("_alm", "")
     if save:
         outfile += f"_{str(int(fwhm))}arcmin" if fwhm > 0.0 else ""
-        hp.write_map(
-            outfile + f"_n{str(nside)}_lmax{lmax}.fits", maps, overwrite=True,
-        )
+        hp.write_map(outfile + f"_n{str(nside)}_lmax{lmax}.fits", maps, overwrite=True,)
     return maps, nside, lmax, fwhm, outfile
 
 
@@ -364,3 +362,61 @@ def forward(x):
     return x/100
 def inverse(x):
     return x*100
+
+class fgs:
+    h    = 6.62607e-34 # Planck's konstant
+    k_b  = 1.38065e-23 # Boltzmanns konstant
+    Tcmb = 2.7255      # K CMB Temperature
+    def cmb(nu, A):
+        x = h*nu/(k_b*Tcmb)
+        g = (np.exp(x)-1)**2/(x**2*np.exp(x))
+        s_cmb = A/g
+        return s_cmb
+
+    def sync(nu, As, alpha, nuref=0.408):
+        #alpha = 1., As = 30 K (30*1e6 muK)
+        nu_0 = nuref*1e9 # 408 MHz
+        fnu, f = np.loadtxt("Synchrotron_template_GHz_extended.txt", unpack=True)
+        f = np.interp(nu, fnu*1e9, f)
+        f0 = np.interp(nu_0, nu, f) # Value of s at nu_0
+        s_s = As*(nu_0/nu)**2*f/f0
+        return s_s
+
+
+    def ffEM(nu,EM,Te):
+        #EM = 1 cm-3pc, Te= 500 #K
+        T4 = Te*1e-4
+        nu9 = nu/1e9 #Hz
+        g_ff = np.log(np.exp(5.960-np.sqrt(3)/np.pi*np.log(nu9*T4**(-3./2.)))+np.e)
+        tau = 0.05468*Te**(-3./2.)*nu9**(-2)*EM*g_ff
+        s_ff = 1e6*Te*(1-np.exp(-tau))
+        return s_ff
+
+    def ff(nu,A,Te, nuref=40.):
+        nu_ref = nuref*1e9
+        S =     np.log(np.exp(5.960 - np.sqrt(3.0)/np.pi * np.log(    nu/1e9*(Te/1e4)**-1.5))+2.71828)
+        S_ref = np.log(np.exp(5.960 - np.sqrt(3.0)/np.pi * np.log(nu_ref/1e9*(Te/1e4)**-1.5))+2.71828)
+        s_ff = A*S/S_ref*np.exp(-h*(nu-nu_ref)/k_b/Te)*(nu/nu_ref)**-2
+        return s_ff
+
+    def sdust(nu, Asd, nu_p, nuref=22.):
+        nu_ref = nuref*1e9
+        nu_p0 = 30.*1e9
+        fnu, f = np.loadtxt("spdust2_cnm.dat", unpack=True)
+        fnu *= 1e9
+        # MAKE SURE THAT THESE ARE BOTH IN 1e9
+        scale = nu_p0/nu_p
+        f = np.interp(scale*nu, fnu, f)
+        f0 = np.interp(scale*nu_ref, scale*nu, f) # Value of s at nu_0
+        s_sd = Asd*(nu_ref/nu)**2*f/f0
+        return s_sd
+
+
+    def tdust(nu,Ad,betad,Td,nuref=545.):
+        nu0=nuref*1e9
+        gamma = h/(k_b*Td)
+        s_d=Ad*(nu/nu0)**(betad+1)*(np.exp(gamma*nu0)-1)/(np.exp(gamma*nu)-1)
+        return s_d
+
+    def lf(nu,Alf,betalf,nuref=1.):
+        return Alf*(nu/nuref)**(betalf)
