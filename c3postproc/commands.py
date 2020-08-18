@@ -135,9 +135,10 @@ def specplot(input,):
 @click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]",)
 @click.option("-fwhm", default=0.0, help="FWHM in arcmin")
 @click.option("-nside", default=None, type=click.INT, help="Nside for alm binning",)
+@click.option("-zerospin", is_flag=True, help="If smoothing, treat maps as zero-spin maps.",)
 @click.option("-lowmemory", is_flag=True, help="Compute using less memory, this may reduce computation speed.",)
 def mean(
-    input, dataset, output, min, max, maxchain, fwhm, nside, lowmemory):
+    input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, lowmemory):
     """
     Calculates the mean over sample range from .h5 file.\n
     ex. chains_c0001.h5 dust/amp_map 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40 -maxchain 3\n
@@ -148,10 +149,8 @@ def mean(
         click.echo("Please specify nside when handling alms.")
         sys.exit()
 
-    if (lowmemory):
-        h5handler_low(input, dataset, min, max, maxchain, output, fwhm, nside, lowmemory, False, np.mean)
-    else:
-        h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.mean)
+    h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, zerospin, lowmemory, False, np.mean)
+    #h5handler_old(input, dataset, min, max, maxchain, output, fwhm, nside, np.mean)
 
 @commands.command()
 @click.argument("input", type=click.STRING)
@@ -162,8 +161,9 @@ def mean(
 @click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]",)
 @click.option("-fwhm", default=0.0, help="FWHM in arcmin")
 @click.option("-nside", default=None, type=click.INT, help="Nside for alm binning",)
+@click.option("-zerospin", is_flag=True, help="If smoothing, treat maps as zero-spin maps.",)
 @click.option("-lowmemory", is_flag=True, help="Compute using less memory, this may reduce computation speed.",)
-def stddev(input, dataset, output, min, max, maxchain, fwhm, nside, lowmemory,):
+def stddev(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, lowmemory,):
     """
     Calculates the stddev over sample range from .h5 file.\n
     ex. chains_c0001.h5 dust/amp_map 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40 -maxchain 3\n
@@ -175,11 +175,50 @@ def stddev(input, dataset, output, min, max, maxchain, fwhm, nside, lowmemory,):
         click.echo("Please specify nside when handling alms.")
         sys.exit()
 
-    if (lowmemory):
-        h5handler_low(input, dataset, min, max, maxchain, output, fwhm, nside, lowmemory, False, np.std)
-    else:
-        h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.std,)
+    h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, zerospin, lowmemory, False, np.std)
+    #h5handler_old(input, dataset, min, max, maxchain, output, fwhm, nside, np.std,)
 
+@commands.command()
+@click.argument("input", type=click.STRING)
+@click.argument("output", type=click.STRING)
+@click.option("-min", default=1, type=click.INT, help="Start sample, default 1",)
+@click.option("-max", default=None, type=click.INT, help="End sample, calculated automatically if not set",)
+@click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]",)
+@click.option("-fwhm", default=0.0, help="FWHM in arcmin")
+@click.option("-nside", default=None, type=click.INT, help="Nside for down-grading maps before calculation",)
+@click.option("-zerospin", is_flag=True, help="If smoothing, treat maps as zero-spin maps.",)
+@click.option("-missing", is_flag=True, help="If files are missing, drop them. Else, exit computation",)
+@click.option("-lowmemory", is_flag=True, help="Compute using less memory, this may reduce computation speed.",)
+def fits_mean(
+    input, output, min, max, maxchain, fwhm, nside, zerospin, drop_missing, lowmemory):
+    """
+    Calculates the mean over sample range from fits-files.\n
+    ex. res_030_c0001_k000020.fits res_030_20-100_mean_40arcmin.fits -min 20 -max 100 -fwhm 40 -maxchain 3\n
+    If output name is set to .dat, data will not be converted to map.
+    """
+
+    fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, lowmemory, drop_missing, False, np.mean)
+
+@commands.command()
+@click.argument("input", type=click.STRING)
+@click.argument("output", type=click.STRING)
+@click.option("-min", default=1, type=click.INT, help="Start sample, default 1",)
+@click.option("-max", default=None, type=click.INT, help="End sample, calculated automatically if not set",)
+@click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]",)
+@click.option("-fwhm", default=0.0, help="FWHM in arcmin")
+@click.option("-nside", default=None, type=click.INT, help="Nside for down-grading maps before calculation",)
+@click.option("-zerospin", is_flag=True, help="If smoothing, treat maps as zero-spin maps.",)
+@click.option("-missing", is_flag=True, help="If files are missing, drop them. Else, exit computation",)
+@click.option("-lowmemory", is_flag=True, help="Compute using less memory, this may reduce computation speed.",)
+def fits_stddev(
+    input, output, min, max, maxchain, fwhm, nside, zerospin, drop_missing, lowmemory):
+    """
+    Calculates the standard deviation over sample range from fits-files.\n
+    ex. res_030_c0001_k000020.fits res_030_20-100_mean_40arcmin.fits -min 20 -max 100 -fwhm 40 -maxchain 3\n
+    If output name is set to .dat, data will not be converted to map.
+    """
+
+    fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_missing, lowmemory, False, np.std)
 
 @commands.command()
 @click.argument("input", type=click.Path(exists=True))#, nargs=-1,)
@@ -758,7 +797,7 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
                 maxchain=maxchain,
                 polar=True,
                 component="CMB",
-                fwhm=0.0,
+                fwhm=10.0,
                 nu_ref_t="NONE",
                 nu_ref_p="NONE",
                 procver=procver,
@@ -784,7 +823,7 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
                 maxchain=maxchain,
                 polar=False,
                 component="FREE-FREE",
-                fwhm=75.0,
+                fwhm=30.0,
                 nu_ref_t="40.0 GHz",
                 nu_ref_p="40.0 GHz",
                 procver=procver,
@@ -810,7 +849,7 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
                 maxchain=maxchain,
                 polar=False,
                 component="AME",
-                fwhm=90.0,
+                fwhm=30.0,
                 nu_ref_t="22.0 GHz",
                 nu_ref_p="22.0 GHz",
                 procver=procver,
@@ -836,7 +875,7 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
                 maxchain=maxchain,
                 polar=True,
                 component="SYNCHROTRON",
-                fwhm=0.0,  # 60.0,
+                fwhm=60.0,  # 60.0,
                 nu_ref_t="0.408 GHz",
                 nu_ref_p="30.0 GHz",
                 procver=procver,
