@@ -270,7 +270,7 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, zerospin,
                 # If data is map, smooth first.
                 elif type == "map" and fwhm > 0.0 and command == np.std:
                     #print(f"#{sample} --- Smoothing map ---")
-                    data = hp.sphtfunc.smoothing(data, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol,)
+                    data = hp.sphtfunc.smoothing(data, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol,use_pixel_weights=True,)
 
                 if (lowmem):
                     if (first_samp):
@@ -574,7 +574,7 @@ def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_
                 # If smoothing applied and calculating stddev, smooth first.
                 if fwhm > 0.0 and command == np.std:
                     #print(f"#{sample} --- Smoothing map ---")
-                    data = hp.sphtfunc.smoothing(data, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol)
+                    data = hp.sphtfunc.smoothing(data, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol,use_pixel_weights=True,)
 
                 if (lowmem):
                     if (first_samp):
