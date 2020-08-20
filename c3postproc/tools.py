@@ -178,14 +178,14 @@ def h5handler_old(input, dataset, min, max, maxchain, output, fwhm, nside, comma
     else:
         return outdata
 
-def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, zerospin, lowmem, return_mean, command):
+def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, zerospin, lowmem, pixweight, return_mean, command):
     # Check if you want to output a map
     import h5py
     import healpy as hp
     from tqdm import tqdm
 
     if (lowmem and command == np.std): #need to compute mean first
-        mean_data = h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, zerospin, lowmem, True, np.mean)
+        mean_data = h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, zerospin, lowmem, pixweight, True, np.mean)
 
     print()
     print("{:-^50}".format(f" {dataset} calculating {command.__name__} "))
@@ -270,7 +270,7 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, zerospin,
                 # If data is map, smooth first.
                 elif type == "map" and fwhm > 0.0 and command == np.std:
                     #print(f"#{sample} --- Smoothing map ---")
-                    data = hp.sphtfunc.smoothing(data, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol,use_pixel_weights=True,)
+                    data = hp.sphtfunc.smoothing(data, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol,use_pixel_weights=True,datapath=pixweight)
 
                 if (lowmem):
                     if (first_samp):
@@ -307,12 +307,12 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, zerospin,
     if type == "alm" and command == np.mean and alm2map:
         print(f"# --- alm2map mean with {fwhm} arcmin, lmax {lmax_h5} ---")
         outdata = hp.alm2map(
-            outdata, nside=nside, lmax=lmax_h5, fwhm=arcmin2rad(fwhm), pixwin=True, pol=pol,
+            outdata, nside=nside, lmax=lmax_h5, fwhm=arcmin2rad(fwhm), pixwin=True, pol=pol
         )
 
     if type == "map" and fwhm > 0.0 and command == np.mean:
         print(f"--- Smoothing mean map with {fwhm} arcmin,---")
-        outdata = hp.sphtfunc.smoothing(outdata, fwhm=arcmin2rad(fwhm), pol=pol,)
+        outdata = hp.sphtfunc.smoothing(outdata, fwhm=arcmin2rad(fwhm), pol=pol, use_pixel_weights=True, datapath=pixweight,)
 
     # Outputs fits map if output name is .fits
     if (return_mean and command == np.mean):
@@ -423,7 +423,7 @@ class fgs:
     def lf(nu,Alf,betalf,nuref=1.):
         return Alf*(nu/nuref)**(betalf)
 
-def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_missing, lowmem, return_mean, command):
+def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_missing, lowmem, pixweight, return_mean, command):
     # Check if you want to output a map
     import healpy as hp
     from tqdm import tqdm
@@ -434,7 +434,7 @@ def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_
         exit()
 
     if (lowmem and command == np.std): #need to compute mean first
-        mean_data = fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_missing, lowmem, True, np.mean)
+        mean_data = fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_missing, lowmem, pixweight, True, np.mean)
 
     aline=input.split('/')
     dataset=aline[-1]
@@ -574,8 +574,8 @@ def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_
                 # If smoothing applied and calculating stddev, smooth first.
                 if fwhm > 0.0 and command == np.std:
                     #print(f"#{sample} --- Smoothing map ---")
-                    data = hp.sphtfunc.smoothing(data, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol,use_pixel_weights=True,)
-
+                    data = hp.sphtfunc.smoothing(data, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol,use_pixel_weights=True,datapath=pixweight)
+                    
                 if (lowmem):
                     if (first_samp):
                         first_samp=False
@@ -610,7 +610,7 @@ def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_
     # Smoothing afterwards when calculating mean
     if fwhm > 0.0 and command == np.mean:
         print(f"--- Smoothing mean map with {fwhm} arcmin,---")
-        outdata = hp.sphtfunc.smoothing(outdata, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol)
+        outdata = hp.sphtfunc.smoothing(outdata, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol,use_pixel_weights=True,datapath=pixweight))
 
     # Outputs fits map if output name is .fits
     if (return_mean and command == np.mean):
