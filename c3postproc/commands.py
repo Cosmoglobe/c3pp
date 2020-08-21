@@ -234,7 +234,7 @@ def fits_stddev(
 @click.option("-range", default="auto", type=click.STRING, help='Color range. "-range auto" sets to 97.5 percentile of data., or "minmax" which sets to data min and max values.',)  # str until changed to float
 @click.option("-colorbar", "-bar", is_flag=True, help='Adds colorbar ("cb" in filename)',)
 @click.option("-lmax", default=None, type=click.FLOAT, help="This is automatically set from the h5 file. Only available for alm inputs.",)
-@click.option("-fwhm", default=0.0, type=click.FLOAT, help="FWHM of smoothing to apply to alm binning. Only available for alm inputs.",)
+@click.option("-fwhm", default=0.0, type=click.FLOAT, help="FWHM of smoothing.",)
 @click.option("-mask", default=None, type=click.STRING, help="Masks input with specified maskfile.",)
 @click.option("-mfill", default=None, type=click.STRING, help='Color to fill masked area. for example "gray". Transparent by default.',)
 @click.option("-sig", default=[0,], type=click.INT, multiple=True, help="Signal to be plotted 0 by default (0, 1, 2 is interprated as IQU)",)
@@ -520,7 +520,7 @@ def plotrelease(ctx, procver, mask, defaultmask, pdf, skipfreqmaps, skipcmb, ski
         os.mkdir("figs")
 
 
-    for size in ["s", "m", "l"]:
+    for size in ["m", "l", "s",]:
         for colorbar in [True, False]:
             if not skipcmb and mask or defaultmask:
                 outdir = "figs/cmb/"
@@ -532,9 +532,15 @@ def plotrelease(ctx, procver, mask, defaultmask, pdf, skipfreqmaps, skipcmb, ski
 
                 # CMB I no dip
                 ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask, pdf=pdf,)
+                ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask, pdf=pdf, fwhm=np.sqrt(60.0**2-14**2),)
+                ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask, pdf=pdf, fwhm=np.sqrt(420.0**2-14**2))
 
-                # CMB QU and IQU rms, and P_mean, P_rms
-                ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2, 3, 4, 5, 6, 7], pdf=pdf,)
+                # CMB QU at 14 arcmin, 1 degree and 7 degree smoothing
+                for fwhm in [0.0, np.sqrt(60.0**2-14**2), np.sqrt(420.0**2-14**2)]:
+                    ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, fwhm=fwhm)
+
+                # RMS maps
+                ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[4, 5, 6,], pdf=pdf,)
 
             if not skipfreqmaps:
                 outdir = "figs/freqmaps/"
@@ -786,7 +792,7 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
             print("Creating frequency difference maps")
             path_dx12 = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/dx12"
             path_npipe = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/npipe"
-            maps_dx12 = ["30ghz_2018_n1024_dip.fits","44ghz_2018_n1024_dip.fits","70ghz_2018_n1024_dip.fits"]
+            maps_dx12 = ["30ghz_2018_n1024_beamscaled_dip.fits","44ghz_2018_n1024_beamscaled_dip.fits","70ghz_2018_n1024_beamscaled_dip.fits"]
             maps_npipe = ["npipe6v20_030_map_uK.fits", "npipe6v20_044_map_uK.fits", "npipe6v20_070_map_uK.fits",]
             maps_BP = [f"BP_030_IQU_full_n0512_{procver}.fits", f"BP_044_IQU_full_n0512_{procver}.fits", f"BP_070_IQU_full_n1024_{procver}.fits",]
             beamscaling = [9.8961854E-01, 9.9757886E-01, 9.9113965E-01]
@@ -797,7 +803,8 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
                 
                 #dx12 dipole values:
                 # 3362.08 pm 0.99, 264.021 pm 0.011, 48.253 ± 0.005
-                #dipole_dx12 = 3362.08*hp.dir2vec(264.021, 48.253)
+                # 233.18308357  2226.43833645 -2508.42179665
+                #dipole_dx12 = -3362.08*hp.dir2vec(264.021, 48.253, lonlat=True)
 
                 #map_dx12  = map_dx12/beamscaling[i]
                 # Smooth to 60 arcmin
@@ -832,8 +839,8 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
             format_fits(
                 fname,
                 extname="COMP-MAP-CMB",
-                types=["I_MEAN", "Q_MEAN", "U_MEAN", "P_MEAN", "I_RMS", "Q_RMS", "U_RMS", "P_RMS", "mask1", "mask2",],
-                units=["uK_cmb", "uK_cmb", "uK_cmb", "uK", "uK", "uK", "NONE", "NONE",],
+                types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS", "mask1", "mask2",],
+                units=["uK_cmb", "uK_cmb", "uK", "uK", "NONE", "NONE",],
                 nside=1024,
                 burnin=burnin,
                 maxchain=maxchain,

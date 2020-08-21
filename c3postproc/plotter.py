@@ -14,7 +14,7 @@ print("Importtime:", (time.time() - totaltime))
 
 
 def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, outdir, verbose,):
-    rcParams["backend"] = "pdf" if pdf else "Agg"
+    rcParams["backend"] = "pdf" if pdf else "agg"
     rcParams["legend.fancybox"] = True
     rcParams["lines.linewidth"] = 2
     rcParams["savefig.dpi"] = 300
@@ -388,7 +388,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             else:
                 fontsize = 6
 
-            fig = plt.figure(figsize=(cm2inch(width), cm2inch(height),))
+            fig = plt.figure(figsize=(cm2inch(width), cm2inch(height),),)
             ax = fig.add_subplot(111, projection="mollweide")
 
             # rasterized makes the map bitmap while the labels remain vectorial
@@ -541,7 +541,7 @@ def get_params(m, outfile, polt, signal_label):
         title["comp"]  = "cmb" 
         title["param"] = r"$A$"
         if sl == "Q" or sl == "U" or sl == "QU" or sl=="P":
-            ticks = [-2, 0, 2]
+            ticks = [-10, 0, 10]
         else:
             ticks = [-300, 0, 300]
     # ------ Chisq ------
