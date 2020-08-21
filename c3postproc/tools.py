@@ -207,6 +207,7 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, zerospin,
     else:
         dats = []
 
+    use_pixweights = False if pixweight == None else True
     maxnone = True if max == None else False  # set length of keys for maxchains>1
     pol = True if zerospin == False else False  # treat maps as TQU maps (polarization)
     for c in range(1, maxchain + 1):
@@ -270,7 +271,10 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, zerospin,
                 # If data is map, smooth first.
                 elif type == "map" and fwhm > 0.0 and command == np.std:
                     #print(f"#{sample} --- Smoothing map ---")
-                    data = hp.sphtfunc.smoothing(data, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol,use_pixel_weights=True,datapath=pixweight)
+                    if use_pixweights:
+                        data = hp.sphtfunc.smoothing(data, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol,use_pixel_weights=True,datapath=pixweight)
+                    else: #use ring weights
+                        data = hp.sphtfunc.smoothing(data, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol,use_weights=True)
 
                 if (lowmem):
                     if (first_samp):
@@ -312,7 +316,10 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, zerospin,
 
     if type == "map" and fwhm > 0.0 and command == np.mean:
         print(f"--- Smoothing mean map with {fwhm} arcmin,---")
-        outdata = hp.sphtfunc.smoothing(outdata, fwhm=arcmin2rad(fwhm), pol=pol, use_pixel_weights=True, datapath=pixweight,)
+        if use_pixweights:
+            outdata = hp.sphtfunc.smoothing(outdata, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol,use_pixel_weights=True,datapath=pixweight)
+        else: #use ring weights
+            outdata = hp.sphtfunc.smoothing(outdata, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol,use_weights=True)
 
     # Outputs fits map if output name is .fits
     if (return_mean and command == np.mean):
@@ -453,6 +460,7 @@ def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_
     nsamp = 0 #track number of samples
     first_samp = True #flag for first sample
 
+    use_pixweights = False if pixweight == None else True
     maxnone = True if max == None else False  # set length of keys for maxchains>1
     pol = True if zerospin == False else False  # treat maps as TQU maps (polarization)
     for c in range(1, maxchain + 1):
@@ -574,7 +582,10 @@ def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_
                 # If smoothing applied and calculating stddev, smooth first.
                 if fwhm > 0.0 and command == np.std:
                     #print(f"#{sample} --- Smoothing map ---")
-                    data = hp.sphtfunc.smoothing(data, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol,use_pixel_weights=True,datapath=pixweight)
+                    if use_pixweights:
+                        data = hp.sphtfunc.smoothing(data, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol,use_pixel_weights=True,datapath=pixweight)
+                    else: #use ring weights
+                        data = hp.sphtfunc.smoothing(data, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol,use_weights=True)
                     
                 if (lowmem):
                     if (first_samp):
@@ -610,7 +621,10 @@ def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_
     # Smoothing afterwards when calculating mean
     if fwhm > 0.0 and command == np.mean:
         print(f"--- Smoothing mean map with {fwhm} arcmin,---")
-        outdata = hp.sphtfunc.smoothing(outdata, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol,use_pixel_weights=True,datapath=pixweight))
+        if use_pixweights:
+            outdata = hp.sphtfunc.smoothing(outdata, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol,use_pixel_weights=True,datapath=pixweight)
+        else: #use ring weights
+            outdata = hp.sphtfunc.smoothing(outdata, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol,use_weights=True)
 
     # Outputs fits map if output name is .fits
     if (return_mean and command == np.mean):
