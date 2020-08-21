@@ -3,7 +3,6 @@ import sys
 import os
 import numpy as np
 import healpy as hp
-import fitsio
 from c3postproc.tools import *
 
 

@@ -178,14 +178,14 @@ def h5handler_old(input, dataset, min, max, maxchain, output, fwhm, nside, comma
     else:
         return outdata
 
-def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, zerospin, lowmem, return_mean, command):
+def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command, zerospin=False, lowmem=True):
     # Check if you want to output a map
     import h5py
     import healpy as hp
     from tqdm import tqdm
 
     if (lowmem and command == np.std): #need to compute mean first
-        mean_data = h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, zerospin, lowmem, True, np.mean)
+        mean_data = h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.mean, zerospin, lowmem,)
 
     print()
     print("{:-^50}".format(f" {dataset} calculating {command.__name__} "))
@@ -315,14 +315,11 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, zerospin,
         outdata = hp.sphtfunc.smoothing(outdata, fwhm=arcmin2rad(fwhm), pol=pol,)
 
     # Outputs fits map if output name is .fits
-    if (return_mean and command == np.mean):
-        return outdata
-    elif output.endswith(".fits"):
+    if output.endswith(".fits"):
         hp.write_map(output, outdata, overwrite=True)
     elif output.endswith(".dat"):
         np.savetxt(output, outdata)
-    else:
-        return outdata
+    return outdata
 
 def arcmin2rad(arcmin):
     return arcmin * (2 * np.pi) / 21600

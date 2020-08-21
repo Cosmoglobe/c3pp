@@ -13,7 +13,7 @@ from astropy.io import fits
 print("Importtime:", (time.time() - totaltime))
 
 
-def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, verbose,):
+def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, outdir, verbose,):
     rcParams["backend"] = "pdf" if pdf else "Agg"
     rcParams["legend.fancybox"] = True
     rcParams["lines.linewidth"] = 2
@@ -36,9 +36,10 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
     rc("text.latex", preamble=r"\usepackage{sfmath}",)
 
     # Which signal to plot
-    print("----------------------------------")
+    print(""); print("");
+    print("{:#^48}".format(""))
     #if len(input)==1: input = input[0]
-    print("Plotting ", input)
+    print("Plotting", input)
 
     #######################
     ####   READ MAP   #####
@@ -67,8 +68,8 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
 
     # Plot all signals specified
     print(f"Plotting the following signals: {sig}")
+    print("{:#^48}".format(""))
     for polt in sig:
-        print("----------------------------------")
         signal_label = get_signallabel(polt)
         
         try:
@@ -94,15 +95,18 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
         #  SMOOTH  #
         ############
         if fwhm > 0 and input.endswith(".fits"):
+            print("")
             print(f"Smoothing fits map to {fwhm} degrees fwhm")
+            print("")
             m = hp.smoothing(m, fwhm=arcmin2rad(fwhm), lmax=lmax,)
 
         ############
         # UD_GRADE #
         ############
         if nside is not None and input.endswith(".fits"):
-            print(f"UDgrading map from {nsid} to {nside}")
-            m = hp.ud_grade(m, nside)
+            if nsid != nside:
+                print(f"UDgrading map from {nsid} to {nside}")
+                m = hp.ud_grade(m, nside,)
         else:
             nside = nsid
 
@@ -111,11 +115,11 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
         ########################
         if remove_dipole:
             starttime = time.time()
-            print("Removing dipole")
+            print("Removing dipole:")
             dip_mask_name = remove_dipole
             # Mask map for dipole estimation
             m_masked = hp.ma(m)
-            m_masked.mask = np.logical_not(hp.read_map(dip_mask_name))
+            m_masked.mask = np.logical_not(hp.read_map(dip_mask_name,verbose=False,dtype=None,))
 
             # Fit dipole to masked map
             mono, dip = hp.fit_dipole(m_masked)
@@ -157,7 +161,6 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
                 ttl = r"$\Delta$ " + _title["param"] + r"$_{\mathrm{" + _title["comp"] + "}}^{" + _title["diff_label"] + "}$" 
             else:
                 ttl =  _title["param"] + r"$_{\mathrm{" + _title["comp"] + "}}^{ }$" 
-
             # Left signal label
             lttl = r"$" + _title["sig"] +"$"
             if lttl == "$I$":
@@ -166,6 +169,12 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
                 lttl= "$P$"
             #elif lttl == "$P$":
             #    ticks *= 2
+
+            # Tick bug fix
+            mn = ticks[0]
+            mx = ticks[-1]
+            if len(ticks)>2:
+                mid = ticks[1:-1]
 
             # Unit
             unt = _title["unit"]
@@ -210,17 +219,21 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
                 ticks[-1] = float(max)
         """
         # If min and max have been specified, set.
-        if rng == "auto":
+        if rng == "auto" and not auto:
             print("Setting range from 97.5th percentile of data")
             mn, mx = get_ticks(m, 97.5)
         elif rng == "minmax":
             print("Setting range from min to max of data")
             mn = np.min(m)
             mx = np.max(m)
-        elif float(rng)>0.0:
-            mn = -float(rng)
-            mx = float(rng)
-            ticks = [False, 0.0, False]
+        else:
+            try:
+                if float(rng)>0.0:
+                    mn = -float(rng)
+                    mx = float(rng)
+                    ticks = [False, 0.0, False]
+            except:
+                pass
 
         if min is False:
             min = mn
@@ -234,7 +247,6 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
 
         ticks[0] = min
         ticks[-1] = max
-
         if mid:
             ticks = [min, *mid, max] 
             
@@ -303,7 +315,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
         else:
             cmap = plt.get_cmap(cmap)
 
-        print(f"Setting colormap to {cmap.name}")
+        print(f"Colormap: {cmap.name}")
         #######################
         ####  Projection? #####
         #######################
@@ -356,7 +368,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
 
         sizes = get_sizes(size)
         for width in sizes:
-            print("Plotting size " + str(width))
+            print("Size: " + str(width))
             height = width / 2.0
 
             # Make sure text doesnt change with colorbar
@@ -371,7 +383,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
                 fontsize = 7
             else:
                 fontsize = 6
-            
+
             fig = plt.figure(figsize=(cm2inch(width), cm2inch(height),))
             ax = fig.add_subplot(111, projection="mollweide")
 
@@ -396,7 +408,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
                 cb = fig.colorbar(image, orientation="horizontal", shrink=0.3, pad=0.08, ticks=ticks, format=FuncFormatter(fmt),)
 
                 # Format tick labels
-                print(ticklabels)
+                print("Ticks: ", ticklabels)
                 ticklabels = [fmt(i, 1) for i in ticklabels]
                 cb.ax.set_xticklabels(ticklabels)
 
@@ -438,7 +450,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             ##############
             ## filename ##
             ##############
-            print(f"Using signal label {signal_label}")
+            print(f"Signal label: {signal_label}")
 
             outfile = outfile.replace("_IQU_", "_")
             outfile = outfile.replace("_I_", "_")
@@ -461,7 +473,8 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             fn += f".{filetype}"
 
             starttime = time.time()
-            plt.savefig(fn, bbox_inches="tight", pad_inches=0.02, transparent=tp, format=filetype,)
+
+            plt.savefig(outdir+fn, bbox_inches="tight", pad_inches=0.02, transparent=tp, format=filetype,)
             print("Savefig", (time.time() - starttime),) if verbose else None
 
             plt.close()
@@ -519,7 +532,7 @@ def get_params(m, outfile, polt, signal_label):
 
     # ------ CMB ------
     if tag_lookup(cmb_tags, outfile,):
-        print(f"Plotting CMB signal {sl}")
+        print("{:-^48}".format(f"Plotting CMB signal {sl}"))
         title["unit"]  = r"$\mu\mathrm{K}_{\mathrm{CMB}}$"
         title["comp"]  = "cmb" 
         title["param"] = r"$A$"
@@ -536,19 +549,20 @@ def get_params(m, outfile, polt, signal_label):
             ticks = [0, 32]
         else:
             ticks = [0, 76]
-        print("Plotting chisq with vmax = " + str(ticks[-1]) + " " + sl)
+        print("{:-^48}".format(f"Plotting chisq with vmax = {str(ticks[-1])} {sl}"))
         cmap = col.LinearSegmentedColormap.from_list("BkWh", ["black", "white"])
 
     # ------ SYNCH ------
     elif tag_lookup(synch_tags, outfile):
         title["comp"] = "s"
         if tag_lookup(synch_beta_tags, outfile+signal_label,):
+            print("{:-^48}".format(f"Plotting Synchrotron beta"))
             print("Plotting Synchrotron beta")
             ticks = [-3.2, -3.1, -3.0]
             title["unit"]  = ""
             title["param"] = r"$\beta$"
         else:
-            print(f"Plotting Synchrotron {sl}")
+            print("{:-^48}".format(f"Plotting Synchrotron {sl}"))            
             title["param"] = r"$A$"
             if sl == "Q" or sl == "U" or sl == "QU" or sl=="P":
                 # BP uses 30 GHz ref freq for pol
@@ -567,7 +581,7 @@ def get_params(m, outfile, polt, signal_label):
     elif tag_lookup(ff_tags, outfile):
         title["comp"]  = "ff" 
         if tag_lookup(ff_Te_tags, outfile+signal_label,):
-            print("Plotting freefree T_e")
+            print("{:-^48}".format(f"Plotting free-free Te"))
             ticks = [5000, 8000]
             title["unit"]  = r"$\mathrm{K}$"
             title["param"] = r"$T_{e}$"
@@ -578,7 +592,7 @@ def get_params(m, outfile, polt, signal_label):
             title["unit"]  = r"$\mathrm{K}$"
             title["param"] = r"$T_{e}$"
         else:
-            print("Plotting freefree")
+            print("{:-^48}".format(f"Plotting free-free"))
             title["param"] = r"$A$"
             ticks = [20, 200, 2000]
             title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
@@ -588,12 +602,12 @@ def get_params(m, outfile, polt, signal_label):
     elif tag_lookup(ame_tags, outfile):
         title["comp"]  = "ame"
         if tag_lookup(ame_nup_tags, outfile+signal_label,):
-            print("Plotting AME nu_p")
+            print("{:-^48}".format(f"Plotting AME nu_p"))        
             ticks = [17, 23]
             title["unit"]  = "GHz"
             title["param"] = r"$\nu_{p}$"
         else:
-            print("Plotting AME")
+            print("{:-^48}".format(f"Plotting AME"))
             title["param"] = r"$A$"
             title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
             ticks = [30, 300, 3000]
@@ -603,17 +617,17 @@ def get_params(m, outfile, polt, signal_label):
     elif tag_lookup(dust_tags, outfile):
         title["comp"]  = "d"
         if tag_lookup(dust_T_tags, outfile+signal_label,):
-            print("Plotting Thermal dust Td")
+            print("{:-^48}".format(f"Plotting Thermal dust temperature"))
             ticks = [14, 30]
             title["unit"]  = r"$\mathrm{K}$"
             title["param"] = r"$T$"
         elif tag_lookup(dust_beta_tags, outfile+signal_label,):
-            print("Plotting Thermal dust beta")
+            print("{:-^48}".format(f"Plotting Thermal dust beta"))
             ticks = [1.3, 1.8]
             title["unit"]  = ""
             title["param"] = r"$\beta$"
         else:
-            print("Plotting Thermal dust" + " " + sl)
+            print("{:-^48}".format(f"Plotting Thermal dust {sl}"))
             title["param"] = r"$A$"
             title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
 
@@ -637,6 +651,7 @@ def get_params(m, outfile, polt, signal_label):
     #######################
 
     elif tag_lookup(co10_tags, outfile):
+        print("{:-^48}".format(f"Plotting CO10"))
         print("Plotting CO10")
         title["comp"] = "co10"
         title["param"] = r"$A$"
@@ -647,7 +662,7 @@ def get_params(m, outfile, polt, signal_label):
         logscale = True
 
     elif tag_lookup(co21_tags, outfile):
-        print("Plotting CO21")
+        print("{:-^48}".format(f"Plotting CO21"))
         title["comp"] = "co21"
         title["param"] =r"$A$"
         title["unit"] = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
@@ -656,7 +671,7 @@ def get_params(m, outfile, polt, signal_label):
         logscale = True
 
     elif tag_lookup(co32_tags, outfile):
-        print("Plotting 32")
+        print("{:-^48}".format(f"Plotting CO32"))
         title["comp"] = "co32"
         title["param"] = r"$A$"
 
@@ -665,7 +680,7 @@ def get_params(m, outfile, polt, signal_label):
         logscale = True
 
     elif tag_lookup(hcn_tags, outfile):
-        print("Plotting HCN")
+        print("{:-^48}".format(f"Plotting HCN"))
         title["comp"] = "hcn"
         title["param"] = r"$A$"
 
@@ -679,7 +694,7 @@ def get_params(m, outfile, polt, signal_label):
 
     elif tag_lookup(res_tags, outfile):
         from re import findall
-        print("Plotting residual map" + " " + sl)
+        print("{:-^48}".format(f"Plotting residual map {sl}"))
 
         if "res_" in outfile:
             tit = str(findall(r"res_(.*?)_", outfile)[0])
@@ -702,9 +717,8 @@ def get_params(m, outfile, polt, signal_label):
     ############
     elif tag_lookup(tod_tags, outfile):
         from re import findall
-
-        print("Plotting Smap map" + " " + sl)
-
+        print("{:-^48}".format(f"Plotting Smap {sl}"))
+        
         tit = str(findall(r"tod_(.*?)_Smap", outfile)[0])
         title["comp"] = fr"{tit}"
         title["param"] = r"$smap$"
@@ -717,8 +731,8 @@ def get_params(m, outfile, polt, signal_label):
 
     elif tag_lookup(freqmap_tags, outfile):
         from re import findall
-        print("Plotting Frequency map" + " " + sl)
-
+        print("{:-^48}".format(f"Plotting frequency map {sl}"))
+        
         vmin, vmax = get_ticks(m, 97.5)
         ticks = [vmin, vmax]
 
@@ -739,7 +753,7 @@ def get_params(m, outfile, polt, signal_label):
 
     # If signal is an RMS map, add tag.
     if signal_label.endswith("RMS"):
-        print(f"Plotting RMS signal {signal_label}")
+        print("{:-^48}".format(f"Plotting RMS map {signal_label}"))
         title["stddev"] = True
         vmin, vmax = get_ticks(m, 97.5)
         logscale = False
@@ -768,7 +782,7 @@ def get_params(m, outfile, polt, signal_label):
 
 
 def not_identified(m, signal_label, logscale):
-    print("Map not recognized, plotting with min and max values")
+    print("{:-^48}".format(f"Map not recognized, plotting with min and max values"))
     title["comp"] = signal_label.split("_")[-1]
     scale = 1.0
     vmin, vmax = get_ticks(m, 97.5)
