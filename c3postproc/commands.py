@@ -136,8 +136,8 @@ def specplot(input,):
 @click.option("-fwhm", default=0.0, help="FWHM in arcmin")
 @click.option("-nside", default=None, type=click.INT, help="Nside for alm binning",)
 @click.option("-zerospin", is_flag=True, help="If smoothing, treat maps as zero-spin maps.",)
-def mean(
-    input, dataset, output, min, max, maxchain, fwhm, nside, zerospin,):
+@click.option("-pixweight", default=None, type=click.STRING, help="Path to healpy pixel weights.",)
+def mean(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, pixweight):
     """
     Calculates the mean over sample range from .h5 file.\n
     ex. chains_c0001.h5 dust/amp_map 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40 -maxchain 3\n
@@ -145,10 +145,12 @@ def mean(
     If output name is set to .dat, data will not be converted to map.
     """
     if dataset.endswith("alm") and nside == None:
+        import sys
         click.echo("Please specify nside when handling alms.")
         sys.exit()
 
-    h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.mean, zerospin,)
+
+    h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.mean, pixweight, zerospin,)
     #h5handler_old(input, dataset, min, max, maxchain, output, fwhm, nside, np.mean)
 
 @commands.command()
@@ -161,7 +163,8 @@ def mean(
 @click.option("-fwhm", default=0.0, help="FWHM in arcmin")
 @click.option("-nside", default=None, type=click.INT, help="Nside for alm binning",)
 @click.option("-zerospin", is_flag=True, help="If smoothing, treat maps as zero-spin maps.",)
-def stddev(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin,):
+@click.option("-pixweight", default=None, type=click.STRING, help="Path to healpy pixel weights.",)
+def stddev(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, pixweight,):
     """
     Calculates the stddev over sample range from .h5 file.\n
     ex. chains_c0001.h5 dust/amp_map 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40 -maxchain 3\n
@@ -170,10 +173,11 @@ def stddev(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin,):
     If output name is set to .dat, data will not be converted to map.
     """
     if dataset.endswith("alm") and nside == None:
+        import sys
         click.echo("Please specify nside when handling alms.")
         sys.exit()
 
-    h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.std, zerospin,)
+    h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.std, pixweight, zerospin,)
     #h5handler_old(input, dataset, min, max, maxchain, output, fwhm, nside, np.std,)
 
 @commands.command()
@@ -187,15 +191,16 @@ def stddev(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin,):
 @click.option("-zerospin", is_flag=True, help="If smoothing, treat maps as zero-spin maps.",)
 @click.option("-missing", is_flag=True, help="If files are missing, drop them. Else, exit computation",)
 @click.option("-lowmemory", is_flag=True, help="Compute using less memory, this may reduce computation speed.",)
+@click.option("-pixweight", default=None, type=click.STRING, help="Path to healpy pixel weights.",)
 def fits_mean(
-    input, output, min, max, maxchain, fwhm, nside, zerospin, drop_missing, lowmemory):
+        input, output, min, max, maxchain, fwhm, nside, zerospin, missing, lowmemory, pixweight):
     """
     Calculates the mean over sample range from fits-files.\n
     ex. res_030_c0001_k000020.fits res_030_20-100_mean_40arcmin.fits -min 20 -max 100 -fwhm 40 -maxchain 3\n
     If output name is set to .dat, data will not be converted to map.
     """
 
-    fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, lowmemory, drop_missing, False, np.mean)
+    fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, missing, lowmemory, pixweight, False, np.mean)
 
 @commands.command()
 @click.argument("input", type=click.STRING)
@@ -208,15 +213,16 @@ def fits_mean(
 @click.option("-zerospin", is_flag=True, help="If smoothing, treat maps as zero-spin maps.",)
 @click.option("-missing", is_flag=True, help="If files are missing, drop them. Else, exit computation",)
 @click.option("-lowmemory", is_flag=True, help="Compute using less memory, this may reduce computation speed.",)
+@click.option("-pixweight", default=None, type=click.STRING, help="Path to healpy pixel weights.",)
 def fits_stddev(
-    input, output, min, max, maxchain, fwhm, nside, zerospin, drop_missing, lowmemory):
+        input, output, min, max, maxchain, fwhm, nside, zerospin, missing, lowmemory, pixweight):
     """
     Calculates the standard deviation over sample range from fits-files.\n
     ex. res_030_c0001_k000020.fits res_030_20-100_mean_40arcmin.fits -min 20 -max 100 -fwhm 40 -maxchain 3\n
     If output name is set to .dat, data will not be converted to map.
     """
 
-    fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_missing, lowmemory, False, np.std)
+    fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, missing, lowmemory, pixweight, False, np.std)
 
 @commands.command()
 @click.argument("input", type=click.Path(exists=True))#, nargs=-1,)
