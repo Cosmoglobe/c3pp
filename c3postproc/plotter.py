@@ -313,7 +313,11 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             cmap = Path(__file__).parent / "parchment1.dat"
             cmap = col.ListedColormap(np.loadtxt(cmap) / 255.0, "planck")
         else:
-            cmap = plt.get_cmap(cmap)
+            if cmap.startswith("cmasher."):
+                import cmasher
+                cmap = eval(cmap)
+            else:
+                cmap = plt.get_cmap(cmap)
 
         print(f"Colormap: {cmap.name}")
         #######################

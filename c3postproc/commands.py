@@ -795,7 +795,11 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
                 map_npipe = hp.read_map(f"{path_npipe}/{maps_npipe[i]}", field=(0,1,2), verbose=False,)
                 map_dx12  = hp.read_map(f"{path_dx12}/{maps_dx12[i]}", field=(0,1,2), verbose=False,)
                 
-                map_dx12  = map_dx12/beamscaling[i]
+                #dx12 dipole values:
+                # 3362.08 pm 0.99, 264.021 pm 0.011, 48.253 ± 0.005
+                #dipole_dx12 = 3362.08*hp.dir2vec(264.021, 48.253)
+
+                #map_dx12  = map_dx12/beamscaling[i]
                 # Smooth to 60 arcmin
                 map_BP = hp.smoothing(map_BP, fwhm=arcmin2rad(60.0))
                 map_npipe = hp.smoothing(map_npipe, fwhm=arcmin2rad(60.0))
