@@ -193,14 +193,14 @@ def stddev(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, lo
 @click.option("-lowmemory", is_flag=True, help="Compute using less memory, this may reduce computation speed.",)
 @click.option("-pixweight", default=None, type=click.STRING, help="Path to healpy pixel weights.",)
 def fits_mean(
-        input, output, min, max, maxchain, fwhm, nside, zerospin, drop_missing, lowmemory, pixweight):
+        input, output, min, max, maxchain, fwhm, nside, zerospin, missing, lowmemory, pixweight):
     """
     Calculates the mean over sample range from fits-files.\n
     ex. res_030_c0001_k000020.fits res_030_20-100_mean_40arcmin.fits -min 20 -max 100 -fwhm 40 -maxchain 3\n
     If output name is set to .dat, data will not be converted to map.
     """
 
-    fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, lowmemory, drop_missing, pixweight, False, np.mean)
+    fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, missing, lowmemory, pixweight, False, np.mean)
 
 @commands.command()
 @click.argument("input", type=click.STRING)
@@ -215,14 +215,14 @@ def fits_mean(
 @click.option("-lowmemory", is_flag=True, help="Compute using less memory, this may reduce computation speed.",)
 @click.option("-pixweight", default=None, type=click.STRING, help="Path to healpy pixel weights.",)
 def fits_stddev(
-        input, output, min, max, maxchain, fwhm, nside, zerospin, drop_missing, lowmemory, pixweight):
+        input, output, min, max, maxchain, fwhm, nside, zerospin, missing, lowmemory, pixweight):
     """
     Calculates the standard deviation over sample range from fits-files.\n
     ex. res_030_c0001_k000020.fits res_030_20-100_mean_40arcmin.fits -min 20 -max 100 -fwhm 40 -maxchain 3\n
     If output name is set to .dat, data will not be converted to map.
     """
 
-    fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_missing, lowmemory, pixweight, False, np.std)
+    fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, missing, lowmemory, pixweight, False, np.std)
 
 @commands.command()
 @click.argument("input", type=click.Path(exists=True))#, nargs=-1,)

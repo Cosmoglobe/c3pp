@@ -497,11 +497,10 @@ def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_
                     temp=temp[:-6]
                     for siter in range(min,max+1):
                         tempf = temp+str(siter).zfill(6)+'.fits'
-                        
-                        if (os.path.isfile(tempf)):
-                            siter += 1
-                        else:
-                            print('chain {c}, sample {siter} missing')
+
+                        if (not os.path.isfile(tempf)):
+                            print('chain %i, sample %i missing'%(c,siter))
+                            print(tempf)
                             if (not drop_missing):
                                 exit()
 
