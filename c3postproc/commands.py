@@ -1,6 +1,7 @@
 import time
 import os
 import numpy as np
+import sys
 import click
 from c3postproc.tools import *
 
@@ -37,7 +38,6 @@ def crosspec(input1, input2, output, beam1, beam2, mask,):
     This function calculates a powerspectrum from polspice using this path:
     /mn/stornext/u3/trygvels/PolSpice_v03-03-02/
     """
-    import sys
     sys.path.append("/mn/stornext/u3/trygvels/PolSpice_v03-03-02/")
     from ispice import ispice
 
@@ -145,7 +145,6 @@ def mean(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, pixw
     If output name is set to .dat, data will not be converted to map.
     """
     if dataset.endswith("alm") and nside == None:
-        import sys
         click.echo("Please specify nside when handling alms.")
         sys.exit()
 
@@ -173,7 +172,6 @@ def stddev(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, pi
     If output name is set to .dat, data will not be converted to map.
     """
     if dataset.endswith("alm") and nside == None:
-        import sys
         click.echo("Please specify nside when handling alms.")
         sys.exit()
 
@@ -226,6 +224,7 @@ def fits_stddev(
 
 @commands.command()
 @click.argument("input", type=click.Path(exists=True))#, nargs=-1,)
+@click.option("-dataset", type=click.STRING, help="for .h5 plotting (ex. 000007/cmb/amp_alm)")
 @click.option("-nside", type=click.INT, help="nside for optional ud_grade.",)
 @click.option("-auto", is_flag=True, help="Automatically sets all plotting parameters.",)
 @click.option("-min", default=False, help="Min value of colorbar, overrides autodetector.",)
@@ -251,65 +250,25 @@ def fits_stddev(
 @click.option("-scale", default=1.0, type=click.FLOAT, help="Scale input map [ex. 1e-6 for muK to K]",)
 @click.option("-outdir", default="./", type=click.Path(exists=True), help="Output directory for plot",)
 @click.option("-verbose", is_flag=True, help="Verbose mode")
-def plot(input, nside, auto, min, max, mid, range, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, outdir, verbose,):
+def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, outdir, verbose,):
     """
     \b
-    Plots map from .fits.
+    Plots map from .fits or h5 file.
+    ex. c3pp plot coolmap.fits -bar -auto -lmax 60 -darkmode -pdf -title $\beta_s$
+    ex. c3pp plot coolhdf.h5 -dataset 000007/cmb/amp_alm -nside 512 -remove_dipole maskfile.fits -cmap cmasher.arctic 
 
     Uses 97.5 percentile values for min and max by default!\n
     RECCOMENDED: Use -auto to autodetect map type and set parameters.\n
     Some autodetected maps use logscale, you will be warned.
     """
-    dataset = None
+    if input.endswith(".h5") and not dataset and not nside:
+        print("Specify Nside when plotting alms!")
+        sys.exit()
+        
 
     from c3postproc.plotter import Plotter
 
     Plotter(input, dataset, nside, auto, min, max, mid, range, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, outdir, verbose,)
-
-
-@commands.command()
-@click.argument("input", nargs=1, type=click.STRING)
-@click.argument("dataset", type=click.STRING)
-@click.argument("nside", type=click.INT)
-@click.option("-auto", is_flag=True, help="Automatically sets all plotting parameters.",)
-@click.option("-min", default=False, help="Min value of colorbar, overrides autodetector.",)
-@click.option("-max", default=False, help="Max value of colorbar, overrides autodetector.",)
-@click.option("-minmax", is_flag=True, help="Toggle min max values to be min and max of data (As opposed to 97.5 percentile).",)
-@click.option("-range", "rng", default=None, type=click.STRING, help='Color range. "-range auto" sets to 97.5 percentile of data.',)  # str until changed to float
-@click.option("-colorbar", "-bar", is_flag=True, help='Adds colorbar ("cb" in filename)',)
-@click.option("-lmax", default=None, type=click.FLOAT, help="This is automatically set from the h5 file. Only available for alm inputs.",)
-@click.option("-fwhm", default=0.0, type=click.FLOAT, help="FWHM of smoothing to apply to alm binning. Only available for alm inputs.",)
-@click.option("-mask", default=None, type=click.STRING, help="Masks input with specified maskfile.",)
-@click.option("-mfill", default=None, type=click.STRING, help='Color to fill masked area. for example "gray". Transparent by default.',)
-@click.option("-sig", default=[0,], type=click.INT, multiple=True, help="Signal to be plotted 0 by default (0, 1, 2 is interprated as IQU)",)
-@click.option("-remove_dipole", default=None, type=click.STRING, help="Fits a dipole to the map and removes it.",)
-@click.option("-log/-no-log", "logscale", default=None, help="Plots using planck semi-logscale. (Autodetector sometimes uses this.)",)
-@click.option("-size", default="m", type=click.STRING, help="Size: 1/3, 1/2 and full page width. 8.8, 12.0, 18. cm (s, m or l [small, medium or large], m by default)",)
-@click.option("-white_background", is_flag=True, help="Sets the background to be white. (Transparent by default [recommended])",)
-@click.option("-darkmode", is_flag=True, help='Plots all outlines in white for dark bakgrounds ("dark" in filename)',)
-@click.option("-pdf", is_flag=True, help="Saves output as .pdf ().png by default)",)
-@click.option("-cmap", default=None, help="Choose different color map (string), such as Jet or planck",)
-@click.option("-title", default=None, type=click.STRING, help="Set title (Upper right), has LaTeX functionality. Ex. $A_{s}$.",)
-@click.option("-ltitle", default=None, type=click.STRING, help="Set title (Upper left), has LaTeX functionality. Ex. $A_{s}$.",)
-@click.option("-unit", default=None, type=click.STRING, help="Set unit (Under color bar), has LaTeX functionality. Ex. $\mu$",)
-@click.option("-scale", default=1.0, type=click.FLOAT, help="Scale input map [ex. 1e-6 for muK to K]",)
-@click.option("-verbose", is_flag=True, help="Verbose mode")
-def ploth5(input, dataset, nside, auto, min, max, minmax, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, verbose,):
-    """
-    \b
-    Plots map or alms from h5 file.\n
-
-    c3pp ploth5 [.h5] [000004/cmb/amp_map] [nside]\n
-    c3pp ploth5 [.h5] [000004/cmb/amp_alm] [nside] (Optional FWHM smoothing and LMAX for alm data).\n
-
-    Uses 97.5 percentile values for min and max by default!\n
-    RECCOMENDED: Use -auto to autodetect map type and set parameters.\n
-    Some autodetected maps use logscale, you will be warned.
-
-    """
-
-    from c3postproc.plotter import Plotter
-    Plotter(input, dataset, nside, auto, min, max, minmax, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, verbose,)
 
 
 @commands.command()
@@ -1142,7 +1101,6 @@ def generate_sky(label, freqs, nside, cmb, synch, dust, ff, ame):
     """
     import healpy as hp
     import numpy as np
-    import sys
     # Generate sky maps
     A = 1 # Only relative scaling
     for nu in freqs:
