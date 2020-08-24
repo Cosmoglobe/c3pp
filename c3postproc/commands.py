@@ -478,7 +478,6 @@ def plotrelease(ctx, procver, mask, defaultmask, pdf, skipfreqmaps, skipcmb, ski
     if not os.path.exists("figs"):
         os.mkdir("figs")
 
-
     for size in ["m", "l", "s",]:
         for colorbar in [True, False]:
             if not skipcmb and mask or defaultmask:
@@ -489,6 +488,8 @@ def plotrelease(ctx, procver, mask, defaultmask, pdf, skipfreqmaps, skipcmb, ski
                 if defaultmask:
                     mask = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/masks/dx12_v3_common_mask_int_005a_1024_TQU.fits"
 
+                # CMB I with dip
+                ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, pdf=pdf, range=3400)
                 # CMB I no dip
                 ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask, pdf=pdf,)
                 ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask, pdf=pdf, fwhm=np.sqrt(60.0**2-14**2),)

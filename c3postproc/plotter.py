@@ -2,6 +2,7 @@ import time
 
 totaltime = time.time()
 import sys
+import os
 import healpy as hp
 import numpy as np
 import matplotlib.pyplot as plt
@@ -477,7 +478,8 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             fn += f".{filetype}"
 
             starttime = time.time()
-
+            if outdir:
+                fn = os.path.split(fn)[-1]
             plt.savefig(outdir+fn, bbox_inches="tight", pad_inches=0.02, transparent=tp, format=filetype,)
             print("Savefig", (time.time() - starttime),) if verbose else None
 
