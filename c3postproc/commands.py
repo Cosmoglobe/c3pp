@@ -1,6 +1,7 @@
 import time
 import os
 import numpy as np
+import sys
 import click
 from c3postproc.tools import *
 
@@ -37,7 +38,6 @@ def crosspec(input1, input2, output, beam1, beam2, mask,):
     This function calculates a powerspectrum from polspice using this path:
     /mn/stornext/u3/trygvels/PolSpice_v03-03-02/
     """
-    import sys
     sys.path.append("/mn/stornext/u3/trygvels/PolSpice_v03-03-02/")
     from ispice import ispice
 
@@ -136,10 +136,8 @@ def specplot(input,):
 @click.option("-fwhm", default=0.0, help="FWHM in arcmin")
 @click.option("-nside", default=None, type=click.INT, help="Nside for alm binning",)
 @click.option("-zerospin", is_flag=True, help="If smoothing, treat maps as zero-spin maps.",)
-@click.option("-lowmemory", is_flag=True, help="Compute using less memory, this may reduce computation speed.",)
 @click.option("-pixweight", default=None, type=click.STRING, help="Path to healpy pixel weights.",)
-def mean(
-        input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, lowmemory, pixweight):
+def mean(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, pixweight):
     """
     Calculates the mean over sample range from .h5 file.\n
     ex. chains_c0001.h5 dust/amp_map 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40 -maxchain 3\n
@@ -150,7 +148,8 @@ def mean(
         click.echo("Please specify nside when handling alms.")
         sys.exit()
 
-    h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, zerospin, lowmemory, pixweight, False, np.mean)
+
+    h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.mean, pixweight, zerospin,)
     #h5handler_old(input, dataset, min, max, maxchain, output, fwhm, nside, np.mean)
 
 @commands.command()
@@ -163,9 +162,8 @@ def mean(
 @click.option("-fwhm", default=0.0, help="FWHM in arcmin")
 @click.option("-nside", default=None, type=click.INT, help="Nside for alm binning",)
 @click.option("-zerospin", is_flag=True, help="If smoothing, treat maps as zero-spin maps.",)
-@click.option("-lowmemory", is_flag=True, help="Compute using less memory, this may reduce computation speed.",)
 @click.option("-pixweight", default=None, type=click.STRING, help="Path to healpy pixel weights.",)
-def stddev(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, lowmemory, pixweight,):
+def stddev(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, pixweight,):
     """
     Calculates the stddev over sample range from .h5 file.\n
     ex. chains_c0001.h5 dust/amp_map 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40 -maxchain 3\n
@@ -177,7 +175,7 @@ def stddev(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, lo
         click.echo("Please specify nside when handling alms.")
         sys.exit()
 
-    h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, zerospin, lowmemory, pixweight, False, np.std)
+    h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.std, pixweight, zerospin,)
     #h5handler_old(input, dataset, min, max, maxchain, output, fwhm, nside, np.std,)
 
 @commands.command()
@@ -226,6 +224,7 @@ def fits_stddev(
 
 @commands.command()
 @click.argument("input", type=click.Path(exists=True))#, nargs=-1,)
+@click.option("-dataset", type=click.STRING, help="for .h5 plotting (ex. 000007/cmb/amp_alm)")
 @click.option("-nside", type=click.INT, help="nside for optional ud_grade.",)
 @click.option("-auto", is_flag=True, help="Automatically sets all plotting parameters.",)
 @click.option("-min", default=False, help="Min value of colorbar, overrides autodetector.",)
@@ -234,7 +233,7 @@ def fits_stddev(
 @click.option("-range", default="auto", type=click.STRING, help='Color range. "-range auto" sets to 97.5 percentile of data., or "minmax" which sets to data min and max values.',)  # str until changed to float
 @click.option("-colorbar", "-bar", is_flag=True, help='Adds colorbar ("cb" in filename)',)
 @click.option("-lmax", default=None, type=click.FLOAT, help="This is automatically set from the h5 file. Only available for alm inputs.",)
-@click.option("-fwhm", default=0.0, type=click.FLOAT, help="FWHM of smoothing to apply to alm binning. Only available for alm inputs.",)
+@click.option("-fwhm", default=0.0, type=click.FLOAT, help="FWHM of smoothing.",)
 @click.option("-mask", default=None, type=click.STRING, help="Masks input with specified maskfile.",)
 @click.option("-mfill", default=None, type=click.STRING, help='Color to fill masked area. for example "gray". Transparent by default.',)
 @click.option("-sig", default=[0,], type=click.INT, multiple=True, help="Signal to be plotted 0 by default (0, 1, 2 is interprated as IQU)",)
@@ -249,66 +248,27 @@ def fits_stddev(
 @click.option("-ltitle", default=None, type=click.STRING, help="Set title (Upper left), has LaTeX functionality. Ex. $A_{s}$.",)
 @click.option("-unit", default=None, type=click.STRING, help="Set unit (Under color bar), has LaTeX functionality. Ex. $\mu$",)
 @click.option("-scale", default=1.0, type=click.FLOAT, help="Scale input map [ex. 1e-6 for muK to K]",)
+@click.option("-outdir", default="./", type=click.Path(exists=True), help="Output directory for plot",)
 @click.option("-verbose", is_flag=True, help="Verbose mode")
-def plot(input, nside, auto, min, max, mid, range, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, verbose,):
+def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, outdir, verbose,):
     """
     \b
-    Plots map from .fits.
+    Plots map from .fits or h5 file.
+    ex. c3pp plot coolmap.fits -bar -auto -lmax 60 -darkmode -pdf -title $\beta_s$
+    ex. c3pp plot coolhdf.h5 -dataset 000007/cmb/amp_alm -nside 512 -remove_dipole maskfile.fits -cmap cmasher.arctic 
 
     Uses 97.5 percentile values for min and max by default!\n
     RECCOMENDED: Use -auto to autodetect map type and set parameters.\n
     Some autodetected maps use logscale, you will be warned.
     """
-    dataset = None
+    if input.endswith(".h5") and not dataset and not nside:
+        print("Specify Nside when plotting alms!")
+        sys.exit()
+        
 
     from c3postproc.plotter import Plotter
 
-    Plotter(input, dataset, nside, auto, min, max, mid, range, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, verbose,)
-
-
-@commands.command()
-@click.argument("input", nargs=1, type=click.STRING)
-@click.argument("dataset", type=click.STRING)
-@click.argument("nside", type=click.INT)
-@click.option("-auto", is_flag=True, help="Automatically sets all plotting parameters.",)
-@click.option("-min", default=False, help="Min value of colorbar, overrides autodetector.",)
-@click.option("-max", default=False, help="Max value of colorbar, overrides autodetector.",)
-@click.option("-minmax", is_flag=True, help="Toggle min max values to be min and max of data (As opposed to 97.5 percentile).",)
-@click.option("-range", "rng", default=None, type=click.STRING, help='Color range. "-range auto" sets to 97.5 percentile of data.',)  # str until changed to float
-@click.option("-colorbar", "-bar", is_flag=True, help='Adds colorbar ("cb" in filename)',)
-@click.option("-lmax", default=None, type=click.FLOAT, help="This is automatically set from the h5 file. Only available for alm inputs.",)
-@click.option("-fwhm", default=0.0, type=click.FLOAT, help="FWHM of smoothing to apply to alm binning. Only available for alm inputs.",)
-@click.option("-mask", default=None, type=click.STRING, help="Masks input with specified maskfile.",)
-@click.option("-mfill", default=None, type=click.STRING, help='Color to fill masked area. for example "gray". Transparent by default.',)
-@click.option("-sig", default=[0,], type=click.INT, multiple=True, help="Signal to be plotted 0 by default (0, 1, 2 is interprated as IQU)",)
-@click.option("-remove_dipole", default=None, type=click.STRING, help="Fits a dipole to the map and removes it.",)
-@click.option("-log/-no-log", "logscale", default=None, help="Plots using planck semi-logscale. (Autodetector sometimes uses this.)",)
-@click.option("-size", default="m", type=click.STRING, help="Size: 1/3, 1/2 and full page width. 8.8, 12.0, 18. cm (s, m or l [small, medium or large], m by default)",)
-@click.option("-white_background", is_flag=True, help="Sets the background to be white. (Transparent by default [recommended])",)
-@click.option("-darkmode", is_flag=True, help='Plots all outlines in white for dark bakgrounds ("dark" in filename)',)
-@click.option("-pdf", is_flag=True, help="Saves output as .pdf ().png by default)",)
-@click.option("-cmap", default=None, help="Choose different color map (string), such as Jet or planck",)
-@click.option("-title", default=None, type=click.STRING, help="Set title (Upper right), has LaTeX functionality. Ex. $A_{s}$.",)
-@click.option("-ltitle", default=None, type=click.STRING, help="Set title (Upper left), has LaTeX functionality. Ex. $A_{s}$.",)
-@click.option("-unit", default=None, type=click.STRING, help="Set unit (Under color bar), has LaTeX functionality. Ex. $\mu$",)
-@click.option("-scale", default=1.0, type=click.FLOAT, help="Scale input map [ex. 1e-6 for muK to K]",)
-@click.option("-verbose", is_flag=True, help="Verbose mode")
-def ploth5(input, dataset, nside, auto, min, max, minmax, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, verbose,):
-    """
-    \b
-    Plots map or alms from h5 file.\n
-
-    c3pp ploth5 [.h5] [000004/cmb/amp_map] [nside]\n
-    c3pp ploth5 [.h5] [000004/cmb/amp_alm] [nside] (Optional FWHM smoothing and LMAX for alm data).\n
-
-    Uses 97.5 percentile values for min and max by default!\n
-    RECCOMENDED: Use -auto to autodetect map type and set parameters.\n
-    Some autodetected maps use logscale, you will be warned.
-
-    """
-
-    from c3postproc.plotter import Plotter
-    Plotter(input, dataset, nside, auto, min, max, minmax, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, verbose,)
+    Plotter(input, dataset, nside, auto, min, max, mid, range, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, outdir, verbose,)
 
 
 @commands.command()
@@ -500,8 +460,8 @@ def alm2fits(input, dataset, nside, lmax, fwhm):
 @commands.command()
 @click.argument("procver", type=click.STRING)
 @click.option("-mask", type=click.Path(exists=True), help="Mask for calculating cmb",)
+@click.option("-defaultmask", is_flag=True, help="Use default dx12 mask",)
 @click.option("-pdf", is_flag=True, help="output as pdf")
-@click.option("-nocolorbar", "-nobar", is_flag=True, help='plots without colorbar',)
 @click.option("-skipfreqmaps", is_flag=True, help="Don't output freqmaps",)
 @click.option("-skipcmb", is_flag=True, help="Don't output cmb",)
 @click.option("-skipsynch", is_flag=True, help="Don't output synch",)
@@ -509,72 +469,111 @@ def alm2fits(input, dataset, nside, lmax, fwhm):
 @click.option("-skipff", is_flag=True, help="Don't output ff",)
 @click.option("-skipdiff", is_flag=True, help="Creates diff maps to dx12 and npipe")
 @click.pass_context
-def plotrelease(ctx, procver, mask, pdf, nocolorbar, skipfreqmaps, skipcmb, skipsynch, skipame, skipff, skipdiff,):
+def plotrelease(ctx, procver, mask, defaultmask, pdf, skipfreqmaps, skipcmb, skipsynch, skipame, skipff, skipdiff,):
     """
     \b
     Plots all release files\n
     """
-    colorbar=False if nocolorbar else True
-        
-    if not skipcmb and mask:
-        # CMB I no dip
-        ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", colorbar=colorbar, auto=True, remove_dipole=mask, pdf=pdf,)
+    import os
+    if not os.path.exists("figs"):
+        os.mkdir("figs")
 
-        # CMB QU and IQU rms, and P_mean, P_rms
-        ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", colorbar=colorbar, auto=True, sig=[1, 2, 3, 4, 5, 6, 7], pdf=pdf,)
+    for size in ["m", "l", "s",]:
+        for colorbar in [True, False]:
+            if not skipcmb and mask or defaultmask:
+                outdir = "figs/cmb/"
+                if not os.path.exists(outdir):
+                    os.mkdir(outdir)
 
-    if not skipfreqmaps:
-        # 030 GHz IQU
-        ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=3400,)
-        ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", colorbar=colorbar, auto=True, sig=[4,], pdf=pdf, min=0.0, max=20.0)
-        ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, fwhm=60.0, range=30,)
-        ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", colorbar=colorbar, auto=True, sig=[3,], pdf=pdf, fwhm=60.0, min=0.0, max=100,)
-        ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", colorbar=colorbar, auto=True, sig=[5, 6,], pdf=pdf, fwhm=60.0,min=0.0, max=20.0)
-        ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", colorbar=colorbar, auto=True, sig=[7,], pdf=pdf, fwhm=60.0,min=0.0, max=40.0)
+                if defaultmask:
+                    mask = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/masks/dx12_v3_common_mask_int_005a_1024_TQU.fits"
 
-        # 044 GHz IQU
-        ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=3400,)
-        ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", colorbar=colorbar, auto=True, sig=[4,], pdf=pdf, min=0.0, max=20.0)
-        ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, fwhm=60.0, range=30,)
-        ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", colorbar=colorbar, auto=True, sig=[3,], pdf=pdf, fwhm=60.0, min=0.0, max=100,)
-        ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", colorbar=colorbar, auto=True, sig=[5, 6,], pdf=pdf, fwhm=60.0,min=0.0, max=20.0)
-        ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", colorbar=colorbar, auto=True, sig=[7,], pdf=pdf, fwhm=60.0, min=0.0, max=40.0)
-        # 070 GHz IQU
-        ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=3400,)
-        ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=colorbar, auto=True, sig=[4,], pdf=pdf, min=0.0, max=20.0)
-        ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, fwhm=60.0, range=30,)
-        ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=colorbar, auto=True, sig=[3,], pdf=pdf, fwhm=60.0, min=0.0, max=200,)
-        ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=colorbar, auto=True, sig=[5, 6,], pdf=pdf, fwhm=60.0,min=0.0, max=20.0)
-        ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", colorbar=colorbar, auto=True, sig=[7,], pdf=pdf, fwhm=60.0,min=0.0, max=40.0)
+                # CMB I with dip
+                ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, pdf=pdf, range=3400)
+                # CMB I no dip
+                ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask, pdf=pdf,)
+                ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask, pdf=pdf, fwhm=np.sqrt(60.0**2-14**2),)
+                ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask, pdf=pdf, fwhm=np.sqrt(420.0**2-14**2))
 
-    if not skipsynch:
-        # Synch IQU
-        ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", colorbar=colorbar, auto=True, sig=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], pdf=pdf,)
+                # CMB QU at 14 arcmin, 1 degree and 7 degree smoothing
+                for fwhm in [0.0, np.sqrt(60.0**2-14**2), np.sqrt(420.0**2-14**2)]:
+                    ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, fwhm=fwhm)
 
-    if not skipff:
-        # freefree mean and rms
-        ctx.invoke(plot, input=f"BP_freefree_I_full_n1024_{procver}.fits", colorbar=colorbar, auto=True, sig=[0, 1, 2, 3], pdf=pdf,)
+                # RMS maps
+                ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[4, 5, 6,], pdf=pdf,)
 
-    if not skipame:
-        # ame mean and rms
-        ctx.invoke(plot, input=f"BP_ame_I_full_n1024_{procver}.fits", colorbar=colorbar, auto=True, sig=[0, 1, 2, 3], pdf=pdf,)
+            if not skipfreqmaps:
+                outdir = "figs/freqmaps/"
+                if not os.path.exists(outdir):
+                    os.mkdir(outdir)
+    
+                # 030 GHz IQU
+                ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=3400,)
+                ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[4,], pdf=pdf, min=0.0, max=20.0)
+                ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, fwhm=60.0, range=30,)
+                ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,], pdf=pdf, fwhm=60.0, min=0.0, max=100,)
+                ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[5, 6,], pdf=pdf, fwhm=60.0,min=0.0, max=20.0)
+                ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[7,], pdf=pdf, fwhm=60.0,min=0.0, max=40.0)
 
-    if not skipdiff:
-        # Plot difference to npipe and dx12
-        ctx.invoke(plot, input=f"BP_030_diff_npipe_{procver}.fits", colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=10)
-        ctx.invoke(plot, input=f"BP_030_diff_npipe_{procver}.fits", colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, range=4)
-        ctx.invoke(plot, input=f"BP_030_diff_dx12_{procver}.fits",  colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=10)
-        ctx.invoke(plot, input=f"BP_030_diff_dx12_{procver}.fits",  colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, range=4)
+                # 044 GHz IQU
+                ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=3400,)
+                ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[4,], pdf=pdf, min=0.0, max=20.0)
+                ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, fwhm=60.0, range=30,)
+                ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,], pdf=pdf, fwhm=60.0, min=0.0, max=100,)
+                ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[5, 6,], pdf=pdf, fwhm=60.0,min=0.0, max=20.0)
+                ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[7,], pdf=pdf, fwhm=60.0, min=0.0, max=40.0)
+                # 070 GHz IQU
+                ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=3400,)
+                ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[4,], pdf=pdf, min=0.0, max=20.0)
+                ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, fwhm=60.0, range=30,)
+                ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,], pdf=pdf, fwhm=60.0, min=0.0, max=200,)
+                ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[5, 6,], pdf=pdf, fwhm=60.0,min=0.0, max=20.0)
+                ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[7,], pdf=pdf, fwhm=60.0,min=0.0, max=40.0)
 
-        ctx.invoke(plot, input=f"BP_044_diff_npipe_{procver}.fits", colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=10)
-        ctx.invoke(plot, input=f"BP_044_diff_npipe_{procver}.fits", colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, range=4)
-        ctx.invoke(plot, input=f"BP_044_diff_dx12_{procver}.fits",  colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=10)
-        ctx.invoke(plot, input=f"BP_044_diff_dx12_{procver}.fits",  colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, range=4)
+            if not skipsynch:
+                outdir = "figs/synchrotron/"
+                if not os.path.exists(outdir):
+                    os.mkdir(outdir)
+    
+                # Synch IQU
+                ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], pdf=pdf,)
 
-        ctx.invoke(plot, input=f"BP_070_diff_npipe_{procver}.fits", colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=10)
-        ctx.invoke(plot, input=f"BP_070_diff_npipe_{procver}.fits", colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, range=4)
-        ctx.invoke(plot, input=f"BP_070_diff_dx12_{procver}.fits",  colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=10)
-        ctx.invoke(plot, input=f"BP_070_diff_dx12_{procver}.fits",  colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, range=4)
+            if not skipff:
+                outdir = "figs/freefree/"
+                if not os.path.exists(outdir):
+                    os.mkdir(outdir)
+    
+                # freefree mean and rms
+                ctx.invoke(plot, input=f"BP_freefree_I_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3], pdf=pdf,)
+
+            if not skipame:
+                outdir = "figs/ame/"
+                if not os.path.exists(outdir):
+                    os.mkdir(outdir)
+    
+                # ame mean and rms
+                ctx.invoke(plot, input=f"BP_ame_I_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3], pdf=pdf,)
+
+            if not skipdiff:
+                outdir = "figs/freqmap_difference/"
+                if not os.path.exists(outdir):
+                    os.mkdir(outdir)
+    
+                # Plot difference to npipe and dx12
+                ctx.invoke(plot, input=f"BP_030_diff_npipe_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=10)
+                ctx.invoke(plot, input=f"BP_030_diff_npipe_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, range=4)
+                ctx.invoke(plot, input=f"BP_030_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=10)
+                ctx.invoke(plot, input=f"BP_030_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, range=4)
+
+                ctx.invoke(plot, input=f"BP_044_diff_npipe_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=10)
+                ctx.invoke(plot, input=f"BP_044_diff_npipe_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, range=4)
+                ctx.invoke(plot, input=f"BP_044_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=10)
+                ctx.invoke(plot, input=f"BP_044_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, range=4)
+                
+                ctx.invoke(plot, input=f"BP_070_diff_npipe_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=10)
+                ctx.invoke(plot, input=f"BP_070_diff_npipe_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, range=4)
+                ctx.invoke(plot, input=f"BP_070_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=10)
+                ctx.invoke(plot, input=f"BP_070_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, range=4)
 
 
 
@@ -753,15 +752,21 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
             print("Creating frequency difference maps")
             path_dx12 = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/dx12"
             path_npipe = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/npipe"
-            maps_dx12 = ["30ghz_2018_n1024_dip.fits","44ghz_2018_n1024_dip.fits","70ghz_2018_n1024_dip.fits"]
+            maps_dx12 = ["30ghz_2018_n1024_beamscaled_dip.fits","44ghz_2018_n1024_beamscaled_dip.fits","70ghz_2018_n1024_beamscaled_dip.fits"]
             maps_npipe = ["npipe6v20_030_map_uK.fits", "npipe6v20_044_map_uK.fits", "npipe6v20_070_map_uK.fits",]
             maps_BP = [f"BP_030_IQU_full_n0512_{procver}.fits", f"BP_044_IQU_full_n0512_{procver}.fits", f"BP_070_IQU_full_n1024_{procver}.fits",]
-
+            beamscaling = [9.8961854E-01, 9.9757886E-01, 9.9113965E-01]
             for i, freq in enumerate(["030", "044", "070",]):
                 map_BP    = hp.read_map(f"{procver}/{maps_BP[i]}", field=(0,1,2), verbose=False,)
                 map_npipe = hp.read_map(f"{path_npipe}/{maps_npipe[i]}", field=(0,1,2), verbose=False,)
                 map_dx12  = hp.read_map(f"{path_dx12}/{maps_dx12[i]}", field=(0,1,2), verbose=False,)
                 
+                #dx12 dipole values:
+                # 3362.08 pm 0.99, 264.021 pm 0.011, 48.253 ± 0.005
+                # 233.18308357  2226.43833645 -2508.42179665
+                #dipole_dx12 = -3362.08*hp.dir2vec(264.021, 48.253, lonlat=True)
+
+                #map_dx12  = map_dx12/beamscaling[i]
                 # Smooth to 60 arcmin
                 map_BP = hp.smoothing(map_BP, fwhm=arcmin2rad(60.0))
                 map_npipe = hp.smoothing(map_npipe, fwhm=arcmin2rad(60.0))
@@ -772,7 +777,7 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
                     map_npipe = hp.ud_grade(map_npipe, nside_out=512,)
                     map_dx12 = hp.ud_grade(map_dx12, nside_out=512,)
 
-                # Remove dipoles
+                # Remove monopoles
                 map_BP -= np.mean(map_BP,axis=1).reshape(-1,1)
                 map_npipe -= np.mean(map_npipe,axis=1).reshape(-1,1)
                 map_dx12 -= np.mean(map_dx12,axis=1).reshape(-1,1)
@@ -794,14 +799,14 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
             format_fits(
                 fname,
                 extname="COMP-MAP-CMB",
-                types=["I_MEAN", "Q_MEAN", "U_MEAN", "P_MEAN", "I_RMS", "Q_RMS", "U_RMS", "P_RMS", "mask1", "mask2",],
-                units=["uK_cmb", "uK_cmb", "uK_cmb", "uK", "uK", "uK", "NONE", "NONE",],
+                types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS", "mask1", "mask2",],
+                units=["uK_cmb", "uK_cmb", "uK", "uK", "NONE", "NONE",],
                 nside=1024,
                 burnin=burnin,
                 maxchain=maxchain,
                 polar=True,
                 component="CMB",
-                fwhm=10.0,
+                fwhm=14.0,
                 nu_ref_t="NONE",
                 nu_ref_p="NONE",
                 procver=procver,
@@ -1097,7 +1102,6 @@ def generate_sky(label, freqs, nside, cmb, synch, dust, ff, ame):
     """
     import healpy as hp
     import numpy as np
-    import sys
     # Generate sky maps
     A = 1 # Only relative scaling
     for nu in freqs:
