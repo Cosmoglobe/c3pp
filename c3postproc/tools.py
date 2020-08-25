@@ -537,6 +537,8 @@ def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_
                     elif (nfields == 3):
                         fields=(0,1,2)
 
+                    print('   Reading fields ',fields)
+
                     nest = False
                     for par in header:
                         if (par[0] == 'ORDERING'):
@@ -563,7 +565,7 @@ def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_
                     else:
                         continue
 
-                data = hp.fitsfunc.read_map(filename,verbose=False,h=False, nest=nest, dtype=np.float64)
+                data = hp.fitsfunc.read_map(filename,field=field,verbose=False,h=False, nest=nest, dtype=np.float64)
                 
                 if (nest): #need to reorder to ring-ordering
                     data = hp.pixelfunc.reorder(data,n2r=True)
