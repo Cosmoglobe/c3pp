@@ -248,7 +248,7 @@ def fits_stddev(
 @click.option("-ltitle", default=None, type=click.STRING, help="Set title (Upper left), has LaTeX functionality. Ex. $A_{s}$.",)
 @click.option("-unit", default=None, type=click.STRING, help="Set unit (Under color bar), has LaTeX functionality. Ex. $\mu$",)
 @click.option("-scale", default=1.0, type=click.FLOAT, help="Scale input map [ex. 1e-6 for muK to K]",)
-@click.option("-outdir", default="./", type=click.Path(exists=True), help="Output directory for plot",)
+@click.option("-outdir", type=click.Path(exists=True), help="Output directory for plot",)
 @click.option("-verbose", is_flag=True, help="Verbose mode")
 def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, outdir, verbose,):
     """
@@ -1136,4 +1136,34 @@ def generate_sky(label, freqs, nside, cmb, synch, dust, ff, ame):
 
             data[pl] = pl_data
         hp.write_map(filename, data)
+"""
+def makespec():
+    
+    Implement spectrum as it appears on github.
+    Spectral parameters can either be specified, in which case they will act fullsky, or maps can be given.
+    
+    for i in range(num_fg_comp):
+        for j, nu in enumerate(frequencies):
+            for sig in range(3):
+                for p in range(npix):
+                    map_[p, sig] = fg[i].amp[p,sig] * get_ideal_spectrum(fg[i].label, par_smooth(p, sig, i), nu)
 
+                # Which mask to use
+                for m in range(2):
+                    mu     = np.sum(map_[:, sig]*mask[:, sig, m]) / np.sum(mask[:, sig, m])
+
+                    f[nu,m] = np.log( np.sqrt(np.sum( (map_[:,sig]*mask[:,sig,m]-mu)**2) / (np.sum(mask[:,sig,m])-1.d0)) )
+
+
+@commands.command()
+#@click.argument("input", type=click.STRING)
+@click.option("-nside", default=None, type=click.INT, help="Nside for alm binning",)
+@click.option("-pol", is_flag=True, help="",)
+@click.option("-long", is_flag=True, help="",)
+@click.option("-lowfreq", is_flag=True, help="",)
+@click.option("-darkmode", is_flag=True, help="",)
+@click.option("-png", is_flag=True, help="",)
+def output_sky_model(pol, long, lowfreq, darkmode, png):
+    from c3postproc.spectrum import Spectrum
+    spectrum()
+"""

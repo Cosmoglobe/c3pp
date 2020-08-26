@@ -34,6 +34,7 @@ setuptools.setup(
         'pandas',
         'seaborn',
         'cmasher',
+        'brokenaxes',
     ],
     python_requires=">=3.6",
 )

@@ -479,8 +479,10 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
 
             starttime = time.time()
             if outdir:
-                fn = os.path.split(fn)[-1]
-            plt.savefig(outdir+fn, bbox_inches="tight", pad_inches=0.02, transparent=tp, format=filetype,)
+                fn = outdir + "/" + os.path.split(fn)[-1]
+
+            print(f"Output: {fn}")
+            plt.savefig(fn, bbox_inches="tight", pad_inches=0.02, transparent=tp, format=filetype,)
             print("Savefig", (time.time() - starttime),) if verbose else None
 
             plt.close()
