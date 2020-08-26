@@ -25,6 +25,19 @@ def printheader(input,):
         for hdu in hdulist:
             print(repr(hdu.header))
 
+@commands.command()
+@click.argument("input", type=click.STRING)
+def printdata(input,):
+    """
+    Prints the data of a fits file
+    """
+    from astropy.io import fits
+
+    with fits.open(input) as hdulist:
+        hdulist.info()
+        for hdu in hdulist:
+            print(repr(hdu.data))
+
 
 @commands.command()
 @click.argument("input1", type=click.STRING)
@@ -282,11 +295,13 @@ def sigma_l2fits(filename, nchains, burnin, path, outname, save=True,):
     \b
     Converts c3-h5 dataset to fits suitable for c1 BR and GBR estimator analysis.\n
 
-    ex. c3pp sigma_l2fits chains_v1/chain 5 10 cmb_sigma_l_GBRlike.fits \n
+    ex. c3pp sigma-l2fits chains_v1/chain 5 10 cmb_sigma_l_GBRlike.fits \n
 
     If "chain_c0001.h5", filename is cut to "chain" and will look in same directory for "chain_c*****.h5".\n
     See comm_like_tools for further information about BR and GBR post processing
     """
+    #data = h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.mean, pixweight, zerospin,)
+    print("{:-^48}".format("Formatting sigma_l data to fits file"))
     import h5py
 
     if filename.endswith(".h5"):
@@ -298,30 +313,27 @@ def sigma_l2fits(filename, nchains, burnin, path, outname, save=True,):
             groups = list(f.keys())
             temp[nc - 1] = len(groups)
     nsamples_max = int(max(temp[:]))
-    click.echo("maximum number of samples for chain: " + str(nsamples_max))
+    print(f"Largest chain has {nsamples_max} samples, using burnin {burnin}\n")
 
     for nc in range(1, nchains + 1):
-        with h5py.File(filename + "_c" + str(nc).zfill(4) + ".h5", "r",) as f:
-            click.echo("Reading HDF5 file: " + filename + " ...")
+        fn = filename + "_c" + str(nc).zfill(4) + ".h5"
+        with h5py.File(fn, "r",) as f:
+            print(f"Reading {fn}")
             groups = list(f.keys())
-            click.echo()
-            click.echo("Reading " + str(len(groups)) + " samples from file.")
-
+            nsamples = len(groups)
             if nc == 1:
                 dset = np.zeros((nsamples_max + 1, 1, len(f[groups[0] + "/" + path]), len(f[groups[0] + "/" + path][0]),))
                 nspec = len(f[groups[0] + "/" + path])
                 lmax = len(f[groups[0] + "/" + path][0]) - 1
-                nsamples = len(groups)
             else:
-                nsamples = len(groups)
                 dset = np.append(dset, np.zeros((nsamples_max + 1, 1, nspec, lmax + 1,)), axis=1,)
-            click.echo(np.shape(dset))
-
-            click.echo("Found: \npath in the HDF5 file : " + path + " \nnumber of spectra :" + str(nspec) + "\nlmax: " + str(lmax))
+            print(f"Dataset: {path} \n# samples: {nsamples} \n# spectra: {nspec} \nlmax: {lmax}")
 
             for i in range(nsamples):
                 for j in range(nspec):
                     dset[i + 1, nc - 1, j, :] = np.asarray(f[groups[i] + "/" + path][j][:])
+
+            print("")
 
     # Optimize with jit?
     ell = np.arange(lmax + 1)
@@ -332,20 +344,33 @@ def sigma_l2fits(filename, nchains, burnin, path, outname, save=True,):
     dset[0, :, :, :] = nsamples - burnin
 
     if save:
-        import fitsio
-
-        click.echo(f"Dumping fits file: {outname}...")
+        print(f"Dumping fits file: {outname}")
         dset = np.asarray(dset, dtype="f4")
-        fits = fitsio.FITS(outname, mode="rw", clobber=True, verbose=True,)
-        h_dict = [
-            {"name": "FUNCNAME", "value": "Gibbs sampled power spectra", "comment": "Full function name",},
-            {"name": "LMAX", "value": lmax, "comment": "Maximum multipole moment",},
-            {"name": "NUMSAMP", "value": nsamples_max, "comment": "Number of samples",},
-            {"name": "NUMCHAIN", "value": nchains, "comment": "Number of independent chains",},
-            {"name": "NUMSPEC", "value": nspec, "comment": "Number of power spectra",},
-        ]
-        fits.write(dset[:, :, :, :], header=h_dict, clobber=True,)
-        fits.close()
+
+        from astropy.io import fits
+        head = fits.Header()
+        head["FUNCNAME"] = ("Gibbs sampled power spectra",  "Full function name")
+        head["LMAX"]     = (lmax,  "Maximum multipole moment")
+        head["NUMSAMP"]  = (nsamples_max,  "Number of samples")
+        head["NUMCHAIN"] = (nchains,  "Number of independent chains")
+        head["NUMSPEC"]  = (nspec,  "Number of power spectra")
+        fits.writeto(outname, dset, head, overwrite=True)                
+
+        # FITSIO Saving Deprecated (Use astropy)
+        if False:
+            import fitsio
+
+            fits = fitsio.FITS(outname, mode="rw", clobber=True, verbose=True,)
+            h_dict = [
+                {"name": "FUNCNAME", "value": "Gibbs sampled power spectra", "comment": "Full function name",},
+                {"name": "LMAX", "value": lmax, "comment": "Maximum multipole moment",},
+                {"name": "NUMSAMP", "value": nsamples_max, "comment": "Number of samples",},
+                {"name": "NUMCHAIN", "value": nchains, "comment": "Number of independent chains",},
+                {"name": "NUMSPEC", "value": nspec, "comment": "Number of power spectra",},
+            ]
+            fits.write(dset[:, :, :, :], header=h_dict, clobber=True,)
+            fits.close()
+
     return dset
 
 
