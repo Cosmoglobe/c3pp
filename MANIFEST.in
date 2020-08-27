@@ -1,2 +1,3 @@
 include c3postproc/parchment1.dat
 include c3postproc/spdust2_cnm.dat
+include c3postproc/Synchrotron_template_GHz_extended.txt
