@@ -370,11 +370,12 @@ def inverse(x):
     return x*100
 
 
-class fgs:
-    h    = 6.62607e-34 # Planck's konstant
-    k_b  = 1.38065e-23 # Boltzmanns konstant
-    Tcmb = 2.7255      # K CMB Temperature
+class fgs:          
     def cmb(nu, A):
+        h = 6.62607e-34 # Planck's konstant
+        k_b  = 1.38065e-23 # Boltzmanns konstant
+        Tcmb = 2.7255      # K CMB Temperature
+
         x = h*nu/(k_b*Tcmb)
         g = (np.exp(x)-1)**2/(x**2*np.exp(x))
         s_cmb = A/g

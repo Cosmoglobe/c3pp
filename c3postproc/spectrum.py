@@ -7,10 +7,9 @@ import sys
 import math
 from brokenaxes import brokenaxes
 
-from c3postproc.tools import *
+import c3postproc.tools as tls
 
-
-def spectrum(pol, long, lowfreq, darkmode, filetype):
+def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks):
     params = {'savefig.dpi'        : 300, # save figures to 300 dpi
               'xtick.top'          : False,
               'ytick.right'        : True, #Set to false
@@ -94,8 +93,77 @@ def spectrum(pol, long, lowfreq, darkmode, filetype):
         fgtext = 20
         labelsize = 20
         ticksize = 20
-	
-    
+
+    # This function calculates the intensity spectra
+    # Alternative 1 uses 2 masks to calculate spatial variations
+    # Alternative 2 uses only scalar values
+    def getspec(fg, params, masks, field):
+        val = []
+        # Alternative 1
+        if any([str(x).endswith(".fits") for x in params]):
+
+            temp = []
+            nsides = []
+            # Read all maps and record nsides
+            for p in params:
+                if str(p).endswith(".fits"):
+                    p, h = hp.read_map(p, header=True, field=field)
+                    nsides.append(int(h["NSIDE"]))
+                else:
+                    nsides.append(0)
+                temp.append(p)  
+            nside_max = np.max(nsides)
+            npix = hp.npix2nside(nside_max)
+
+            # Create dataset and convert to same resolution
+            params = np.zeros(( len(params), npix ))
+            for i, t in enumerate(temp):
+                if nsides[i] == 0:
+                    params[i,:] = t
+                elif nsides[i] != nside_max:
+                    params[i,:] = hp.ud_grade(t, nside_max)
+                    
+            # Calculate spectra
+            N = 10
+            nus  = np.logspace(np.log10(0.1),np.log10(5000),N)
+            map_ = np.zeros((N,nside2npix(1024)))
+            for i, nu in enumerate(nus):
+                for pix in npix:
+                       map_[i, pix] = getattr(tls.fgs, fg)(nu, *params[pix]) #fgs.fg(nu, *params[pix])
+                       
+            # Apply mask to all frequency points
+            # calculate mean 
+            for i, mask in enumerate(masks):
+                # Read and ud_grade mask
+                if not mask: 
+                    continue
+                m, h = hp.read_map(mask, header=True, field=field)
+                if h["NSIDE"] != nside_max:
+                    m = hp.ud_grade(m, nside_mask)
+                m[m>0] = 1 # Set all mask values to integer            
+
+                n = np.sum(m) # Total valid pixels
+                masked = map_*m.reshape(1,-1) # Mask data
+                mu = np.sum(masked)/n
+                val.append(np.sqrt((masked-mu)**2/n))
+                       
+            val = np.array(val)
+            vals[0,:] = np.min(val,axis=0)
+            vals[1,:] = np.max(val,axis=0)
+
+        # Alternative 2
+        else:
+            N = 1000
+            nu   = np.logspace(np.log10(0.1),np.log10(5000),N)
+            val = getattr(tls.fgs, fg)(nu, *params) #fgs.fg(nu, *params))
+            vals = np.stack((val, val),)
+        return vals
+
+    fgs = []
+    field = 1 if pol else 0
+    for fg in foregrounds.keys():
+        fgs.append(getspec(fg, foregrounds[fg], masks, field) )
+
     """
     OLD METHOD
     
@@ -127,6 +195,7 @@ def spectrum(pol, long, lowfreq, darkmode, filetype):
         return np.linspace(range[0]-range[1],range[0]+range[1], 10)
     
     cmb_range = [67,1]
+
     te_range = [7000, 11]
     EM_range = [30,5]#[13, 1]
     
@@ -173,6 +242,7 @@ def spectrum(pol, long, lowfreq, darkmode, filetype):
     """
 
     # calculate sky model
+    """
     Functions should take numbers
     A, B, T
     if A B and T are scalar, just insert, and calculate returning scalar
@@ -180,21 +250,17 @@ def spectrum(pol, long, lowfreq, darkmode, filetype):
             read maps, rescale maps to the lowest resolution of inputs
             calculate spectrum in each pixel for N frequency points (Set in input?)
             return masked average (input optional list of masks?)
-            
+    """
 
-            
-
-    N = 1000
-    nu    = np.logspace(np.log10(0.1),np.log10(5000),N) #Text scaled to 0.2, 5000
-    
+                
     
     if pol:	
         #CMB   = cmb(  nu*1e9, 0.67)
         #SYNC  = sync( nu*1e9, 12,1., nuref=30.)
         #TDUST = tdust(nu*1e9, 8, 1.51,21.,nuref=353. )
         
-        sumf = SYNC+TDUST+SDUST*0.01
-        fgs=[CMB,SYNC,TDUST,SDUST*0.01]
+        sumf = np.sum(fgs) # SYNC+TDUST+SDUST*0.01
+        #fgs=[CMB,SYNC,TDUST,SDUST*0.01]
         col=["C9","C2","C3","C1","C7"]
         label=["CMB", "Synchrotron","Thermal Dust", "Spinning Dust", "Sum fg."]
         if long:

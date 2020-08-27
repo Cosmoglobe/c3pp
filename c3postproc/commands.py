@@ -1178,17 +1178,43 @@ def makespec():
                     mu     = np.sum(map_[:, sig]*mask[:, sig, m]) / np.sum(mask[:, sig, m])
 
                     f[nu,m] = np.log( np.sqrt(np.sum( (map_[:,sig]*mask[:,sig,m]-mu)**2) / (np.sum(mask[:,sig,m])-1.d0)) )
+"""
 
 
 @commands.command()
-#@click.argument("input", type=click.STRING)
-@click.option("-nside", default=None, type=click.INT, help="Nside for alm binning",)
 @click.option("-pol", is_flag=True, help="",)
 @click.option("-long", is_flag=True, help="",)
 @click.option("-lowfreq", is_flag=True, help="",)
 @click.option("-darkmode", is_flag=True, help="",)
 @click.option("-png", is_flag=True, help="",)
-def output_sky_model(pol, long, lowfreq, darkmode, png):
+@click.option("-a_cmb", default=(67,0.67),  help="",)
+@click.option("-a_s", default=(20e6,12),  help="",)
+@click.option("-b_s", default=-3.1,  help="",)
+@click.option("-a_ff", default=30,  help="",)
+@click.option("-t_e", default=7000,  help="",)
+@click.option("-a_ame1", default=50,  help="",)
+@click.option("-a_ame2", default=50,  help="",)
+@click.option("-nup", default=22.8e9,  help="",)
+@click.option("-a_d", default=(163,8),  help="",)
+@click.option("-b_d", default=1.51,  help="",)
+@click.option("-t_d", default=21.0,  help="",)
+@click.option("-mask1",  help="",)
+@click.option("-mask2",  help="",)
+def output_sky_model(pol, long, lowfreq, darkmode, png, a_cmb, a_s, b_s, a_ff, t_e, a_ame1, a_ame2, nup, a_d, b_d, t_d, mask1, mask2):
+    """
+    BP parameters
+    bd = 1.6
+    Td = 18.5
+    Aame2 = 0.0
+    nup = 21
+    """
     from c3postproc.spectrum import Spectrum
-    spectrum()
-"""
+    # PROBLEM! Default value is 2d, specified is not
+    if pol:
+        foregrounds = {"cmb": [a_cmb[-1]], "sync": [a_s[-1], b_s], "tdust": [a_d[-1], b_d, t_d]}
+    else:
+        foregrounds = {"cmb": [a_cmb[0]], "sync": [a_s[0], b_s], "tdust": [a_d[0], b_d, t_d], "ff": [a_ff, t_e], "sdust": [a_ame1, nup]}
+    Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, [mask1,mask2])
+
+
+
