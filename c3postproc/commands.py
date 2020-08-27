@@ -1187,33 +1187,58 @@ def makespec():
 @click.option("-lowfreq", is_flag=True, help="",)
 @click.option("-darkmode", is_flag=True, help="",)
 @click.option("-png", is_flag=True, help="",)
-@click.option("-a_cmb", default=(67,0.67),  help="",)
-@click.option("-a_s", default=(20e6,12),  help="",)
-@click.option("-b_s", default=-3.1,  help="",)
-@click.option("-a_ff", default=30,  help="",)
-@click.option("-t_e", default=7000,  help="",)
-@click.option("-a_ame1", default=50,  help="",)
-@click.option("-a_ame2", default=50,  help="",)
-@click.option("-nup", default=22.8e9,  help="",)
-@click.option("-a_d", default=(163,8),  help="",)
-@click.option("-b_d", default=1.51,  help="",)
-@click.option("-t_d", default=21.0,  help="",)
+@click.option("-a_cmb", help="",)
+@click.option("-a_s",  help="",)
+@click.option("-b_s",  help="",)
+@click.option("-a_ff", help="",)
+@click.option("-t_e",  help="",)
+@click.option("-a_ame1",help="",)
+@click.option("-a_ame2", help="",)
+@click.option("-nup",  help="",)
+@click.option("-a_d", help="",)
+@click.option("-b_d", help="",)
+@click.option("-t_d", help="",)
 @click.option("-mask1",  help="",)
 @click.option("-mask2",  help="",)
 def output_sky_model(pol, long, lowfreq, darkmode, png, a_cmb, a_s, b_s, a_ff, t_e, a_ame1, a_ame2, nup, a_d, b_d, t_d, mask1, mask2):
     """
-    BP parameters
-    bd = 1.6
-    Td = 18.5
-    Aame2 = 0.0
-    nup = 21
+    Outputs spectrum plots
+
+    c3pp output-sky-model -a_s synch_c0001_k000100.fits -mask1 mask_common_dx12_n1024_TQU.fits -mask2 mask_synch_beta_10deg.fits 
+    -b_s synch_beta_c0001_k000100.fits -a_d dust_init_kja_n1024.fits -b_d dust_beta_init_kja_n1024.fits -t_d dust_T_init_kja_n1024.fits 
+    -a_ff ff_c0001_k000100.fits -t_e ff_Te_c0001_k000100.fits
+    -a_ame1 ame_c0001_k000100.fits -nup ame_nu_p_c0001_k000100.fits 
     """
     from c3postproc.spectrum import Spectrum
-    # PROBLEM! Default value is 2d, specified is not
+
+    if not a_cmb:
+        a_cmb = 0.67 if pol else 67
+    if not a_s:
+        a_s = 12 if pol else 76
+    if not b_s:
+        b_s = -3.1
+    if not a_ff:
+        a_ff = 30.
+    if not t_e:
+        t_e = 7000.
+    if not a_ame1:
+        a_ame1 = 5 if pol else 50
+    if not a_ame2:
+        a_ame2 = 50.
+    if not nup:
+        nup = 21
+    if not a_d:
+        a_d = 8 if pol else 163
+    if not b_d:
+        b_d = 1.6
+    if not t_d:
+        t_d = 18.5
+
+
     if pol:
-        foregrounds = {"cmb": [a_cmb[-1]], "sync": [a_s[-1], b_s], "tdust": [a_d[-1], b_d, t_d]}
+        foregrounds = {"cmb": [a_cmb], "lf": [a_s, b_s], "tdust": [a_d, b_d, t_d, 353], "sdust": [a_ame1, nup]}
     else:
-        foregrounds = {"cmb": [a_cmb[0]], "sync": [a_s[0], b_s], "tdust": [a_d[0], b_d, t_d], "ff": [a_ff, t_e], "sdust": [a_ame1, nup]}
+        foregrounds = {"cmb": [a_cmb], "ff": [a_ff, t_e], "lf": [a_s, b_s], "sdust": [a_ame1, nup], "tdust": [a_d, b_d, t_d, 545],}
     Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, [mask1,mask2])
 
 

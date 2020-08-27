@@ -370,7 +370,7 @@ def inverse(x):
     return x*100
 
 
-class fgs:          
+class fgs:         
     def cmb(nu, A):
         h = 6.62607e-34 # Planck's konstant
         k_b  = 1.38065e-23 # Boltzmanns konstant
@@ -384,7 +384,9 @@ class fgs:
     def sync(nu, As, alpha, nuref=0.408):
         #alpha = 1., As = 30 K (30*1e6 muK)
         nu_0 = nuref*1e9 # 408 MHz
-        fnu, f = np.loadtxt("Synchrotron_template_GHz_extended.txt", unpack=True)
+        from pathlib import Path
+        synch_template = Path(__file__).parent / "Synchrotron_template_GHz_extended.txt"
+        fnu, f = np.loadtxt(synch_template, unpack=True)
         f = np.interp(nu, fnu*1e9, f)
         f0 = np.interp(nu_0, nu, f) # Value of s at nu_0
         s_s = As*(nu_0/nu)**2*f/f0
@@ -401,32 +403,48 @@ class fgs:
         return s_ff
 
     def ff(nu,A,Te, nuref=40.):
+        h = 6.62607e-34 # Planck's konstant
+        k_b  = 1.38065e-23 # Boltzmanns konstant
+
         nu_ref = nuref*1e9
         S =     np.log(np.exp(5.960 - np.sqrt(3.0)/np.pi * np.log(    nu/1e9*(Te/1e4)**-1.5))+2.71828)
         S_ref = np.log(np.exp(5.960 - np.sqrt(3.0)/np.pi * np.log(nu_ref/1e9*(Te/1e4)**-1.5))+2.71828)
         s_ff = A*S/S_ref*np.exp(-h*(nu-nu_ref)/k_b/Te)*(nu/nu_ref)**-2
         return s_ff
 
-    def sdust(nu, Asd, nu_p, nuref=22.):
+    def sdust(nu, Asd, nu_p, fnu = None, f_ = None, nuref=22.,):
         nu_ref = nuref*1e9
         nu_p0 = 30.*1e9
-        fnu, f = np.loadtxt("spdust2_cnm.dat", unpack=True)
-        fnu *= 1e9
-        # MAKE SURE THAT THESE ARE BOTH IN 1e9
-        scale = nu_p0/nu_p
-        f = np.interp(scale*nu, fnu, f)
-        f0 = np.interp(scale*nu_ref, scale*nu, f) # Value of s at nu_0
+        nu_p = nu_p*1e9
+
+        try:
+            fnu
+        except:
+            from pathlib import Path
+            ame_template = Path(__file__).parent / "spdust2_cnm.dat"
+            fnu, f_ = np.loadtxt(ame_template, unpack=True)
+            fnu *= 1e9
+
+        #scale = nu_p0/nu_p
+        #f = np.interp(scale*nu, fnu, f)
+        #f0 = np.interp(scale*nu_ref, scale*nu, f) # Value of s at nu_0
+
+        f = np.interp(nu, fnu, f_)
+        f0 = np.interp(nu_ref, fnu, f_) # Value of s at nu_0
         s_sd = Asd*(nu_ref/nu)**2*f/f0
         return s_sd
 
 
     def tdust(nu,Ad,betad,Td,nuref=545.):
+        h = 6.62607e-34 # Planck's konstant
+        k_b  = 1.38065e-23 # Boltzmanns konstant
+
         nu0=nuref*1e9
         gamma = h/(k_b*Td)
         s_d=Ad*(nu/nu0)**(betad+1)*(np.exp(gamma*nu0)-1)/(np.exp(gamma*nu)-1)
         return s_d
 
-    def lf(nu,Alf,betalf,nuref=1.):
+    def lf(nu,Alf,betalf,nuref=30e9):
         return Alf*(nu/nuref)**(betalf)
 
 def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_missing, lowmem, pixweight, return_mean, command):

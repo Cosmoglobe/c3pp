@@ -2,7 +2,9 @@ from matplotlib import rcParams, rc
 import matplotlib.patheffects as path_effects
 import matplotlib.ticker as ticker
 import matplotlib.pyplot as plt
+from tqdm import trange, tqdm
 import numpy as np
+import healpy as hp
 import sys
 import math
 from brokenaxes import brokenaxes
@@ -97,23 +99,29 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks):
     # This function calculates the intensity spectra
     # Alternative 1 uses 2 masks to calculate spatial variations
     # Alternative 2 uses only scalar values
-    def getspec(fg, params, masks, field):
+    def getspec(nu, fg, params, masks, field):
         val = []
         # Alternative 1
         if any([str(x).endswith(".fits") for x in params]):
+            if fg == "sdust":
+                from pathlib import Path
+                ame_template = Path(__file__).parent / "spdust2_cnm.dat"
+                fnu, f_ = np.loadtxt(ame_template, unpack=True)
+                fnu *= 1e9
+                field = 0
 
             temp = []
             nsides = []
             # Read all maps and record nsides
             for p in params:
                 if str(p).endswith(".fits"):
-                    p, h = hp.read_map(p, header=True, field=field)
-                    nsides.append(int(h["NSIDE"]))
+                    p = hp.read_map(p, field=field, dtype=None, verbose=False)
+                    nsides.append(hp.npix2nside(len(p)))
                 else:
                     nsides.append(0)
                 temp.append(p)  
-            nside_max = np.max(nsides)
-            npix = hp.npix2nside(nside_max)
+            nside_max = 4 #2 #np.max(nsides)
+            npix = hp.nside2npix(nside_max)
 
             # Create dataset and convert to same resolution
             params = np.zeros(( len(params), npix ))
@@ -122,14 +130,17 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks):
                     params[i,:] = t
                 elif nsides[i] != nside_max:
                     params[i,:] = hp.ud_grade(t, nside_max)
-                    
-            # Calculate spectra
-            N = 10
-            nus  = np.logspace(np.log10(0.1),np.log10(5000),N)
-            map_ = np.zeros((N,nside2npix(1024)))
-            for i, nu in enumerate(nus):
-                for pix in npix:
-                       map_[i, pix] = getattr(tls.fgs, fg)(nu, *params[pix]) #fgs.fg(nu, *params[pix])
+
+            # Calculate spectra USE JIT?!
+            map_ = np.zeros((N, npix))
+            print(f"Calculating {fg} values over all pixels and freqs")
+            for i, nu_ in enumerate(tqdm(nu, desc = "Freqs", ncols=80)):
+                for pix in trange(npix, desc = "pixel", leave=False, ncols=80):
+                    #print(f"params of {fg}: {params[:,pix]}")
+                    if fg == "sdust":
+                        map_[i, pix] = getattr(tls.fgs, fg)(nu_, *params[:,pix], fnu, f_) #fgs.fg(nu, *params[pix])
+                    else:
+                        map_[i, pix] = getattr(tls.fgs, fg)(nu_, *params[:,pix]) #fgs.fg(nu, *params[pix])
                        
             # Apply mask to all frequency points
             # calculate mean 
@@ -137,32 +148,34 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks):
                 # Read and ud_grade mask
                 if not mask: 
                     continue
-                m, h = hp.read_map(mask, header=True, field=field)
-                if h["NSIDE"] != nside_max:
-                    m = hp.ud_grade(m, nside_mask)
-                m[m>0] = 1 # Set all mask values to integer            
+                m = hp.read_map(mask, field=field, dtype=None, verbose=False)
+                if hp.npix2nside(len(m)) != nside_max:
+                    m = hp.ud_grade(m, nside_max)
+                m[m>0.5] = 1 # Set all mask values to integer    
+                m[m<0.5] = 0 # Set all mask values to integer    
 
                 n = np.sum(m) # Total valid pixels
                 masked = map_*m.reshape(1,-1) # Mask data
-                mu = np.sum(masked)/n
-                val.append(np.sqrt((masked-mu)**2/n))
+                mu = np.sum(masked, axis=1)/n # Average for each freq point
+                mystery = np.sqrt((np.sum(masked-mu.reshape(-1,1), axis=1)**2)/n)
+                val.append(mystery)
                        
-            val = np.array(val)
-            vals[0,:] = np.min(val,axis=0)
-            vals[1,:] = np.max(val,axis=0)
-
+            vals = np.sort(np.array(val), axis=0)
         # Alternative 2
         else:
-            N = 1000
-            nu   = np.logspace(np.log10(0.1),np.log10(5000),N)
             val = getattr(tls.fgs, fg)(nu, *params) #fgs.fg(nu, *params))
             vals = np.stack((val, val),)
         return vals
 
     fgs = []
     field = 1 if pol else 0
+    N = 1000
+    nu  = np.logspace(np.log10(0.1),np.log10(5000),N)
     for fg in foregrounds.keys():
-        fgs.append(getspec(fg, foregrounds[fg], masks, field) )
+        fgs.append(getspec(nu*1e9, fg, foregrounds[fg], masks, field) )
+
+    #for i in range(len(fgs)):
+    #    print(fgs[i])
 
     """
     OLD METHOD
@@ -252,14 +265,15 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks):
             return masked average (input optional list of masks?)
     """
 
-                
     
+    sumf = np.sum(fgs, axis=0) # SYNC+TDUST+SDUST*0.01
+    fgs.append(sumf)
     if pol:	
         #CMB   = cmb(  nu*1e9, 0.67)
         #SYNC  = sync( nu*1e9, 12,1., nuref=30.)
         #TDUST = tdust(nu*1e9, 8, 1.51,21.,nuref=353. )
         
-        sumf = np.sum(fgs) # SYNC+TDUST+SDUST*0.01
+
         #fgs=[CMB,SYNC,TDUST,SDUST*0.01]
         col=["C9","C2","C3","C1","C7"]
         label=["CMB", "Synchrotron","Thermal Dust", "Spinning Dust", "Sum fg."]
@@ -274,8 +288,6 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks):
     
     
     else:
-        sumf = FF+SYNC+SDUST+TDUST
-        fgs=[CMB,FF,SYNC,SDUST,TDUST]   
         col=["C9","C0","C2","C1","C3","C7"]
         label=["CMB","Free-Free","Synchrotron","Spinning Dust","Thermal Dust", "Sum fg."] 
         if long:
@@ -316,12 +328,13 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks):
     # ---- Plotting foregrounds and labels ----
     j=0
     for i in range(len(fgs)):
-        ax.fill_between(nu, fgs[i][0], fgs[i][1], color=col[i])
-        ax2.fill_between(nu, fgs[i][0], fgs[i][1], color=col[i])
+        linestyle = "dotted" if pol and i == 3 else "solid" # Set upper boundry
+        ax.fill_between(nu, fgs[i][0], fgs[i][1], color=col[i], linestyle=linestyle)
+        ax2.fill_between(nu, fgs[i][0], fgs[i][1], color=col[i], linestyle=linestyle)
     
         #ax.loglog(nu,fgs[i], linewidth=4,color=col[i])
         #ax2.loglog(nu,fgs[i], linewidth=4,color=col[i])
-        ax.text(nu[idx[i]], fgs[i][1,idx[i]]+scale[i], label[i], rotation=rot[i], color=col[i],fontsize=fgtext,  path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
+        #ax.text(nu[idx[i]], fgs[i][1,idx[i]]+scale[i], label[i], rotation=rot[i], color=col[i],fontsize=fgtext,  path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
     
         ax.set_xscale("log")
         ax.set_yscale("log")
@@ -329,7 +342,7 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks):
         ax2.set_yscale("log")
     
     # ---- Plotting sum of all foregrounds ----        
-    ax.text(nu[idx[-1]], fgs[-1][1,idx[-1]]+scale[-1], label[-1], rotation=rot[-1], color=black, fontsize=fgtext, alpha=0.7,  path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
+    #ax.text(nu[idx[-1]], fgs[-1][1,idx[-1]]+scale[-1], label[-1], rotation=rot[-1], color=black, fontsize=fgtext, alpha=0.7,  path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
     
     
     def find_nearest(array, value):
@@ -506,8 +519,8 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks):
         ax2.axvspan(band_range19[0],band_range19[1],color='C3',alpha=baralpha, zorder=0)
     
     # ---- Axis label stuff ----
-    ax.set_xticks(np.append(ax.get_xticks(),[3,30,300,3000]))
-    ax.set_xticklabels(np.append(ax.get_xticks(),300))
+    #ax.set_xticks(np.append(ax.get_xticks(),[3,30,300,3000])) #???
+    #ax.set_xticklabels(np.append(ax.get_xticks(),300))
     ax.xaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
     ax.tick_params(axis='both', which='major', labelsize=ticksize, direction='in')
     ax.tick_params(which="both",direction="in")
@@ -530,12 +543,13 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks):
     
     # ---- Plotting ----
     plt.tight_layout(h_pad=0.3)
-    filename ="figs/spectrum"
+    filename = "spectrum"
     filename += "_pol" if pol else ""
     filename += "_long" if long else ""
     filename += "_lowfreq" if lowfreq else ""
     filename += "_darkmode" if darkmode else ""
+    filename += ".png" if png else ".pdf"
     print("Plotting {}".format(filename))
-    plt.savefig(filename+filetype, bbox_inches='tight',  pad_inches=0.02, transparent=True)
+    plt.savefig(filename, bbox_inches='tight',  pad_inches=0.02, transparent=True)
     #plt.show()
 	
