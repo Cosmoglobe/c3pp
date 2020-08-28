@@ -11,7 +11,7 @@ from brokenaxes import brokenaxes
 
 import c3postproc.tools as tls
 
-def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks):
+def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
     params = {'savefig.dpi'        : 300, # save figures to 300 dpi
               'xtick.top'          : False,
               'ytick.right'        : True, #Set to false
@@ -99,7 +99,7 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks):
     # This function calculates the intensity spectra
     # Alternative 1 uses 2 masks to calculate spatial variations
     # Alternative 2 uses only scalar values
-    def getspec(nu, fg, params, masks, field):
+    def getspec(nu, fg, params, masks, field, nside):
         val = []
         # Alternative 1
         if any([str(x).endswith(".fits") for x in params]):
@@ -120,7 +120,8 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks):
                 else:
                     nsides.append(0)
                 temp.append(p)  
-            nside_max = 4 #2 #np.max(nsides)
+
+            nside_max = nside if nside else np.max(nsides)
             npix = hp.nside2npix(nside_max)
 
             # Create dataset and convert to same resolution
@@ -131,40 +132,38 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks):
                 elif nsides[i] != nside_max:
                     params[i,:] = hp.ud_grade(t, nside_max)
 
-            # Calculate spectra USE JIT?!
             map_ = np.zeros((N, npix))
-            print(f"Calculating {fg} values over all pixels and freqs")
-            for i, nu_ in enumerate(tqdm(nu, desc = "Freqs", ncols=80)):
-                for pix in trange(npix, desc = "pixel", leave=False, ncols=80):
-                    #print(f"params of {fg}: {params[:,pix]}")
-                    if fg == "sdust":
-                        map_[i, pix] = getattr(tls.fgs, fg)(nu_, *params[:,pix], fnu, f_) #fgs.fg(nu, *params[pix])
-                    else:
-                        map_[i, pix] = getattr(tls.fgs, fg)(nu_, *params[:,pix]) #fgs.fg(nu, *params[pix])
-                       
+            for pix in trange(npix, desc = fg, ncols=80):
+                if fg == "sdust":
+                    map_[:, pix] = getattr(tls.fgs, fg)(nu, *params[:,pix], fnu, f_) #fgs.fg(nu, *params[pix])
+                else:
+                    map_[:, pix] = getattr(tls.fgs, fg)(nu, *params[:,pix]) #fgs.fg(nu, *params[pix])
+
             # Apply mask to all frequency points
             # calculate mean 
             for i, mask in enumerate(masks):
                 # Read and ud_grade mask
-                if not mask: 
-                    continue
-                m = hp.read_map(mask, field=field, dtype=None, verbose=False)
-                if hp.npix2nside(len(m)) != nside_max:
-                    m = hp.ud_grade(m, nside_max)
-                m[m>0.5] = 1 # Set all mask values to integer    
-                m[m<0.5] = 0 # Set all mask values to integer    
+                if mask: 
+                    m = hp.read_map(mask, field=field, dtype=None, verbose=False)
+                    if hp.npix2nside(len(m)) != nside_max:
+                        m = hp.ud_grade(m, nside_max)
+                        m[m>0.5] = 1 # Set all mask values to integer    
+                        m[m<0.5] = 0 # Set all mask values to integer    
 
-                n = np.sum(m) # Total valid pixels
-                masked = map_*m.reshape(1,-1) # Mask data
-                mu = np.sum(masked, axis=1)/n # Average for each freq point
-                mystery = np.sqrt((np.sum(masked-mu.reshape(-1,1), axis=1)**2)/n)
-                val.append(mystery)
-                       
+                    n = np.sum(m) # Total valid pixels
+                    masked = map_*m.reshape(1,-1) # Mask data
+                    mu = np.sum(masked, axis=1)/n # Average for each freq point
+                    mystery = np.sqrt((np.sum(masked-mu.reshape(-1,1), axis=1)**2)/n)
+                    val.append(mystery)
+                else:
+                    val.append(np.mean(map_,axis=1))
+
             vals = np.sort(np.array(val), axis=0)
-        # Alternative 2
         else:
+            # Alternative 2
             val = getattr(tls.fgs, fg)(nu, *params) #fgs.fg(nu, *params))
-            vals = np.stack((val, val),)
+            #vals = np.stack((val, val),)
+            vals = val.reshape(1,-1)
         return vals
 
     fgs = []
@@ -172,10 +171,7 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks):
     N = 1000
     nu  = np.logspace(np.log10(0.1),np.log10(5000),N)
     for fg in foregrounds.keys():
-        fgs.append(getspec(nu*1e9, fg, foregrounds[fg], masks, field) )
-
-    #for i in range(len(fgs)):
-    #    print(fgs[i])
+        fgs.append(getspec(nu*1e9, fg, foregrounds[fg], masks, field, nside))
 
     """
     OLD METHOD
@@ -329,8 +325,12 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks):
     j=0
     for i in range(len(fgs)):
         linestyle = "dotted" if pol and i == 3 else "solid" # Set upper boundry
-        ax.fill_between(nu, fgs[i][0], fgs[i][1], color=col[i], linestyle=linestyle)
-        ax2.fill_between(nu, fgs[i][0], fgs[i][1], color=col[i], linestyle=linestyle)
+        if fgs[i].shape[0] == 1:
+            ax.plot(nu, fgs[i][0], color=col[i], linestyle=linestyle, linewidth=4,)
+            ax2.plot(nu, fgs[i][0], color=col[i], linestyle=linestyle, linewidth=4,)
+        else:
+            ax.fill_between(nu, fgs[i][0], fgs[i][1], color=col[i], linestyle=linestyle)
+            ax2.fill_between(nu, fgs[i][0], fgs[i][1], color=col[i], linestyle=linestyle)
     
         #ax.loglog(nu,fgs[i], linewidth=4,color=col[i])
         #ax2.loglog(nu,fgs[i], linewidth=4,color=col[i])

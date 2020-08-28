@@ -493,8 +493,9 @@ def alm2fits(input, dataset, nside, lmax, fwhm):
 @click.option("-skipame", is_flag=True, help="Don't output ame",)
 @click.option("-skipff", is_flag=True, help="Don't output ff",)
 @click.option("-skipdiff", is_flag=True, help="Creates diff maps to dx12 and npipe")
+@click.option("-skipspec", is_flag=True, help="Creates emission plot")
 @click.pass_context
-def plotrelease(ctx, procver, mask, defaultmask, pdf, skipfreqmaps, skipcmb, skipsynch, skipame, skipff, skipdiff,):
+def plotrelease(ctx, procver, mask, defaultmask, pdf, skipfreqmaps, skipcmb, skipsynch, skipame, skipff, skipdiff, skipspec,):
     """
     \b
     Plots all release files\n
@@ -503,6 +504,10 @@ def plotrelease(ctx, procver, mask, defaultmask, pdf, skipfreqmaps, skipcmb, ski
     if not os.path.exists("figs"):
         os.mkdir("figs")
 
+
+    if not skipspec:
+        ctx.invoke(output_sky_model, )
+        
     for size in ["m", "l", "s",]:
         for colorbar in [True, False]:
             if not skipcmb and mask or defaultmask:
@@ -1187,6 +1192,7 @@ def makespec():
 @click.option("-lowfreq", is_flag=True, help="",)
 @click.option("-darkmode", is_flag=True, help="",)
 @click.option("-png", is_flag=True, help="",)
+@click.option("-nside", type=click.INT, help="",)
 @click.option("-a_cmb", help="",)
 @click.option("-a_s",  help="",)
 @click.option("-b_s",  help="",)
@@ -1200,19 +1206,15 @@ def makespec():
 @click.option("-t_d", help="",)
 @click.option("-mask1",  help="",)
 @click.option("-mask2",  help="",)
-def output_sky_model(pol, long, lowfreq, darkmode, png, a_cmb, a_s, b_s, a_ff, t_e, a_ame1, a_ame2, nup, a_d, b_d, t_d, mask1, mask2):
+def output_sky_model(pol, long, lowfreq, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e, a_ame1, a_ame2, nup, a_d, b_d, t_d, mask1, mask2):
     """
     Outputs spectrum plots
-
-    c3pp output-sky-model -a_s synch_c0001_k000100.fits -mask1 mask_common_dx12_n1024_TQU.fits -mask2 mask_synch_beta_10deg.fits 
-    -b_s synch_beta_c0001_k000100.fits -a_d dust_init_kja_n1024.fits -b_d dust_beta_init_kja_n1024.fits -t_d dust_T_init_kja_n1024.fits 
-    -a_ff ff_c0001_k000100.fits -t_e ff_Te_c0001_k000100.fits
-    -a_ame1 ame_c0001_k000100.fits -nup ame_nu_p_c0001_k000100.fits 
+    c3pp output-sky-model -a_s synch_c0001_k000100.fits -b_s synch_beta_c0001_k000100.fits -a_d dust_init_kja_n1024.fits -b_d dust_beta_init_kja_n1024.fits -t_d dust_T_init_kja_n1024.fits -a_ame1 ame_c0001_k000100.fits -nup ame_nu_p_c0001_k000100.fits -a_ff ff_c0001_k000100.fits -t_e ff_Te_c0001_k000100.fits -mask1 mask_70GHz_t70.fits -mask2 mask_70GHz_t7.fits -nside 16
     """
     from c3postproc.spectrum import Spectrum
 
     if not a_cmb:
-        a_cmb = 0.67 if pol else 67
+        a_cmb = 0.67 if pol else 45
     if not a_s:
         a_s = 12 if pol else 76
     if not b_s:
@@ -1239,7 +1241,7 @@ def output_sky_model(pol, long, lowfreq, darkmode, png, a_cmb, a_s, b_s, a_ff, t
         foregrounds = {"cmb": [a_cmb], "lf": [a_s, b_s], "tdust": [a_d, b_d, t_d, 353], "sdust": [a_ame1, nup]}
     else:
         foregrounds = {"cmb": [a_cmb], "ff": [a_ff, t_e], "lf": [a_s, b_s], "sdust": [a_ame1, nup], "tdust": [a_d, b_d, t_d, 545],}
-    Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, [mask1,mask2])
+    Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, [mask1,mask2], nside)
 
 
 
