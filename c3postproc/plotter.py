@@ -314,10 +314,10 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             cmap = Path(__file__).parent / "parchment1.dat"
             cmap = col.ListedColormap(np.loadtxt(cmap) / 255.0, "planck")
         else:
-            if cmap.startswith("cmasher."):
+            try:
                 import cmasher
-                cmap = eval(cmap)
-            else:
+                cmap = eval(f"cmasher.{cmap}")
+            except:
                 cmap = plt.get_cmap(cmap)
 
         print(f"Colormap: {cmap.name}")
@@ -508,7 +508,7 @@ def get_params(m, outfile, polt, signal_label):
     synch_tags = ["synch",]
     dust_tags = ["dust",]
     ame_tags = [ "ame_","ame1","ame2",]
-    ff_tags = ["_ff_", "freefree",]
+    ff_tags = ["ff_", "freefree",]
     co10_tags = ["co10", "co-100"]
     co21_tags = ["co21", "co-217"]
     co32_tags = ["co32", "co-353"]
@@ -572,6 +572,7 @@ def get_params(m, outfile, polt, signal_label):
         else:
             print("{:-^48}".format(f"Plotting Synchrotron {sl}"))            
             title["param"] = r"$A$"
+            cmap = "swamp"
             if sl == "Q" or sl == "U" or sl == "QU" or sl=="P":
                 # BP uses 30 GHz ref freq for pol
                 ticks = [-50, 0, 50]
@@ -599,10 +600,11 @@ def get_params(m, outfile, polt, signal_label):
             ticks = [vmin, vmax]
             title["unit"]  = r"$\mathrm{K}$"
             title["param"] = r"$T_{e}$"
-        else:
+        elif not tag_lookup("diff", outfile+signal_label,):
             print("{:-^48}".format(f"Plotting free-free"))
             title["param"] = r"$A$"
-            ticks = [20, 200, 2000]
+            cmap = "freeze"
+            ticks = [40, 400, 2000]
             title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
             logscale = True
 
@@ -618,6 +620,7 @@ def get_params(m, outfile, polt, signal_label):
             print("{:-^48}".format(f"Plotting AME"))
             title["param"] = r"$A$"
             title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
+            cmap = "amber"
             ticks = [30, 300, 3000]
             logscale = True
 
@@ -638,21 +641,13 @@ def get_params(m, outfile, polt, signal_label):
             print("{:-^48}".format(f"Plotting Thermal dust {sl}"))
             title["param"] = r"$A$"
             title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
-
+            cmap = "sunburst"
             if sl == "Q" or sl == "U" or sl == "QU" or sl=="P":
                 ticks = [-100, 0, 100]
                 logscale = True
-
-                col1 = "deepskyblue"
-                col2 = "blue"
-                col3 = "firebrick"
-                col4 = "darkorange"
-                cmap = col.LinearSegmentedColormap.from_list("BlBkRd", [endcolor, col1, col2, startcolor, col3, col4, endcolor,],)
-
             else:
                 ticks = [30, 300, 3000]
                 logscale = True
-                cmap = plt.get_cmap("gist_heat")
 
     #######################
     ## LINE EMISSION MAPS #
@@ -661,6 +656,7 @@ def get_params(m, outfile, polt, signal_label):
     elif tag_lookup(co10_tags, outfile):
         print("{:-^48}".format(f"Plotting CO10"))
         print("Plotting CO10")
+        cmap = "arctic"
         title["comp"] = "co10"
         title["param"] = r"$A$"
         title["unit"] = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
@@ -675,15 +671,15 @@ def get_params(m, outfile, polt, signal_label):
         title["param"] =r"$A$"
         title["unit"] = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
         ticks = [0, 10, 100]
-
+        cmap = "arctic"
         logscale = True
 
     elif tag_lookup(co32_tags, outfile):
         print("{:-^48}".format(f"Plotting CO32"))
         title["comp"] = "co32"
         title["param"] = r"$A$"
-
         ticks = [0, 10, 100]
+        cmap = "arctic"
         title["unit"] = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
         logscale = True
 
@@ -691,8 +687,8 @@ def get_params(m, outfile, polt, signal_label):
         print("{:-^48}".format(f"Plotting HCN"))
         title["comp"] = "hcn"
         title["param"] = r"$A$"
-
         ticks = [0.01, 100]
+        cmap = "arctic"
         title["unit"] = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
         logscale = True
 

@@ -99,7 +99,7 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
     # This function calculates the intensity spectra
     # Alternative 1 uses 2 masks to calculate spatial variations
     # Alternative 2 uses only scalar values
-    def getspec(nu, fg, params, masks, field, nside):
+    def getspec(nu, fg, params, field, nside, npix, idx, m):
         val = []
         # Alternative 1
         if any([str(x).endswith(".fits") for x in params]):
@@ -121,42 +121,31 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
                     nsides.append(0)
                 temp.append(p)  
 
-            nside_max = nside if nside else np.max(nsides)
-            npix = hp.nside2npix(nside_max)
 
             # Create dataset and convert to same resolution
             params = np.zeros(( len(params), npix ))
             for i, t in enumerate(temp):
                 if nsides[i] == 0:
                     params[i,:] = t
-                elif nsides[i] != nside_max:
-                    params[i,:] = hp.ud_grade(t, nside_max)
+                elif nsides[i] != nside:
+                    params[i,:] = hp.ud_grade(t, nside)
 
+            # Only calculate outside masked region    
             map_ = np.zeros((N, npix))
-            for pix in trange(npix, desc = fg, ncols=80):
+            for i, nu_ in enumerate(tqdm(nu, desc = fg, ncols=80)):
                 if fg == "sdust":
-                    map_[:, pix] = getattr(tls.fgs, fg)(nu, *params[:,pix], fnu, f_) #fgs.fg(nu, *params[pix])
+                    map_[i, idx] = getattr(tls.fgs, fg)(nu_, *params[:,idx], fnu, f_) #fgs.fg(nu, *params[pix])
                 else:
-                    map_[:, pix] = getattr(tls.fgs, fg)(nu, *params[:,pix]) #fgs.fg(nu, *params[pix])
+                    map_[i, idx] = getattr(tls.fgs, fg)(nu_, *params[:,idx]) #fgs.fg(nu, *params[pix])
 
             # Apply mask to all frequency points
             # calculate mean 
-            for i, mask in enumerate(masks):
-                # Read and ud_grade mask
-                if mask: 
-                    m = hp.read_map(mask, field=field, dtype=None, verbose=False)
-                    if hp.npix2nside(len(m)) != nside_max:
-                        m = hp.ud_grade(m, nside_max)
-                        m[m>0.5] = 1 # Set all mask values to integer    
-                        m[m<0.5] = 0 # Set all mask values to integer    
-
-                    n = np.sum(m) # Total valid pixels
-                    masked = map_*m.reshape(1,-1) # Mask data
-                    mu = np.sum(masked, axis=1)/n # Average for each freq point
-                    mystery = np.sqrt((np.sum(masked-mu.reshape(-1,1), axis=1)**2)/n)
-                    val.append(mystery)
-                else:
-                    val.append(np.mean(map_,axis=1))
+            for i in range(2):
+                n = np.sum(m[i]) # Total valid pixels
+                masked = map_*m[i].reshape(1,-1) # Mask data
+                mu = np.sum(masked, axis=1)/n # Average for each freq point
+                #rms = np.sqrt((np.sum(masked-mu.reshape(-1,1), axis=1)**2)/n)
+                val.append(mu)
 
             vals = np.sort(np.array(val), axis=0)
         else:
@@ -166,12 +155,34 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
             vals = val.reshape(1,-1)
         return vals
 
+    # Spectrum parameters
     fgs = []
     field = 1 if pol else 0
     N = 1000
     nu  = np.logspace(np.log10(0.1),np.log10(5000),N)
+    npix = hp.nside2npix(nside)
+
+    # Read masks
+    m = np.ones((len(masks), npix))
+    for i, mask in enumerate(masks):
+        # Read and ud_grade mask
+        if mask:
+            m_temp = hp.read_map(mask, field=field, dtype=None, verbose=False)
+            if hp.npix2nside(len(m_temp)) != nside:
+                m[i] = hp.ud_grade(m_temp, nside)
+                m[i,m[i,:]>0.5] = 1 # Set all mask values to integer    
+                m[i,m[i,:]<0.5] = 0 # Set all mask values to integer   
+            else:
+                m[i] = m_temp
+
+    #hp.write_map("mask0.fits", m[0])
+    #hp.write_map("mask1.fits", m[1])
+    # Get indices of smallest mask
+    idx = m[np.argmax(np.sum(m, axis=1)), :] > 0.5
+    print(f"Using sky fractions {np.sum(m,axis=1)/npix*100}%")
+    # Looping over foregrounds and calculating spectra
     for fg in foregrounds.keys():
-        fgs.append(getspec(nu*1e9, fg, foregrounds[fg], masks, field, nside))
+        fgs.append(getspec(nu*1e9, fg, foregrounds[fg], field, nside, npix, idx, m,))
 
     """
     OLD METHOD
@@ -316,14 +327,17 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
     
     #scale=[5,105,195] # Scaling CMB, thermal dust and sum up and down
     
-    
+
     ax.loglog(nu,sumf[0], "--", linewidth=2, color=black, alpha=0.7)
-    ax.loglog(nu,sumf[1], "--", linewidth=2, color=black, alpha=0.7)
     ax2.loglog(nu,sumf[0], "--", linewidth=2, color=black, alpha=0.7)
-    ax2.loglog(nu,sumf[1], "--", linewidth=2, color=black, alpha=0.7)
+    try:
+        ax.loglog(nu,sumf[1], "--", linewidth=2, color=black, alpha=0.7)
+        ax2.loglog(nu,sumf[1], "--", linewidth=2, color=black, alpha=0.7)
+    except:
+        pass
     # ---- Plotting foregrounds and labels ----
     j=0
-    for i in range(len(fgs)):
+    for i in range(len(fgs)-1): # Plot all fgs except sumf
         linestyle = "dotted" if pol and i == 3 else "solid" # Set upper boundry
         if fgs[i].shape[0] == 1:
             ax.plot(nu, fgs[i][0], color=col[i], linestyle=linestyle, linewidth=4,)
@@ -528,7 +542,7 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
     ax2.tick_params(axis='both', which='major', labelsize=ticksize, direction='in')
     ax2.tick_params(which="both",direction="in")
     
-    plt.ylabel(r"Brightness temperature [$\mu$K]",fontsize=labelsize)
+    plt.ylabel(r"RMS brightness temperature [$\mu$K]",fontsize=labelsize)
     plt.xlabel(r"Frequency [GHz]",fontsize=labelsize)
     
     if lowfreq:
