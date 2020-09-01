@@ -132,12 +132,18 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
 
             # Only calculate outside masked region    
             map_ = np.zeros((N, npix))
+
             for i, nu_ in enumerate(tqdm(nu, desc = fg, ncols=80)):
                 if fg == "sdust":
                     map_[i, idx] = getattr(tls.fgs, fg)(nu_, *params[:,idx], fnu, f_) #fgs.fg(nu, *params[pix])
                 else:
                     map_[i, idx] = getattr(tls.fgs, fg)(nu_, *params[:,idx]) #fgs.fg(nu, *params[pix])
-
+            """
+            if fg == "sdust":
+                map_[:, idx] = getattr(tls.fgs, fg)(nu, *params[:,idx], fnu, f_) #fgs.fg(nu, *params[pix])
+            else:
+                map_[:, idx] = getattr(tls.fgs, fg)(nu, *params[:,idx]) #fgs.fg(nu, *params[pix])
+            """
             # Apply mask to all frequency points
             # calculate mean 
             for i in range(2):
