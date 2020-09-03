@@ -413,22 +413,33 @@ class fgs:
         return s_ff
 
     def sdust(nu, Asd, nu_p, fnu = None, f_ = None, nuref=22.,):
-        nu_ref = nuref*1e9
+        nuref = nuref*1e9 
         scale = 30./nu_p
 
         try:
             f = np.interp(scale*nu, fnu, f_)
-            f0 = np.interp(scale*nu_ref, scale*nu, f) # Value of s at nu_0
+            f0 = np.interp(scale*nuref, fnu, f_) # Value of s at nu_0
+            
         except:
             from pathlib import Path
             ame_template = Path(__file__).parent / "spdust2_cnm.dat"
             fnu, f_ = np.loadtxt(ame_template, unpack=True)
             fnu *= 1e9
             f = np.interp(scale*nu, fnu, f_)
-            f0 = np.interp(scale*nu_ref, scale*nu, f) # Value of s at nu_0
+            f0 = np.interp(scale*nuref, fnu, f_) # Value of s at nu_0
+            #f0 = np.interp(scale*nuref, scale*nu, f) # Value of s at nu_0
 
+        """
+        print("nu", nu)
+        print("Asd", Asd)
+        print("nup", nu_p)
+        print("scale",scale)
+        print("nuref",nuref)
+        print("fnu", fnu[50])
+        print("f_", f_[50])
+        """
         
-        s_sd = Asd*(nu_ref/nu)**2*f/f0
+        s_sd = Asd*(nuref/nu)**2*f/f0
         return s_sd
 
 

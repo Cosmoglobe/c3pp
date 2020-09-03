@@ -494,9 +494,10 @@ def alm2fits(input, dataset, nside, lmax, fwhm):
 @click.option("-skipame", is_flag=True, help="Don't output ame",)
 @click.option("-skipff", is_flag=True, help="Don't output ff",)
 @click.option("-skipdiff", is_flag=True, help="Creates diff maps to dx12 and npipe")
+@click.option("-skipdiffcmb", is_flag=True, help="Creates diff maps with cmb maps")
 @click.option("-skipspec", is_flag=True, help="Creates emission plot")
 @click.pass_context
-def plotrelease(ctx, procver, mask, defaultmask, pdf, skipfreqmaps, skipcmb, skipsynch, skipame, skipff, skipdiff, skipspec,):
+def plotrelease(ctx, procver, mask, defaultmask, pdf, skipfreqmaps, skipcmb, skipsynch, skipame, skipff, skipdiff, skipdiffcmb, skipspec,):
     """
     \b
     Plots all release files\n
@@ -606,7 +607,16 @@ def plotrelease(ctx, procver, mask, defaultmask, pdf, skipfreqmaps, skipcmb, ski
                 ctx.invoke(plot, input=f"BP_070_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,], pdf=pdf, range=10)
                 ctx.invoke(plot, input=f"BP_070_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, range=4)
 
+            if not skipdiffcmb:
+                outdir = "figs/cmb_difference/"
+                if not os.path.exists(outdir):
+                    os.mkdir(outdir)
 
+                mask = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/masks/dx12_v3_common_mask_int_005a_1024_TQU.fits"
+                for i, method in enumerate(["Commander", "SEVEM", "NILC", "SMICA",]):
+                    input = f"BP_cmb_diff_{method.lower()}_{procver}.fits"
+                    ctx.invoke(plot, input=input, size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask, sig=[0,], pdf=pdf, range=10, title=method, ltitle=" ",)
+                    ctx.invoke(plot, input=input, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, range=4, title=method, ltitle=" ",)
 
 @commands.command()
 @click.argument("chain", type=click.Path(exists=True), nargs=-1,)
@@ -621,8 +631,9 @@ def plotrelease(ctx, procver, mask, defaultmask, pdf, skipfreqmaps, skipcmb, ski
 @click.option("-skipsynch", is_flag=True, help="Don't output synchrotron",)
 @click.option("-skipbr", is_flag=True, help="Don't output BR",)
 @click.option("-skipdiff", is_flag=True, help="Creates diff maps to dx12 and npipe")
+@click.option("-skipdiffcmb", is_flag=True, help="Creates diff maps cmb")
 @click.pass_context
-def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame, skipff, skipcmb, skipsynch, skipbr, skipdiff,):
+def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame, skipff, skipcmb, skipsynch, skipbr, skipdiff, skipdiffcmb,):
     """
     Creates a release file-set on the BeyondPlanck format.\n
     https://gitlab.com/BeyondPlanck/repo/-/wikis/BeyondPlanck-Release-Candidate-2\n    
@@ -799,14 +810,14 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
 
                 #map_dx12  = map_dx12/beamscaling[i]
                 # Smooth to 60 arcmin
-                map_BP = hp.smoothing(map_BP, fwhm=arcmin2rad(60.0))
-                map_npipe = hp.smoothing(map_npipe, fwhm=arcmin2rad(60.0))
-                map_dx12 = hp.smoothing(map_dx12, fwhm=arcmin2rad(60.0))
+                map_BP = hp.smoothing(map_BP, fwhm=arcmin2rad(60.0), verbose=False)
+                map_npipe = hp.smoothing(map_npipe, fwhm=arcmin2rad(60.0), verbose=False)
+                map_dx12 = hp.smoothing(map_dx12, fwhm=arcmin2rad(60.0), verbose=False)
 
                 #ud_grade 30 and 44ghz
                 if i<2:
-                    map_npipe = hp.ud_grade(map_npipe, nside_out=512,)
-                    map_dx12 = hp.ud_grade(map_dx12, nside_out=512,)
+                    map_npipe = hp.ud_grade(map_npipe, nside_out=512, verbose=False)
+                    map_dx12 = hp.ud_grade(map_dx12, nside_out=512, verbose=False)
 
                 # Remove monopoles
                 map_BP -= np.mean(map_BP,axis=1).reshape(-1,1)
@@ -815,6 +826,45 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
 
                 hp.write_map(f"{procver}/BP_{freq}_diff_npipe_{procver}.fits", np.array(map_BP-map_npipe), overwrite=True, column_names=["I_DIFF", "Q_DIFF", "U_DIFF"])
                 hp.write_map(f"{procver}/BP_{freq}_diff_dx12_{procver}.fits", np.array(map_BP-map_dx12), overwrite=True, column_names=["I_DIFF", "Q_DIFF", "U_DIFF"])
+
+        except Exception as e:
+            print(e)
+            print("Continuing...")
+
+    if not skipdiffcmb:
+        import healpy as hp
+        try:
+            print("Creating cmb difference maps")
+            path_cmblegacy = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/cmb-legacy"
+            mask_ = hp.read_map("/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/masks/dx12_v3_common_mask_int_005a_1024_TQU.fits", verbose=False, dtype=np.bool,)
+            map_BP = hp.read_map(f"{procver}/BP_cmb_IQU_full_n1024_{procver}.fits", field=(0,1,2), verbose=False, dtype=None,)
+            map_BP_masked = hp.ma(map_BP[0])
+            map_BP_masked.mask = np.logical_not(mask_)
+            mono, dip = hp.fit_dipole(map_BP_masked)
+            nside = 1024
+            ray = range(hp.nside2npix(nside))
+            vecs = hp.pix2vec(nside, ray)
+            dipole = np.dot(dip, vecs)
+            map_BP[0] = map_BP[0] - dipole - mono
+            map_BP = hp.smoothing(map_BP, fwhm=arcmin2rad(np.sqrt(60.0**2-14**2)), verbose=False)
+            #map_BP -= np.mean(map_BP,axis=1).reshape(-1,1)
+            for i, method in enumerate(["commander", "sevem", "nilc", "smica",]):
+
+                data = f"COM_CMB_IQU-{method}_2048_R3.00_full.fits"
+                print(f"making difference map with {data}")
+                map_cmblegacy  = hp.read_map(f"{path_cmblegacy}/{data}", field=(0,1,2), verbose=False,)
+                map_cmblegacy = hp.smoothing(map_cmblegacy, fwhm=arcmin2rad(60.0), verbose=False)
+                map_cmblegacy = hp.ud_grade(map_cmblegacy, nside_out=1024, verbose=False)
+                map_cmblegacy = map_cmblegacy*1e6
+
+                # Remove monopoles
+                map_cmblegacy_masked = hp.ma(map_cmblegacy[0])
+                map_cmblegacy_masked.mask = np.logical_not(mask_)
+                mono = hp.fit_monopole(map_cmblegacy_masked)
+                print(f"{method} subtracting monopole {mono}")
+                map_cmblegacy[0] = map_cmblegacy[0] - mono #np.mean(map_cmblegacy,axis=1).reshape(-1,1)
+
+                hp.write_map(f"{procver}/BP_cmb_diff_{method}_{procver}.fits", np.array(map_BP-map_cmblegacy), overwrite=True, column_names=["I_DIFF", "Q_DIFF", "U_DIFF"])
 
         except Exception as e:
             print(e)
@@ -1215,7 +1265,7 @@ def output_sky_model(pol, long, lowfreq, darkmode, png, nside, a_cmb, a_s, b_s, 
     from c3postproc.spectrum import Spectrum
 
     if not a_cmb:
-        a_cmb = 0.67 if pol else 45
+        a_cmb = 0.45 if pol else 45
     if not a_s:
         a_s = 12 if pol else 76
     if not b_s:
@@ -1229,7 +1279,7 @@ def output_sky_model(pol, long, lowfreq, darkmode, png, nside, a_cmb, a_s, b_s, 
     if not a_ame2:
         a_ame2 = 50.
     if not nup:
-        nup = 21
+        nup = 24
     if not a_d:
         a_d = 8 if pol else 163
     if not b_d:
