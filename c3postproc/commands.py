@@ -460,7 +460,8 @@ def h52fits(filename, dataset,):
 
     with h5py.File(filename, "r") as f:
         maps = f[f"{dataset}/{tag}"][()]
-        lmax = f[f"{dataset}/amp_lmax"][()]  # Get lmax from h5
+        if ('aml' in tag):
+            lmax = f[f"{dataset}/amp_lmax"][()]  # Get lmax from h5
 
     nside = hp.npix2nside(maps.shape[-1])
     dataset = f"{dataset}/{tag}"

@@ -194,6 +194,8 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command, 
 
     if dataset.endswith("map"):
         type = "map"
+    elif dataset.endswith("rms"):
+        type = "map"
     elif dataset.endswith("alm"):
         type = "alm"
     elif dataset.endswith("sigma"):
