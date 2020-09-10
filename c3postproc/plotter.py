@@ -79,6 +79,13 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
                 header = dict(header)
                 try:
                     signal_label = header[f"TTYPE{polt+1}"]
+                    if signal_label == "TEMPERATURE":
+                        signal_label = "T"
+                    if signal_label == "Q-POLARISATION":
+                        signal_label = "Q"
+                    if signal_label == "U-POLARISATION":
+                        signal_label = "U"
+                    
                 except:
                     pass
 
@@ -464,6 +471,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             filename.append(f"{str(int(fwhm))}arcmin") if fwhm > 0 else None
             filename.append("cb") if colorbar else None
             filename.append("masked") if masked else None
+            filename.append("nodip") if remove_dipole else None
             filename.append("dark") if darkmode else None
             filename.append(f"c-{cmap.name}")
 
@@ -575,8 +583,10 @@ def get_params(m, outfile, polt, signal_label):
             cmap = "swamp"
             if sl == "Q" or sl == "U" or sl == "QU" or sl=="P":
                 # BP uses 30 GHz ref freq for pol
+                cmap = "wildfire"
                 ticks = [-50, 0, 50]
-                if title["sig"] == "P": ticks = [0, 10, 100]
+                if title["sig"] == "P": 
+                    ticks = [0, 10, 100]
                 logscale = True
                 title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
             else:
@@ -587,7 +597,7 @@ def get_params(m, outfile, polt, signal_label):
                 title["unit"] = r"$\mathrm{K}_{\mathrm{RJ}}$"
 
     # ------ FREE-FREE ------
-    elif tag_lookup(ff_tags, outfile):
+    elif tag_lookup(ff_tags, outfile) and not tag_lookup(["diff",], outfile+signal_label,):
         title["comp"]  = "ff" 
         if tag_lookup(ff_Te_tags, outfile+signal_label,):
             print("{:-^48}".format(f"Plotting free-free Te"))
@@ -600,7 +610,7 @@ def get_params(m, outfile, polt, signal_label):
             ticks = [vmin, vmax]
             title["unit"]  = r"$\mathrm{K}$"
             title["param"] = r"$T_{e}$"
-        elif not tag_lookup("diff", outfile+signal_label,):
+        else:
             print("{:-^48}".format(f"Plotting free-free"))
             title["param"] = r"$A$"
             cmap = "freeze"
@@ -641,11 +651,12 @@ def get_params(m, outfile, polt, signal_label):
             print("{:-^48}".format(f"Plotting Thermal dust {sl}"))
             title["param"] = r"$A$"
             title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
-            cmap = "sunburst"
             if sl == "Q" or sl == "U" or sl == "QU" or sl=="P":
                 ticks = [-100, 0, 100]
                 logscale = True
+                cmap = "iceburn"
             else:
+                cmap = "sunburst"
                 ticks = [30, 300, 3000]
                 logscale = True
 
@@ -761,7 +772,7 @@ def get_params(m, outfile, polt, signal_label):
         title["stddev"] = True
         vmin, vmax = get_ticks(m, 97.5)
         logscale = False
-        vmin = 0
+        #vmin = 0
         ticks = [vmin, vmax]
         cmap = "planck"
         scale = 1.0
@@ -849,3 +860,4 @@ def cm2inch(cm):
 
 def tag_lookup(tags, outfile):
     return any(e in outfile for e in tags)
+

@@ -178,7 +178,7 @@ def h5handler_old(input, dataset, min, max, maxchain, output, fwhm, nside, comma
     else:
         return outdata
 
-def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command, pixweight, zerospin=False, lowmem=True,):
+def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command, pixweight=None, zerospin=False, lowmem=True,):
 
     # Check if you want to output a map
     import h5py

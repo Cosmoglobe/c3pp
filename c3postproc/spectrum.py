@@ -146,14 +146,18 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
             """
             # Apply mask to all frequency points
             # calculate mean 
+            rmss = []
             for i in range(2):
-                n = np.sum(m[i]) # Total valid pixels
-                masked = map_*m[i].reshape(1,-1) # Mask data
-                mu = np.sum(masked, axis=1)/n # Average for each freq point
-                #rms = np.sqrt((np.sum(masked-mu.reshape(-1,1), axis=1)**2)/n)
-                val.append(mu)
+                n = np.sum(m[i])            
+                masked = hp.ma(map_)
+                masked.mask = np.logical_not(m[i])
+                mono = masked.mean(axis=1)
+                masked -= mono.reshape(-1,1)
+            
+                rms = np.sqrt( ( (masked**2).sum(axis=1) ) /n)
+                val.append(rms)
 
-            vals = np.sort(np.array(val), axis=0)
+            vals = np.sort(np.array(val), axis=0) 
         else:
             # Alternative 2
             val = getattr(tls.fgs, fg)(nu, *params) #fgs.fg(nu, *params))
@@ -173,7 +177,7 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
     for i, mask in enumerate(masks):
         # Read and ud_grade mask
         if mask:
-            m_temp = hp.read_map(mask, field=field, dtype=None, verbose=False)
+            m_temp = hp.read_map(mask, field=0, dtype=None, verbose=False)
             if hp.npix2nside(len(m_temp)) != nside:
                 m[i] = hp.ud_grade(m_temp, nside)
                 m[i,m[i,:]>0.5] = 1 # Set all mask values to integer    
@@ -187,107 +191,23 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
     idx = m[np.argmax(np.sum(m, axis=1)), :] > 0.5
     print(f"Using sky fractions {np.sum(m,axis=1)/npix*100}%")
     # Looping over foregrounds and calculating spectra
+    i = 0
+    label = []
     for fg in foregrounds.keys():
-        fgs.append(getspec(nu*1e9, fg, foregrounds[fg], field, nside, npix, idx, m,))
-
-    """
-    OLD METHOD
-    
-    ## FIND MIN MAX
-    def findminmax(nu, function, numparams, range1=None,range2=None,range3=None, range4=None):
-        vals = np.zeros((2, len(nu)))
-        val = []
-        for i in range1:
-            if numparams >= 2:
-                for j in range2:
-                    if numparams >= 3:
-                        for k in range3:
-                            if numparams == 4:
-                                for l in range4:                                
-                                    val.append(fgs.function(nu, i, j,k,l))
-                            else:
-                                val.append(fgs.function(nu, i, j, k))
-                    else:
-                        val.append(fgs.function(nu, i, j))
+        spectrum = getspec(nu*1e9, fg, foregrounds[fg], field, nside, npix, idx, m,)
+        fgs.append(spectrum)
+        label.append(fg)
+        if fg != "cmb":
+            if i==0:
+                sumf = spectrum.copy()
             else:
-                val.append(fgs.function(nu, i))
-    
-        val = np.array(val)
-        vals[0,:] = np.min(val,axis=0)
-        vals[1,:] = np.max(val,axis=0)
-        return vals
-    
-    def mb(range, n=5):
-        return np.linspace(range[0]-range[1],range[0]+range[1], 10)
-    
-    cmb_range = [67,1]
+                sumf += spectrum
+            i+=1
 
-    te_range = [7000, 11]
-    EM_range = [30,5]#[13, 1]
-    
-    ame1_a = [92,1]#[92,118]
-    ame2_a = [17,1]#[17,22]
-    ame_nu = [19,1] #[19,1]
-    
-    ame1_a = [50,5]#[92,118]
-    ame2_a = [50,5]#[17,22]
-    ame_nu = [22.8e9, 1e9] #[19,1]
-    
-    dust_a = [163,30] #[163,228]
-    dust_t = [21,2]
-    dust_b = [1.51, 0.05]
-    
-    sync_a = [20*1e6,1*1e6] #[20,15]
-    
-    cmb_pol = [0.67,0.03]
-    sync_pol = [12, 1] #[12,9]
-    dust_pol = [8,1] #[8,10]
-    
-    if not pol:
-    	CMB = findminmax(nu*1e9, cmb, numparams=1, range1=mb(cmb_range)) # 70
-    	FF    = findminmax(nu*1e9, ff,numparams=2, range1=mb(EM_range),range2=mb(te_range)) #, 30., 7000.)
-    	SYNC  = findminmax(nu*1e9, sync, numparams=2, range1=mb(sync_a), range2=[1]) # 30.*1e6,1.)
-    	TDUST = findminmax(nu*1e9, tdust, numparams=4, range1=mb(dust_a), range2=mb(dust_b), range3=mb(dust_t), range4=[545.]) # 163, 1.6,21.)
-    	
-    	SDUST1 = findminmax(1.5*nu*1e9, sdust, numparams=2, range1=mb(ame1_a),range2=[41e9])#,  (1.5*nu*1e9, 50, 41e9)+
-    	SDUST2 = findminmax(0.9*nu*1e9, sdust, numparams=2, range1=mb(ame2_a), range2=mb(ame_nu))#,  sdust(0.9*nu*1e9, 50, 22.8e9)
-    	SDUST = SDUST1+SDUST2
-    	
-    	# REFERANGE?
-    	
-    	CMB   = cmb(  nu*1e9, 70)
-    	FF    = ff(   nu*1e9, 30., 7000.)
-    	SYNC  = sync( nu*1e9, 30.*1e6,1.)
-    	SDUST = sdust(1.5*nu*1e9, 50, 41e9)+sdust(0.9*nu*1e9, 50, 22.8e9)
-        T = tdust(nu*1e9, 163, 1.6,21.)    
-    else:
-        CMB = findminmax(nu*1e9, cmb, numparams=1, range1=mb(cmb_pol)) # 70
-        SYNC  = findminmax(nu*1e9, sync, numparams=3, range1=mb(sync_pol), range2=[1], range3=[30.]) # 30.*1e6,1.)
-        TDUST = findminmax(nu*1e9, tdust, numparams=4, range1=mb(dust_pol), range2=mb(dust_b), range3=mb(dust_t),range4=[353.]) # 163, 1.6,21.)
-    
-    """
+    #fgs.append(sumf)
+    label.append("Sum Fg.")
 
-    # calculate sky model
-    """
-    Functions should take numbers
-    A, B, T
-    if A B and T are scalar, just insert, and calculate returning scalar
-    if not:
-            read maps, rescale maps to the lowest resolution of inputs
-            calculate spectrum in each pixel for N frequency points (Set in input?)
-            return masked average (input optional list of masks?)
-    """
-
-    
-    sumf = np.sum(fgs, axis=0) # SYNC+TDUST+SDUST*0.01
-    fgs.append(sumf)
     if pol:	
-        #CMB   = cmb(  nu*1e9, 0.67)
-        #SYNC  = sync( nu*1e9, 12,1., nuref=30.)
-        #TDUST = tdust(nu*1e9, 8, 1.51,21.,nuref=353. )
-        
-
-        #fgs=[CMB,SYNC,TDUST,SDUST*0.01]
         col=["C9","C2","C3","C1","C7"]
         label=["CMB", "Synchrotron","Thermal Dust", "Spinning Dust", "Sum fg."]
         if long:
@@ -298,7 +218,6 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
             rot=[-20, -45, 18, -15, -10]
             idx=[70, -120,  115, -145, -15]
             scale=[0.05, 0, 10, 0.5, 3]
-    
     
     else:
         col=["C9","C0","C2","C1","C3","C7"]
@@ -314,7 +233,7 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
     
         if lowfreq:
             rot=[-8, -37, -47, -70, 13, -43]
-    
+    scale=[0,0,0,0,0,0,0]
     idxshift = 600
     idx = [x + idxshift for x in idx]
     
@@ -332,9 +251,12 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
     # ---- Foreground plotting parameters ----
     
     #scale=[5,105,195] # Scaling CMB, thermal dust and sum up and down
-    
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax2.set_xscale("log")
+    ax2.set_yscale("log")
 
-    ax.loglog(nu,sumf[0], "--", linewidth=2, color=black, alpha=0.7)
+    ax.loglog(nu,sumf[0], "--", linewidth=2, color=black, alpha=0.7, label=label[-1])
     ax2.loglog(nu,sumf[0], "--", linewidth=2, color=black, alpha=0.7)
     try:
         ax.loglog(nu,sumf[1], "--", linewidth=2, color=black, alpha=0.7)
@@ -343,26 +265,22 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
         pass
     # ---- Plotting foregrounds and labels ----
     j=0
-    for i in range(len(fgs)-1): # Plot all fgs except sumf
+    for i, fg in enumerate(fgs): # Plot all fgs except sumf
         linestyle = "dotted" if pol and i == 3 else "solid" # Set upper boundry
         if fgs[i].shape[0] == 1:
-            ax.plot(nu, fgs[i][0], color=col[i], linestyle=linestyle, linewidth=4,)
-            ax2.plot(nu, fgs[i][0], color=col[i], linestyle=linestyle, linewidth=4,)
+            ax.plot(nu, fg[0], color=col[i], linestyle=linestyle, linewidth=4,label=label[i])
+            ax2.plot(nu, fg[0], color=col[i], linestyle=linestyle, linewidth=4,)
+            k=0
         else:
-            ax.fill_between(nu, fgs[i][0], fgs[i][1], color=col[i], linestyle=linestyle)
-            ax2.fill_between(nu, fgs[i][0], fgs[i][1], color=col[i], linestyle=linestyle)
-    
+            ax.fill_between(nu, fg[0], fg[1], color=col[i], linestyle=linestyle,label=label[i])
+            ax2.fill_between(nu, fg[0], fg[1], color=col[i], linestyle=linestyle)
+            k=1
         #ax.loglog(nu,fgs[i], linewidth=4,color=col[i])
         #ax2.loglog(nu,fgs[i], linewidth=4,color=col[i])
-        #ax.text(nu[idx[i]], fgs[i][1,idx[i]]+scale[i], label[i], rotation=rot[i], color=col[i],fontsize=fgtext,  path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-    
-        ax.set_xscale("log")
-        ax.set_yscale("log")
-        ax2.set_xscale("log")
-        ax2.set_yscale("log")
-    
+        ax.text(nu[idx[i]], fg[k][idx[i]]+scale[i], label[i], rotation=rot[i], color=col[i],fontsize=fgtext,  path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
+        
     # ---- Plotting sum of all foregrounds ----        
-    #ax.text(nu[idx[-1]], fgs[-1][1,idx[-1]]+scale[-1], label[-1], rotation=rot[-1], color=black, fontsize=fgtext, alpha=0.7,  path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
+    ax.text(nu[idx[-1]], sumf[1][idx[-1]]+scale[-1], label[-1], rotation=rot[-1], color=black, fontsize=fgtext, alpha=0.7,  path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
     
     
     def find_nearest(array, value):
@@ -560,7 +478,7 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
     ax.set_xlim(xmin,xmax)
     ax.set_ylim(ymin,ymax)
     #ax.legend(loc=6,prop={'size': 20}, frameon=False)
-    
+
     # ---- Plotting ----
     plt.tight_layout(h_pad=0.3)
     filename = "spectrum"
@@ -573,3 +491,55 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
     plt.savefig(filename, bbox_inches='tight',  pad_inches=0.02, transparent=True)
     #plt.show()
 	
+def gradient_fill(x, y, fill_color=None, ax=None, **kwargs):
+    """
+    Plot a line with a linear alpha gradient filled beneath it.
+
+    Parameters
+    ----------
+    x, y : array-like
+        The data values of the line.
+    fill_color : a matplotlib color specifier (string, tuple) or None
+        The color for the fill. If None, the color of the line will be used.
+    ax : a matplotlib Axes instance
+        The axes to plot on. If None, the current pyplot axes will be used.
+    Additional arguments are passed on to matplotlib's ``plot`` function.
+
+    Returns
+    -------
+    line : a Line2D instance
+        The line plotted.
+    im : an AxesImage instance
+        The transparent gradient clipped to just the area beneath the curve.
+    """
+    import matplotlib.colors as mcolors
+    from matplotlib.patches import Polygon
+
+    if ax is None:
+        ax = plt.gca()
+
+    line, = ax.plot(x, y, **kwargs)
+    if fill_color is None:
+        fill_color = line.get_color()
+
+    zorder = line.get_zorder()
+    alpha = line.get_alpha()
+    alpha = 1.0 if alpha is None else alpha
+
+    z = np.empty((100, 1, 4), dtype=float)
+    rgb = mcolors.colorConverter.to_rgb(fill_color)
+    z[:,:,:3] = rgb
+    z[:,:,-1] = np.linspace(0, alpha, 100)[:,None]
+
+    xmin, xmax, ymin, ymax = x.min(), x.max(), y.min(), y.max()
+    im = ax.imshow(z, aspect='auto', extent=[xmin, xmax, ymin, ymax],
+                   origin='lower', zorder=zorder)
+
+    xy = np.column_stack([x, y])
+    xy = np.vstack([[xmin, ymin], xy, [xmax, ymin], [xmin, ymin]])
+    clip_path = Polygon(xy, facecolor='none', edgecolor='none', closed=True)
+    ax.add_patch(clip_path)
+    im.set_clip_path(clip_path)
+
+    ax.autoscale(True)
+    return line, im

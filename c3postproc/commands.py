@@ -492,11 +492,12 @@ def alm2fits(input, dataset, nside, lmax, fwhm):
 @click.option("-skipsynch", is_flag=True, help="Don't output synch",)
 @click.option("-skipame", is_flag=True, help="Don't output ame",)
 @click.option("-skipff", is_flag=True, help="Don't output ff",)
+@click.option("-skipdust", is_flag=True, help="Don't output dust",)
 @click.option("-skipdiff", is_flag=True, help="Creates diff maps to dx12 and npipe")
 @click.option("-skipdiffcmb", is_flag=True, help="Creates diff maps with cmb maps")
 @click.option("-skipspec", is_flag=True, help="Creates emission plot")
 @click.pass_context
-def plotrelease(ctx, procver, mask, defaultmask, pdf, skipfreqmaps, skipcmb, skipsynch, skipame, skipff, skipdiff, skipdiffcmb, skipspec,):
+def plotrelease(ctx, procver, mask, defaultmask, pdf, skipfreqmaps, skipcmb, skipsynch, skipame, skipff, skipdust, skipdiff, skipdiffcmb, skipspec,):
     """
     \b
     Plots all release files\n
@@ -506,8 +507,8 @@ def plotrelease(ctx, procver, mask, defaultmask, pdf, skipfreqmaps, skipcmb, ski
         os.mkdir("figs")
 
 
-    if not skipspec:
-        ctx.invoke(output_sky_model, )
+    #if not skipspec:
+    #    ctx.invoke(output_sky_model, )
         
     for size in ["m", "l", "s",]:
         for colorbar in [True, False]:
@@ -524,11 +525,12 @@ def plotrelease(ctx, procver, mask, defaultmask, pdf, skipfreqmaps, skipcmb, ski
                 # CMB I no dip
                 ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask, pdf=pdf,)
                 ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask, pdf=pdf, fwhm=np.sqrt(60.0**2-14**2),)
-                ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask, pdf=pdf, fwhm=np.sqrt(420.0**2-14**2))
+                ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask, pdf=pdf, fwhm=np.sqrt(420.0**2-14**2),range=150)
 
                 # CMB QU at 14 arcmin, 1 degree and 7 degree smoothing
-                for fwhm in [0.0, np.sqrt(60.0**2-14**2), np.sqrt(420.0**2-14**2)]:
-                    ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, fwhm=fwhm)
+                for hehe, fwhm in enumerate([0.0, np.sqrt(60.0**2-14**2), np.sqrt(420.0**2-14**2)]):
+                    rng = 5 if hehe == 2 else None
+                    ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], pdf=pdf, fwhm=fwhm, range=rng)
 
                 # RMS maps
                 ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[4, 5, 6,], pdf=pdf,)
@@ -585,6 +587,14 @@ def plotrelease(ctx, procver, mask, defaultmask, pdf, skipfreqmaps, skipcmb, ski
                 # ame mean and rms
                 ctx.invoke(plot, input=f"BP_ame_I_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3], pdf=pdf,)
 
+            if not skipdust:
+                outdir = "figs/dust/"
+                if not os.path.exists(outdir):
+                    os.mkdir(outdir)
+    
+                # dust IQU
+                ctx.invoke(plot, input=f"BP_dust_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], pdf=pdf,)
+
             if not skipdiff:
                 outdir = "figs/freqmap_difference/"
                 if not os.path.exists(outdir):
@@ -628,11 +638,12 @@ def plotrelease(ctx, procver, mask, defaultmask, pdf, skipfreqmaps, skipcmb, ski
 @click.option("-skipff", "-skipfreefree", "skipff", is_flag=True, help="Don't output freefree",)
 @click.option("-skipcmb", is_flag=True, help="Don't output cmb",)
 @click.option("-skipsynch", is_flag=True, help="Don't output synchrotron",)
+@click.option("-skipdust", is_flag=True, help="Don't output dust",)
 @click.option("-skipbr", is_flag=True, help="Don't output BR",)
 @click.option("-skipdiff", is_flag=True, help="Creates diff maps to dx12 and npipe")
 @click.option("-skipdiffcmb", is_flag=True, help="Creates diff maps cmb")
 @click.pass_context
-def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame, skipff, skipcmb, skipsynch, skipbr, skipdiff, skipdiffcmb,):
+def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame, skipff, skipcmb, skipsynch, skipdust, skipbr, skipdiff, skipdiffcmb,):
     """
     Creates a release file-set on the BeyondPlanck format.\n
     https://gitlab.com/BeyondPlanck/repo/-/wikis/BeyondPlanck-Release-Candidate-2\n    
@@ -977,6 +988,33 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
             print(e)
             print("Continuing...")
 
+    if not skipdust:
+        try:
+            print("lol")
+            # Full-mission thermal dust IQU map
+            format_fits(
+                chain,
+                extname="COMP-MAP-DUST",
+                types=["I_MEAN", "Q_MEAN", "U_MEAN", "P_MEAN", "I_BETA_MEAN", "QU_BETA_MEAN", "I_T_MEAN", "QU_T_MEAN", "I_RMS", "Q_RMS", "U_RMS", "P_RMS", "I_BETA_RMS", "QU_BETA_RMS", "I_T_RMS", "QU_T_RMS",],
+                units=["uK_RJ", "uK_RJ", "uK_RJ", "uK_RJ", "NONE", "NONE", "K", "K", "uK_RJ","uK_RJ","uK_RJ","uK_RJ", "NONE", "NONE", "K", "K",],
+                nside=1024,
+                burnin=burnin,
+                maxchain=maxchain,
+                polar=True,
+                component="DUST",
+                fwhm=10.0,  # 60.0,
+                nu_ref_t="545 GHz",
+                nu_ref_p="353 GHz",
+                procver=procver,
+                filename=f"BP_dust_IQU_full_n1024_{procver}.fits",
+                bndctr=None,
+                restfreq=None,
+                bndwid=None,
+            )
+        except Exception as e:
+            print(e)
+            print("Continuing...")
+
     """ As implemented by Simone
     """
     if not skipbr and resamp:
@@ -1016,14 +1054,16 @@ def traceplot(filename, max, min, nbins):
     This function plots a traceplot of samples from min to max with optional bins.
     Useful to plot sample progression of spectral indexes.
     """
-    header = ['High lat.', 'NGS',
+    header = ['Prior', 'High lat.', 'NGS',
          'Gal. center', 'Fan region', 'Gal. anti-center',
          'Gum nebula']
     cols = [4,5,9,10,11,12,13]
-    df = pd.read_csv(filename, sep=r"\s+", usecols=cols, header=header, nrows=max)
+    import pandas as pd
+    df = pd.read_csv(filename, sep=r"\s+", usecols=cols, skiprows=range(min), nrows=max)
+    df.columns = header
     x = 'MCMC Sample'
     
-    traceplotter(df, cols, header, nbins, outname=filename.replace(".dat","_traceplot.pdf"))
+    traceplotter(df, header, x, nbins, outname=filename.replace(".dat","_traceplot.pdf"), min_=min)
 
 @commands.command()
 @click.argument("chainfile", type=click.STRING)
@@ -1087,9 +1127,9 @@ def pixreg2trace(chainfile, dataset, burnin, maxchain, plot, nbins,):
             df2 = df2.drop(columns=['Top left', 'Top right', 'Bot. left',])
             df2 = df2.rename(columns={'Bot. right':combined_hilat})
             header_ = [combined_hilat] + header[4:]
-            traceplotter(df2, header_, xlabel, nbins, f"{outname}.pdf")
+            traceplotter(df2, header_, xlabel, nbins, f"{outname}.pdf", min_=burnin*maxchain)
 
-def traceplotter(df, header, xlabel, nbins, outname):
+def traceplotter(df, header, xlabel, nbins, outname, min_):
     import seaborn as sns
     import matplotlib.pyplot as plt
     sns.set_context("notebook", font_scale=1.2, rc={"lines.linewidth": 1.2})
@@ -1288,7 +1328,7 @@ def output_sky_model(pol, long, lowfreq, darkmode, png, nside, a_cmb, a_s, b_s, 
 
 
     if pol:
-        foregrounds = {"cmb": [a_cmb], "lf": [a_s, b_s], "tdust": [a_d, b_d, t_d, 353], "sdust": [a_ame1, nup]}
+        foregrounds = {"cmb": [a_cmb], "lf": [a_s, b_s], "tdust": [a_d, b_d, t_d, 353]}# "sdust": [a_ame1, nup]}
     else:
         foregrounds = {"cmb": [a_cmb], "ff": [a_ff, t_e], "lf": [a_s, b_s], "sdust": [a_ame1, nup], "tdust": [a_d, b_d, t_d, 545],}
     Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, [mask1,mask2], nside)
