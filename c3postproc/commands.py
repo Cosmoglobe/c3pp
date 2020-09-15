@@ -38,6 +38,22 @@ def printdata(input,):
         for hdu in hdulist:
             print(repr(hdu.data))
 
+@commands.command()
+@click.argument("input", type=click.STRING)
+@click.argument("output", type=click.STRING)
+@click.argument("columns", type=click.INT)
+def rmcolumn(input, output, columns):
+    """
+    remove columns in fits file
+    """
+    from astropy.io import fits
+
+    with fits.open(input) as hdulist:
+        for hdu in hdulist:
+            hdu.header.pop(columns)        
+            hdu.data.del_col(columns)        
+        hdulist.writeto(output, overwrite=True)
+        
 
 @commands.command()
 @click.argument("input1", type=click.STRING)
@@ -594,7 +610,7 @@ def plotrelease(ctx, procver, mask, defaultmask, pdf, skipfreqmaps, skipcmb, ski
                     os.mkdir(outdir)
     
                 # dust IQU
-                ctx.invoke(plot, input=f"BP_dust_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], pdf=pdf,)
+                ctx.invoke(plot, input=f"BP_dust_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], pdf=pdf,)
 
             if not skipdiff:
                 outdir = "figs/freqmap_difference/"
@@ -977,7 +993,7 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
                 polar=True,
                 component="SYNCHROTRON",
                 fwhm=60.0,  # 60.0,
-                nu_ref_t="0.408 GHz",
+                nu_ref_t="30.0 GHz",
                 nu_ref_p="30.0 GHz",
                 procver=procver,
                 filename=f"BP_synch_IQU_full_n1024_{procver}.fits",
@@ -1327,11 +1343,10 @@ def output_sky_model(pol, long, lowfreq, darkmode, png, nside, a_cmb, a_s, b_s, 
     if not t_d:
         t_d = 18.5
 
-
     if pol:
-        foregrounds = {"cmb": [a_cmb], "lf": [a_s, b_s], "tdust": [a_d, b_d, t_d, 353]}# "sdust": [a_ame1, nup]}
+        foregrounds = {"cmb": [a_cmb], "lf": [a_s, b_s,], "tdust": [a_d, b_d, t_d, 353]}# "sdust": [a_ame1, nup]}
     else:
-        foregrounds = {"cmb": [a_cmb], "ff": [a_ff, t_e], "lf": [a_s, b_s], "sdust": [a_ame1, nup], "tdust": [a_d, b_d, t_d, 545],}
+        foregrounds = {"cmb": [a_cmb], "ff": [a_ff, t_e], "lf": [a_s, b_s,], "sdust": [a_ame1, nup], "tdust": [a_d, b_d, t_d, 545],}
     Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, [mask1,mask2], nside)
 
 

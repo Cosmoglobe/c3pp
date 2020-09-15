@@ -580,20 +580,20 @@ def get_params(m, outfile, polt, signal_label):
         else:
             print("{:-^48}".format(f"Plotting Synchrotron {sl}"))            
             title["param"] = r"$A$"
+            logscale = True
             cmap = "swamp"
-            if sl == "Q" or sl == "U" or sl == "QU" or sl=="P":
+            if sl == "Q" or sl == "U" or sl == "QU":
                 # BP uses 30 GHz ref freq for pol
+                title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
                 cmap = "wildfire"
                 ticks = [-50, 0, 50]
-                if title["sig"] == "P": 
-                    ticks = [0, 10, 100]
-                logscale = True
+            elif title["sig"] == "P": 
                 title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
+                ticks = [10, 30, 100]
             else:
                 # BP uses 408 MHz GHz ref freq
                 # scale = 1e-6
                 ticks = [50, 100, 200, 400]
-                logscale = True
                 title["unit"] = r"$\mathrm{K}_{\mathrm{RJ}}$"
 
     # ------ FREE-FREE ------
@@ -651,14 +651,18 @@ def get_params(m, outfile, polt, signal_label):
             print("{:-^48}".format(f"Plotting Thermal dust {sl}"))
             title["param"] = r"$A$"
             title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
-            if sl == "Q" or sl == "U" or sl == "QU" or sl=="P":
+            logscale = True
+
+            if sl == "Q" or sl == "U" or sl == "QU":
                 ticks = [-100, 0, 100]
-                logscale = True
                 cmap = "iceburn"
+            elif sl=="P":
+                cmap = "sunburst"
+                ticks = [10, 100, 1000]
             else:
                 cmap = "sunburst"
                 ticks = [30, 300, 3000]
-                logscale = True
+                
 
     #######################
     ## LINE EMISSION MAPS #

@@ -59,7 +59,7 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
         ymax=7e2
         ymax2=1e8#ymax+1e8
         ymax15=1000#ymax+500
-    
+        aspect_ratio = 16/8
         fig, (ax2, ax) = plt.subplots(2,1,sharex=True,figsize=(16,8),gridspec_kw = {'height_ratios':[1, ratio]})
         ax2.spines['bottom'].set_visible(False)
         ax.spines['top'].set_visible(False)
@@ -87,8 +87,10 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
         ymax=7e2
         ymax2=ymax
         ymax15=ymax
-    
+        aspect_ratio = 12/8
         fig, ax = plt.subplots(1,1,figsize=(12,8))
+        #aspect_ratio = 1.0
+        #fig, ax = plt.subplots(1,1,figsize=(12,12))
         ax2 = ax
     
         freqtext = 20
@@ -113,9 +115,15 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
             temp = []
             nsides = []
             # Read all maps and record nsides
-            for p in params:
+            
+            for i, p in enumerate(params):
                 if str(p).endswith(".fits"):
-                    p = hp.read_map(p, field=field, dtype=None, verbose=False)
+                    if field==1 and i==0: # If polarization amplitude map
+                        s1 = hp.read_map(p, field=1, dtype=None, verbose=False)
+                        s2 = hp.read_map(p, field=2, dtype=None, verbose=False)
+                        p = np.sqrt(s1**2+s2**2)
+                    else:
+                        p = hp.read_map(p, field=field, dtype=None, verbose=False)
                     nsides.append(hp.npix2nside(len(p)))
                 else:
                     nsides.append(0)
@@ -207,35 +215,18 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
     #fgs.append(sumf)
     label.append("Sum Fg.")
 
-    if pol:	
-        col=["C9","C2","C3","C1","C7"]
-        label=["CMB", "Synchrotron","Thermal Dust", "Spinning Dust", "Sum fg."]
-        if long:
-            rot=[-25, -51, 22, 10, -10] 
-            idx=[70, -120,  115, -215, -15]
-            scale=[0.05, 0, 13.5, 1.5, 3]
-        else:
-            rot=[-20, -45, 18, -15, -10]
-            idx=[70, -120,  115, -145, -15]
-            scale=[0.05, 0, 10, 0.5, 3]
-    
+    if pol:
+        col=["C9","C2","C3","black"]
+        label=["CMB", "Synchrotron","Thermal Dust", "Sum fg."]
+        pos = [15., 20, 200., 75.]
+        #col=["C9","C2","C3","C1","C7"]
+        #label=["CMB", "Synchrotron","Thermal Dust", "Spinning Dust", "Sum fg."]
+        #pos = [90., 120, 105., 300., 50., 70.]
+
     else:
-        col=["C9","C0","C2","C1","C3","C7"]
+        col=["C9","C0","C2","C1","C3","black"]
         label=["CMB","Free-Free","Synchrotron","Spinning Dust","Thermal Dust", "Sum fg."] 
-        if long:
-            rot=[-8, -40, -50, -73, 13, -45]
-            idx=[17, 50, 50, -10, 160, -90]
-            scale=[5,0,0,0,200,300]
-        else:  
-            rot=[-8, -35, -46, -70, 13, -40] 
-            idx=[17, 60, 58, -10, 160, -90]
-            scale=[5,0,0,0,150,300]
-    
-        if lowfreq:
-            rot=[-8, -37, -47, -70, 13, -43]
-    scale=[0,0,0,0,0,0,0]
-    idxshift = 600
-    idx = [x + idxshift for x in idx]
+        pos = [70., 150., 150., 60, 300., 30.]
     
     
     haslam = True
@@ -255,41 +246,44 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
     ax.set_yscale("log")
     ax2.set_xscale("log")
     ax2.set_yscale("log")
-
-    ax.loglog(nu,sumf[0], "--", linewidth=2, color=black, alpha=0.7, label=label[-1])
-    ax2.loglog(nu,sumf[0], "--", linewidth=2, color=black, alpha=0.7)
-    try:
-        ax.loglog(nu,sumf[1], "--", linewidth=2, color=black, alpha=0.7)
-        ax2.loglog(nu,sumf[1], "--", linewidth=2, color=black, alpha=0.7)
-    except:
-        pass
+    
+    fgs.append(sumf)
     # ---- Plotting foregrounds and labels ----
     j=0
     for i, fg in enumerate(fgs): # Plot all fgs except sumf
         linestyle = "dotted" if pol and i == 3 else "solid" # Set upper boundry
-        if fgs[i].shape[0] == 1:
-            ax.plot(nu, fg[0], color=col[i], linestyle=linestyle, linewidth=4,label=label[i])
-            ax2.plot(nu, fg[0], color=col[i], linestyle=linestyle, linewidth=4,)
-            k=0
+        linestyle = "--" if i == len(fgs) else "solid" # sumfgs
+        alpha = 1
+        if i == len(fgs)-1:
+            ax.plot(nu,fg[0], "--", linewidth=2, color=black, alpha=0.7, label=label[i])
+            ax2.plot(nu,fg[0], "--", linewidth=2, color=black, alpha=0.7)
+            k = 0
+            try:
+                ax.plot(nu,fg[1], "--", linewidth=2, color=black, alpha=0.7)
+                ax2.plot(nu,fg[1], "--", linewidth=2, color=black, alpha=0.7)
+                k=1
+            except:
+                pass
         else:
-            ax.fill_between(nu, fg[0], fg[1], color=col[i], linestyle=linestyle,label=label[i])
-            ax2.fill_between(nu, fg[0], fg[1], color=col[i], linestyle=linestyle)
-            k=1
-        #ax.loglog(nu,fgs[i], linewidth=4,color=col[i])
-        #ax2.loglog(nu,fgs[i], linewidth=4,color=col[i])
-        ax.text(nu[idx[i]], fg[k][idx[i]]+scale[i], label[i], rotation=rot[i], color=col[i],fontsize=fgtext,  path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-        
-    # ---- Plotting sum of all foregrounds ----        
-    ax.text(nu[idx[-1]], sumf[1][idx[-1]]+scale[-1], label[-1], rotation=rot[-1], color=black, fontsize=fgtext, alpha=0.7,  path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
+            if fgs[i].shape[0] == 1:
+                ax.plot(nu, fg[0], color=col[i], linestyle=linestyle, linewidth=4,label=label[i], alpha=alpha)
+                ax2.plot(nu, fg[0], color=col[i], linestyle=linestyle, linewidth=4, alpha=alpha)
+                k = 0
+            else:
+                ax.fill_between(nu, fg[0], fg[1], color=col[i], linestyle=linestyle,label=label[i], alpha=alpha)
+                ax2.fill_between(nu, fg[0], fg[1], color=col[i], linestyle=linestyle, alpha=alpha)
+                k = 1
     
-    
-    def find_nearest(array, value):
-        array = np.asarray(array)
-        idx = (np.abs(array - value)).argmin()
-        return array[idx]
-    
-    #ax.text(10, find_nearest(fgs[-1], 10), label[-1], rotation=rot[-1], color=col[-1],fontsize=fgtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-    
+        x0, idx1 = find_nearest(nu, pos[i])
+        x1, idx2 = find_nearest(nu, pos[i]*1.2)
+        y0 = fg[k][idx1]
+        y1 = fg[k][idx2]
+        datascaling = np.log(ymax/ymin)/np.log(xmax/xmin)
+        alpha = np.arctan(np.log(y1/y0)*np.log(datascaling/aspect_ratio)/np.log(x1/x0))
+        #alpha = alpha/(datascaling*aspect_ratio)
+        angle_data =  np.rad2deg(alpha)
+        ax.annotate(label[i], xy=(x0,y0), xytext=(5,5), textcoords="offset pixels",  rotation=angle_data, rotation_mode='anchor', fontsize=fgtext, color=col[i], path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))], horizontalalignment="center")
+
     if not pol:
         # ---- Plotting CO lines ----
         co10amp=50
@@ -457,7 +451,7 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
         ax2.axvspan(band_range19[0],band_range19[1],color='C3',alpha=baralpha, zorder=0)
     
     # ---- Axis label stuff ----
-    #ax.set_xticks(np.append(ax.get_xticks(),[3,30,300,3000])) #???
+    ax.set_xticks(list(ax.get_xticks()) + [3,30,300,3000]) #???
     #ax.set_xticklabels(np.append(ax.get_xticks(),300))
     ax.xaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
     ax.tick_params(axis='both', which='major', labelsize=ticksize, direction='in')
@@ -489,6 +483,7 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
     filename += ".png" if png else ".pdf"
     print("Plotting {}".format(filename))
     plt.savefig(filename, bbox_inches='tight',  pad_inches=0.02, transparent=True)
+    #plt.savefig(filename, transparent=True)
     #plt.show()
 	
 def gradient_fill(x, y, fill_color=None, ax=None, **kwargs):
@@ -543,3 +538,8 @@ def gradient_fill(x, y, fill_color=None, ax=None, **kwargs):
 
     ax.autoscale(True)
     return line, im
+
+def find_nearest(array, value):
+    array = np.asarray(array)
+    idx = (np.abs(array - value)).argmin()
+    return array[idx], idx

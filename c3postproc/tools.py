@@ -350,14 +350,14 @@ def legend_positions(df, y):
             for column2, value2 in positions.items():
                 if column1 != column2:
                     dist = abs(value1-value2)
-                    if dist < 0.023:#0.0125:
+                    if dist < 0.075: #0.023:
                         collisions += 1
                         if value1 < value2:
-                            positions[column1] -= .0001
-                            positions[column2] += .0001
+                            positions[column1] -= .001
+                            positions[column2] += .001
                         else:
-                            positions[column1] += .0001
-                            positions[column2] -= .0001
+                            positions[column1] += .001
+                            positions[column2] -= .001
                             return True
     while True:
         pushed = push()
