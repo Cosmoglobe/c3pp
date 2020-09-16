@@ -372,90 +372,108 @@ def inverse(x):
     return x*100
 
 
-class fgs:         
-    def cmb(nu, A):
-        h = 6.62607e-34 # Planck's konstant
-        k_b  = 1.38065e-23 # Boltzmanns konstant
-        Tcmb = 2.7255      # K CMB Temperature
 
-        x = h*nu/(k_b*Tcmb)
-        g = (np.exp(x)-1)**2/(x**2*np.exp(x))
-        s_cmb = A/g
-        return s_cmb
+def cmb(nu, A):
+    h = 6.62607e-34 # Planck's konstant
+    k_b  = 1.38065e-23 # Boltzmanns konstant
+    Tcmb = 2.7255      # K CMB Temperature
 
-    def sync(nu, As, alpha, nuref=0.408):
-        #alpha = 1., As = 30 K (30*1e6 muK)
-        nu_0 = nuref*1e9 # 408 MHz
-        from pathlib import Path
-        synch_template = Path(__file__).parent / "Synchrotron_template_GHz_extended.txt"
-        fnu, f = np.loadtxt(synch_template, unpack=True)
-        f = np.interp(nu, fnu*1e9, f)
-        f0 = np.interp(nu_0, nu, f) # Value of s at nu_0
-        s_s = As*(nu_0/nu)**2*f/f0
-        return s_s
+    x = h*nu/(k_b*Tcmb)
+    g = (np.exp(x)-1)**2/(x**2*np.exp(x))
+    s_cmb = A/g
+    return s_cmb
+
+def sync(nu, As, alpha, nuref=0.408):
+    #alpha = 1., As = 30 K (30*1e6 muK)
+    nu_0 = nuref*1e9 # 408 MHz
+    from pathlib import Path
+    synch_template = Path(__file__).parent / "Synchrotron_template_GHz_extended.txt"
+    fnu, f = np.loadtxt(synch_template, unpack=True)
+    f = np.interp(nu, fnu*1e9, f)
+    f0 = np.interp(nu_0, nu, f) # Value of s at nu_0
+    s_s = As*(nu_0/nu)**2*f/f0
+    return s_s
 
 
-    def ffEM(nu,EM,Te):
-        #EM = 1 cm-3pc, Te= 500 #K
-        T4 = Te*1e-4
-        nu9 = nu/1e9 #Hz
-        g_ff = np.log(np.exp(5.960-np.sqrt(3)/np.pi*np.log(nu9*T4**(-3./2.)))+np.e)
-        tau = 0.05468*Te**(-3./2.)*nu9**(-2)*EM*g_ff
-        s_ff = 1e6*Te*(1-np.exp(-tau))
-        return s_ff
+def ffEM(nu,EM,Te):
+    #EM = 1 cm-3pc, Te= 500 #K
+    T4 = Te*1e-4
+    nu9 = nu/1e9 #Hz
+    g_ff = np.log(np.exp(5.960-np.sqrt(3)/np.pi*np.log(nu9*T4**(-3./2.)))+np.e)
+    tau = 0.05468*Te**(-3./2.)*nu9**(-2)*EM*g_ff
+    s_ff = 1e6*Te*(1-np.exp(-tau))
+    return s_ff
 
-    def ff(nu,A,Te, nuref=40.):
-        h = 6.62607e-34 # Planck's konstant
-        k_b  = 1.38065e-23 # Boltzmanns konstant
+def ff(nu,A,Te, nuref=40.):
+    h = 6.62607e-34 # Planck's konstant
+    k_b  = 1.38065e-23 # Boltzmanns konstant
 
-        nu_ref = nuref*1e9
-        S =     np.log(np.exp(5.960 - np.sqrt(3.0)/np.pi * np.log(    nu/1e9*(Te/1e4)**-1.5))+2.71828)
-        S_ref = np.log(np.exp(5.960 - np.sqrt(3.0)/np.pi * np.log(nu_ref/1e9*(Te/1e4)**-1.5))+2.71828)
-        s_ff = A*S/S_ref*np.exp(-h*(nu-nu_ref)/k_b/Te)*(nu/nu_ref)**-2
-        return s_ff
+    nu_ref = nuref*1e9
+    S =     np.log(np.exp(5.960 - np.sqrt(3.0)/np.pi * np.log(    nu/1e9*(Te/1e4)**-1.5))+2.71828)
+    S_ref = np.log(np.exp(5.960 - np.sqrt(3.0)/np.pi * np.log(nu_ref/1e9*(Te/1e4)**-1.5))+2.71828)
+    s_ff = A*S/S_ref*np.exp(-h*(nu-nu_ref)/k_b/Te)*(nu/nu_ref)**-2
+    return s_ff
 
-    def sdust(nu, Asd, nu_p, fnu = None, f_ = None, nuref=22.,):
-        nuref = nuref*1e9 
-        scale = 30./nu_p
+def sdust(nu, Asd, nu_p, fnu = None, f_ = None, nuref=22.,):
+    nuref = nuref*1e9 
+    scale = 30./nu_p
 
-        try:
-            f = np.interp(scale*nu, fnu, f_)
-            f0 = np.interp(scale*nuref, fnu, f_) # Value of s at nu_0
-            
-        except:
-            from pathlib import Path
-            ame_template = Path(__file__).parent / "spdust2_cnm.dat"
-            fnu, f_ = np.loadtxt(ame_template, unpack=True)
-            fnu *= 1e9
-            f = np.interp(scale*nu, fnu, f_)
-            f0 = np.interp(scale*nuref, fnu, f_) # Value of s at nu_0
-            #f0 = np.interp(scale*nuref, scale*nu, f) # Value of s at nu_0
-
-        """
-        print("nu", nu)
-        print("Asd", Asd)
-        print("nup", nu_p)
-        print("scale",scale)
-        print("nuref",nuref)
-        print("fnu", fnu[50])
-        print("f_", f_[50])
-        """
+    try:
+        f = np.interp(scale*nu, fnu, f_)
+        f0 = np.interp(scale*nuref, fnu, f_) # Value of s at nu_0
         
-        s_sd = Asd*(nuref/nu)**2*f/f0
-        return s_sd
+    except:
+        from pathlib import Path
+        ame_template = Path(__file__).parent / "spdust2_cnm.dat"
+        fnu, f_ = np.loadtxt(ame_template, unpack=True)
+        fnu *= 1e9
+        f = np.interp(scale*nu, fnu, f_)
+        f0 = np.interp(scale*nuref, fnu, f_) # Value of s at nu_0
+        
+    s_sd = Asd*(nuref/nu)**2*f/f0
+    return s_sd
 
 
-    def tdust(nu,Ad,betad,Td,nuref=545.):
-        h = 6.62607e-34 # Planck's konstant
-        k_b  = 1.38065e-23 # Boltzmanns konstant
+def tdust(nu,Ad,betad,Td,nuref=545.):
+    h = 6.62607e-34 # Planck's konstant
+    k_b  = 1.38065e-23 # Boltzmanns konstant
+    nu0=nuref*1e9
+    gamma = h/(k_b*Td)
+    s_d=Ad*(nu/nu0)**(betad+1)*(np.exp(gamma*nu0)-1)/(np.exp(gamma*nu)-1)
+    return s_d
 
-        nu0=nuref*1e9
-        gamma = h/(k_b*Td)
-        s_d=Ad*(nu/nu0)**(betad+1)*(np.exp(gamma*nu0)-1)/(np.exp(gamma*nu)-1)
-        return s_d
+def lf(nu,Alf,betalf,nuref=30e9):
+    return Alf*(nu/nuref)**(betalf)
 
-    def lf(nu,Alf,betalf,nuref=30e9):
-        return Alf*(nu/nuref)**(betalf)
+def rspectrum(nu, r, sig, scaling=1.0):
+    import camb
+    from camb import model, initialpower
+    #Set up a new set of parameters for CAMB
+    pars = camb.CAMBparams()
+    #This function sets up CosmoMC-like settings, with one massive neutrino and helium set using BBN consistency
+    pars.set_cosmology(H0=67.5, ombh2=0.022, omch2=0.122, mnu=0.06, omk=0, tau=0.06)
+    lmax=6000
+    pars.set_for_lmax(lmax)
+    pars.WantTensors = True
+    results = camb.get_transfer_functions(pars)
+    inflation_params = initialpower.InitialPowerLaw()
+    inflation_params.set_params(ns=0.96, r=r)
+    results.power_spectra_from_transfer(inflation_params) #warning OK here, not changing scalars
+
+    cl = results.get_total_cls(lmax, raw_cl=True, CMB_unit='muK')
+    l = np.arange(2,lmax+1)
+
+    if sig == "TT":
+        signal = 0
+    elif sig == "EE":
+        signal = 1
+    elif sig == "BB":
+        signal = 2
+
+    A = np.sqrt(sum( 4*np.pi * cl[2:,signal]/(2*l+1) ))
+    return cmb(nu, A*scaling)
+
+
 
 def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_missing, lowmem, pixweight, return_mean, command):
     # Check if you want to output a map

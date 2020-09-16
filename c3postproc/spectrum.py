@@ -10,8 +10,9 @@ import math
 from brokenaxes import brokenaxes
 
 import c3postproc.tools as tls
+#from c3postproc.tools import *
 
-def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
+def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside):
     params = {'savefig.dpi'        : 300, # save figures to 300 dpi
               'xtick.top'          : False,
               'ytick.right'        : True, #Set to false
@@ -50,22 +51,24 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
     rcParams.update(params)
     
     # ---- Figure parameters ----
-    baralpha= 0.3
-    ratio=5
-    if long:
-        xmin=0.3
-        xmax=4000
-        ymin=0.05
-        ymax=7e2
+    if long:    
+        xmin, xmax = (0.3, 4000)
+        ymin, ymax = (0.05, 7e2)
+        ymax15=1e3#ymax+500
         ymax2=1e8#ymax+1e8
-        ymax15=1000#ymax+500
-        aspect_ratio = 16/8
-        fig, (ax2, ax) = plt.subplots(2,1,sharex=True,figsize=(16,8),gridspec_kw = {'height_ratios':[1, ratio]})
+
+        # Figure
+        ratio = 5
+        w, h = (16,8)
+        fig, (ax2, ax) = plt.subplots(2,1,sharex=True,figsize=(w,h),gridspec_kw = {'height_ratios':[1, ratio]})
+        aspect_ratio = w/h*1.25 # Correct for ratio
+        rotdir = -1
+
         ax2.spines['bottom'].set_visible(False)
         ax.spines['top'].set_visible(False)
         ax2.tick_params(labelbottom=False)
         ax2.xaxis.set_ticks_position('none')
-    
+
         # ---- Adding broken axis lines ----
         d = .005  # how big to make the diagonal lines in axes coordinates
         kwargs = dict(transform=ax2.transAxes, color=black, clip_on=False)
@@ -75,111 +78,28 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
         ax.plot((-d, +d), (1 - d, 1 + d), **kwargs)  # bottom-left diagonal
         ax.plot((1 - d, 1 + d), (1 - d, 1 + d), **kwargs)  # bottom-right diagonal
     
+        # textsize
         freqtext = 16
         fgtext = 18
-        labelsize = 20
-        ticksize = 20
-    
+
     else:
-        xmin=10
-        xmax=1000
-        ymin=0.05
-        ymax=7e2
+        xmin, xmax = (10, 1000)
+        ymin, ymax = (0.005, 7e2)
         ymax2=ymax
         ymax15=ymax
-        aspect_ratio = 12/8
-        fig, ax = plt.subplots(1,1,figsize=(12,8))
-        #aspect_ratio = 1.0
-        #fig, ax = plt.subplots(1,1,figsize=(12,12))
-        ax2 = ax
-    
+        w, h = (12,8)
+        fig, ax = plt.subplots(1,1,figsize=(w,h))
+        aspect_ratio = w/h
+        rotdir = 1
+        #ax.set_aspect('equal', adjustable='box')
+        
         freqtext = 20
         fgtext = 20
-        labelsize = 20
-        ticksize = 20
-
-    # This function calculates the intensity spectra
-    # Alternative 1 uses 2 masks to calculate spatial variations
-    # Alternative 2 uses only scalar values
-    def getspec(nu, fg, params, field, nside, npix, idx, m):
-        val = []
-        # Alternative 1
-        if any([str(x).endswith(".fits") for x in params]):
-            if fg == "sdust":
-                from pathlib import Path
-                ame_template = Path(__file__).parent / "spdust2_cnm.dat"
-                fnu, f_ = np.loadtxt(ame_template, unpack=True)
-                fnu *= 1e9
-                field = 0
-
-            temp = []
-            nsides = []
-            # Read all maps and record nsides
-            
-            for i, p in enumerate(params):
-                if str(p).endswith(".fits"):
-                    if field==1 and i==0: # If polarization amplitude map
-                        s1 = hp.read_map(p, field=1, dtype=None, verbose=False)
-                        s2 = hp.read_map(p, field=2, dtype=None, verbose=False)
-                        p = np.sqrt(s1**2+s2**2)
-                    else:
-                        p = hp.read_map(p, field=field, dtype=None, verbose=False)
-                    nsides.append(hp.npix2nside(len(p)))
-                else:
-                    nsides.append(0)
-                temp.append(p)  
-
-
-            # Create dataset and convert to same resolution
-            params = np.zeros(( len(params), npix ))
-            for i, t in enumerate(temp):
-                if nsides[i] == 0:
-                    params[i,:] = t
-                elif nsides[i] != nside:
-                    params[i,:] = hp.ud_grade(t, nside)
-
-            # Only calculate outside masked region    
-            map_ = np.zeros((N, npix))
-
-            for i, nu_ in enumerate(tqdm(nu, desc = fg, ncols=80)):
-                if fg == "sdust":
-                    map_[i, idx] = getattr(tls.fgs, fg)(nu_, *params[:,idx], fnu, f_) #fgs.fg(nu, *params[pix])
-                else:
-                    map_[i, idx] = getattr(tls.fgs, fg)(nu_, *params[:,idx]) #fgs.fg(nu, *params[pix])
-            """
-            if fg == "sdust":
-                map_[:, idx] = getattr(tls.fgs, fg)(nu, *params[:,idx], fnu, f_) #fgs.fg(nu, *params[pix])
-            else:
-                map_[:, idx] = getattr(tls.fgs, fg)(nu, *params[:,idx]) #fgs.fg(nu, *params[pix])
-            """
-            # Apply mask to all frequency points
-            # calculate mean 
-            rmss = []
-            for i in range(2):
-                n = np.sum(m[i])            
-                masked = hp.ma(map_)
-                masked.mask = np.logical_not(m[i])
-                mono = masked.mean(axis=1)
-                masked -= mono.reshape(-1,1)
-            
-                rms = np.sqrt( ( (masked**2).sum(axis=1) ) /n)
-                val.append(rms)
-
-            vals = np.sort(np.array(val), axis=0) 
-        else:
-            # Alternative 2
-            val = getattr(tls.fgs, fg)(nu, *params) #fgs.fg(nu, *params))
-            #vals = np.stack((val, val),)
-            vals = val.reshape(1,-1)
-        return vals
 
     # Spectrum parameters
-    fgs = []
     field = 1 if pol else 0
-    N = 1000
-    nu  = np.logspace(np.log10(0.1),np.log10(5000),N)
+    nu  = np.logspace(np.log10(0.1),np.log10(5000),1000)
     npix = hp.nside2npix(nside)
-
     # Read masks
     m = np.ones((len(masks), npix))
     for i, mask in enumerate(masks):
@@ -193,96 +113,67 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
             else:
                 m[i] = m_temp
 
-    #hp.write_map("mask0.fits", m[0])
-    #hp.write_map("mask1.fits", m[1])
+
     # Get indices of smallest mask
     idx = m[np.argmax(np.sum(m, axis=1)), :] > 0.5
     print(f"Using sky fractions {np.sum(m,axis=1)/npix*100}%")
     # Looping over foregrounds and calculating spectra
     i = 0
-    label = []
     for fg in foregrounds.keys():
-        spectrum = getspec(nu*1e9, fg, foregrounds[fg], field, nside, npix, idx, m,)
-        fgs.append(spectrum)
-        label.append(fg)
-        if fg != "cmb":
+        if not fg == "Sum fg.":
+            foregrounds[fg]["spectrum"] = getspec(nu*1e9, fg, foregrounds[fg]["params"], foregrounds[fg]["function"], field, nside, npix, idx, m,)
+        if foregrounds[fg]["sum"]:
             if i==0:
-                sumf = spectrum.copy()
+                foregrounds["Sum fg."]["spectrum"] = foregrounds[fg]["spectrum"].copy()
             else:
-                sumf += spectrum
+                foregrounds["Sum fg."]["spectrum"] += foregrounds[fg]["spectrum"]
             i+=1
 
-    #fgs.append(sumf)
-    label.append("Sum Fg.")
-
-    if pol:
-        col=["C9","C2","C3","black"]
-        label=["CMB", "Synchrotron","Thermal Dust", "Sum fg."]
-        pos = [15., 20, 200., 75.]
-        #col=["C9","C2","C3","C1","C7"]
-        #label=["CMB", "Synchrotron","Thermal Dust", "Spinning Dust", "Sum fg."]
-        #pos = [90., 120, 105., 300., 50., 70.]
-
-    else:
-        col=["C9","C0","C2","C1","C3","black"]
-        label=["CMB","Free-Free","Synchrotron","Spinning Dust","Thermal Dust", "Sum fg."] 
-        pos = [70., 150., 150., 60, 300., 30.]
-    
-    
-    haslam = True
-    chipass = True
-    spass = True
-    cbass = True
-    quijote = False
-    wmap = True
-    planck = True
-    dirbe = True
-    
-    
-    # ---- Foreground plotting parameters ----
-    
-    #scale=[5,105,195] # Scaling CMB, thermal dust and sum up and down
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax2.set_xscale("log")
-    ax2.set_yscale("log")
-    
-    fgs.append(sumf)
     # ---- Plotting foregrounds and labels ----
     j=0
-    for i, fg in enumerate(fgs): # Plot all fgs except sumf
-        linestyle = "dotted" if pol and i == 3 else "solid" # Set upper boundry
-        linestyle = "--" if i == len(fgs) else "solid" # sumfgs
-        alpha = 1
-        if i == len(fgs)-1:
-            ax.plot(nu,fg[0], "--", linewidth=2, color=black, alpha=0.7, label=label[i])
-            ax2.plot(nu,fg[0], "--", linewidth=2, color=black, alpha=0.7)
+    for label, fg in foregrounds.items(): # Plot all fgs except sumf
+        if fg["gradient"]:
             k = 0
-            try:
-                ax.plot(nu,fg[1], "--", linewidth=2, color=black, alpha=0.7)
-                ax2.plot(nu,fg[1], "--", linewidth=2, color=black, alpha=0.7)
-                k=1
-            except:
-                pass
+            gradient_fill(nu, fg["spectrum"][k], fill_color=fg["color"], ax=ax, alpha=0.5, linewidth=0.0,)
         else:
-            if fgs[i].shape[0] == 1:
-                ax.plot(nu, fg[0], color=col[i], linestyle=linestyle, linewidth=4,label=label[i], alpha=alpha)
-                ax2.plot(nu, fg[0], color=col[i], linestyle=linestyle, linewidth=4, alpha=alpha)
+            if label == "Sum fg.":
+                ax.loglog(nu,fg["spectrum"][0], linestyle=fg["linestyle"], linewidth=2, color=fg["color"])
+                if long:
+                    ax2.loglog(nu,fg["spectrum"][0], linestyle=fg["linestyle"], linewidth=2, color=fg["color"])
                 k = 0
+                try:
+                    ax.loglog(nu,fg["spectrum"][1], linestyle=fg["linestyle"], linewidth=2, color=fg["color"])
+                    if long:
+                        ax2.loglog(nu,fg["spectrum"][1], linestyle=fg["linestyle"], linewidth=2, color=fg["color"])
+                    k=1
+                except:
+                    pass
             else:
-                ax.fill_between(nu, fg[0], fg[1], color=col[i], linestyle=linestyle,label=label[i], alpha=alpha)
-                ax2.fill_between(nu, fg[0], fg[1], color=col[i], linestyle=linestyle, alpha=alpha)
-                k = 1
+                if fg["spectrum"].shape[0] == 1:
+                    ax.loglog(nu,fg["spectrum"][0], linestyle=fg["linestyle"], linewidth=2, color=fg["color"])
+                    if long:
+                        ax2.loglog(nu,fg["spectrum"][0], linestyle=fg["linestyle"], linewidth=2, color=fg["color"])
+                    k = 0
+                else:
+                    ax.fill_between(nu,fg["spectrum"][0],fg["spectrum"][1], linestyle=fg["linestyle"], linewidth=2, color=fg["color"])
+                    if long:
+                        ax2.fill_between(nu,fg["spectrum"][0],fg["spectrum"][1], linestyle=fg["linestyle"], linewidth=2, color=fg["color"])
+                    k = 1
     
-        x0, idx1 = find_nearest(nu, pos[i])
-        x1, idx2 = find_nearest(nu, pos[i]*1.2)
-        y0 = fg[k][idx1]
-        y1 = fg[k][idx2]
-        datascaling = np.log(ymax/ymin)/np.log(xmax/xmin)
-        alpha = np.arctan(np.log(y1/y0)*np.log(datascaling/aspect_ratio)/np.log(x1/x0))
-        #alpha = alpha/(datascaling*aspect_ratio)
-        angle_data =  np.rad2deg(alpha)
-        ax.annotate(label[i], xy=(x0,y0), xytext=(5,5), textcoords="offset pixels",  rotation=angle_data, rotation_mode='anchor', fontsize=fgtext, color=col[i], path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))], horizontalalignment="center")
+        
+
+        x0, idx1 = find_nearest(nu, fg["position"])
+        x1, idx2 = find_nearest(nu, fg["position"]*1.2)
+        y0 = fg["spectrum"][k][idx1]
+        y1 = fg["spectrum"][k][idx2]
+        datascaling  = np.log(xmin/xmax)/np.log(ymin/ymax)
+        rotator = (datascaling/aspect_ratio)
+        alpha = np.arctan(np.log(y1/y0)/np.log(x1/x0)*rotator)
+        rotation =  np.rad2deg(alpha)#*rotator
+
+        ax.annotate(label, xy=(x0,y0), xytext=(5,5), textcoords="offset pixels",  rotation=rotation, rotation_mode='anchor', fontsize=fgtext, color=fg["color"], path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))], horizontalalignment="center")
+    
+
 
     if not pol:
         # ---- Plotting CO lines ----
@@ -299,178 +190,88 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
         ax.text(345.*0.99,co32amp*0.33, r"CO$_{3\rightarrow 2}$", color=black, alpha=0.7, ha='right',va='top',rotation=90,fontsize=fgtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
     
     # ---- Data band ranges ----
-    band_range1   = [.406,.410]      # Haslam?
-    band_range2   = [2.1,2.4]      # Spass?
-    band_range3   = [21,25.5]        # WMAP K
-    band_range4   = [30,37]          # WMAP Ka
-    band_range5   = [38,45]          # WMAP Q
-    band_range6   = [54,68]          # WMAP V
-    band_range7   = [84,106]         # WMAP W
-    band_range8   = [23.9,34.5]      # Planck 30
-    band_range9   = [39,50]          # Planck 44
-    band_range10  = [60,78]          # Planck 70
-    band_range11  = [82,120]         # Planck 100
-    band_range12  = [125,170]        # Planck 143
-    band_range13  = [180,265]        # Planck 217
-    band_range14  = [300,430]        # Planck 353
-    band_range15  = [450,650]        # Planck 545
-    band_range16  = [700,1020]       # Planck 857
-    band_range17  = [1000,1540]      # DIRBE 1250
-    band_range18  = [1780,2500]      # DIRBE 2140
-    band_range19  = [2600,3500]      # DIRBE 3000
-    band_range20  = [4.,6.]      # C-BASS
-    band_range21  = [10.,12.]      # QUIJOTE
-    band_range22  = [12.,14.]      # QUIJOTE
-    band_range23  = [16.,18.]      # QUIJOTE
-    band_range24  = [18.,21.]      # QUIJOTE
-    band_range25  = [26.,36.]      # QUIJOTE
-    band_range26  = [35.,47.]      # QUIJOTE
-    band_range27  = [1.3945-0.064/2,1.3945+0.064/2]  #CHIPASS
-    
     if long:
-        yscaletext = 0.80
+        yscaletext = 0.75
         yscaletextup = 1.2
     else:
         yscaletextup = 1.03
-        yscaletext = 0.97
+        yscaletext = 0.90
+
+    # TODO add these as args?
+    haslam = True
+    chipass = True
+    spass = True
+    cbass = True
+    quijote = False
+    wmap = True
+    planck = True
+    dirbe = True
     
-    # ---- Plotting single data ----
-    if long:
-        if haslam and not pol:
-            ax2.text(np.mean(band_range1),ymax2*yscaletext,"0.408\nHaslam",color='purple',va='top',horizontalalignment='center', size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-            ax.axvspan(band_range1[0],band_range1[1],color='purple',alpha=baralpha, zorder=0,label="Haslam")
-            ax2.axvspan(band_range1[0],band_range1[1],color='purple',alpha=baralpha, zorder=0)
+    databands = {"Haslam":  {"0.408\nHaslam": {"pol": False, "show": haslam, "position": [.408, ymax2*yscaletext],  "range": [.406,.410], "color": 'purple',}},
+                 "S-PASS":  {"2.303\nS-PASS":  {"pol": True, "show": spass,  "position": [2.35, ymax2*yscaletext],  "range": [2.1,2.4], "color": 'green',}},
+                 "C-BASS":  {"5.0\nC-BASS":   {"pol": True, "show": spass,  "position": [5., ymax2*yscaletext],    "range": [4.,6.], "color": 'C0',}},
+                 "CHI-PASS":{"1.394\nCHI-PASS":{"pol": False, "show": chipass,"position": [1.3945, ymax2*yscaletext],"range": [1.3945-0.064/2, 1.3945+0.064/2], "color": 'C5',}},
+                 "QUIJOTE": {"11\nQUIJOTE":    {"pol": True, "show": quijote,"position": [11, ymax2*yscaletext],    "range":  [10.,12.], "color": 'C4',},
+                             "13":             {"pol": True, "show": quijote, "position": [13, ymax2*yscaletext], "range":  [12.,14.], "color": 'C4',},
+                             "17":             {"pol": True, "show": quijote, "position": [17, ymax2*yscaletext], "range":  [16.,18.], "color": 'C4',},
+                             "19":             {"pol": True, "show": quijote, "position": [20, ymax2*yscaletext], "range":  [18.,21.], "color": 'C4',},
+                             "31":             {"pol": True, "show": quijote, "position": [31, ymax2*yscaletext], "range":  [26.,36.], "color": 'C4',},
+                             "41":             {"pol": True, "show": quijote, "position": [42, ymax2*yscaletext], "range":  [35.,47.], "color": 'C4',}},
+                 "Planck":  {"30":          {"pol": True, "show": planck, "position": [27,  ymax2*yscaletext], "range": [23.9,34.5],"color": 'C1',},      # Planck 30
+                             "44":          {"pol": True, "show": planck, "position": [40,  ymax2*yscaletext], "range": [39,50]    ,"color": 'C1',},      # Planck 44
+                             "70":          {"pol": True, "show": planck, "position": [60,  ymax2*yscaletext], "range": [60,78]    ,"color": 'C1',},      # Planck 70
+                             "100\nPlanck": {"pol": True, "show": planck, "position": [90,  ymax2*yscaletext], "range": [82,120]   ,"color": 'C1',},      # Planck 100
+                             "143":         {"pol": True, "show": planck, "position": [130, ymax2*yscaletext], "range": [125,170]  ,"color": 'C1',},      # Planck 143
+                             "217":         {"pol": True, "show": planck, "position": [195, ymax2*yscaletext], "range": [180,265]  ,"color": 'C1',},      # Planck 217
+                             "353":         {"pol": True, "show": planck, "position": [320, ymax2*yscaletext], "range": [300,430]  ,"color": 'C1',},      # Planck 353
+                             "545":         {"pol": False, "show": planck, "position": [490, ymax2*yscaletext], "range": [450,650]  ,"color": 'C1',},      # Planck 545
+                             "857":         {"pol": False, "show": planck, "position": [730, ymax2*yscaletext], "range": [700,1020] ,"color": 'C1',}},      # Planck 857
+                 "DIRBE":   {"1250\nDIRBE":  {"pol": False, "show": dirbe, "position": [1000, ymax2*yscaletext], "range": [1000,1540] , "color": 'C3',},     # DIRBE 1250
+                             "2140":         {"pol": False, "show": dirbe, "position": [1750, ymax2*yscaletext], "range": [1780,2500] , "color": 'C3',},     # DIRBE 2140
+                             "3000":         {"pol": False, "show": dirbe, "position": [2500, ymax2*yscaletext], "range": [2600,3500] , "color": 'C3',}},     # DIRBE 3000
+                 "WMAP":    {"WMAP\nK": {"pol": True, "show": wmap, "position": [21.8, ymin*yscaletextup], "range": [21,25.5], "color": 'C9',}, 
+                             "Ka":      {"pol": True, "show": wmap, "position": [31.5, ymin*yscaletextup], "range": [30,37], "color": 'C9',},
+                             "Q":       {"pol": True, "show": wmap, "position": [39.,  ymin*yscaletextup], "range": [38,45], "color": 'C9',}, 
+                             "V":       {"pol": True, "show": wmap, "position": [58.,  ymin*yscaletextup], "range": [54,68], "color": 'C9',}, 
+                             "W":       {"pol": True, "show": wmap, "position": [90.,  ymin*yscaletextup], "range": [84,106], "color": 'C9',}}, 
+    }
     
-        if spass:
-            ax2.text(np.mean(band_range2)+.1 ,ymax2*yscaletext,"2.303\nS-PASS",color='green',va='top',horizontalalignment='center', size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-            ax.axvspan(band_range2[0],band_range2[1],color='green',alpha=baralpha, zorder=0, label="S-PASS")
-            ax2.axvspan(band_range2[0],band_range2[1],color='green',alpha=baralpha, zorder=0)
-    
-        if cbass:
-            ax2.text(np.mean(band_range20),ymax2*yscaletext,"5.0\nC-BASS",color='C0',va='top',horizontalalignment='center', size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-            ax.axvspan(band_range20[0],band_range20[1],color='C0',alpha=baralpha, zorder=0, label="C-BASS")
-            ax2.axvspan(band_range20[0],band_range20[1],color='C0',alpha=baralpha, zorder=0)
-    
-        if chipass and not pol:
-            ax2.text(np.mean(band_range27)-0.1,ymax2*yscaletext,"1.394\nCHIPASS",color='C5', va='top',horizontalalignment='center', size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-            ax.axvspan(band_range27[0],band_range27[1],color='C5',alpha=baralpha, zorder=0,label='CHIPASS')
-            ax2.axvspan(band_range27[0],band_range27[1],color='C5',alpha=baralpha, zorder=0)
-    
-    
-    # ---- Plotting QUIJOTE ----
-    if quijote:
-        ax2.text(11,ymax2*yscaletext,"11\nQUIJOTE",  color='C4', va='top',alpha=1,horizontalalignment='center', size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-        ax2.text(13,ymax2*yscaletext,"13",  color='C4', va='top',alpha=1,horizontalalignment='center', size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-        ax2.text(17,ymax2*yscaletext,"17",  color='C4', va='top',alpha=1,horizontalalignment='center', size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-        ax2.text(19+1,ymax2*yscaletext,"19", color='C4', va='top',alpha=1,horizontalalignment='center', size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-        ax2.text(31,ymax2*yscaletext,"31",color='C4', va='top',alpha=1,horizontalalignment='center', size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-        ax2.text(41+1,ymax2*yscaletext,"41",color='C4', va='top',alpha=1,horizontalalignment='center', size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-    
-        ax.axvspan(band_range21[0], band_range21[1], color='C4',alpha=baralpha, zorder=0, label="QUIJOTE")
-        ax.axvspan(band_range22[0], band_range22[1], color='C4',alpha=baralpha, zorder=0)
-        ax.axvspan(band_range23[0], band_range23[1], color='C4',alpha=baralpha, zorder=0)
-        ax.axvspan(band_range24[0], band_range24[1], color='C4',alpha=baralpha, zorder=0)
-        ax.axvspan(band_range25[0], band_range25[1], color='C4',alpha=baralpha, zorder=0)
-        ax.axvspan(band_range26[0], band_range26[1], color='C4',alpha=baralpha, zorder=0)
-        if long:
-            ax2.axvspan(band_range21[0],band_range21[1], color='C4',alpha=baralpha, zorder=0)
-            ax2.axvspan(band_range22[0],band_range22[1], color='C4',alpha=baralpha, zorder=0)
-            ax2.axvspan(band_range23[0],band_range23[1], color='C4',alpha=baralpha, zorder=0)
-            ax2.axvspan(band_range24[0],band_range24[1], color='C4',alpha=baralpha, zorder=0)
-            ax2.axvspan(band_range25[0],band_range25[1], color='C4',alpha=baralpha, zorder=0)
-            ax2.axvspan(band_range26[0],band_range26[1], color='C4',alpha=baralpha, zorder=0)
-    
-    # ---- Plotting Planck ----
-    if planck:
-        ax2.text(27,ymax2*yscaletext,"30",           color='C1', va='top',alpha=1, size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-        ax2.text(44-4,ymax2*yscaletext,"44",           color='C1', va='top',alpha=1, size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-        ax2.text(64-4,  ymax2*yscaletext,"70",           color='C1', va='top',alpha=1, size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-        ax2.text(90,ymax2*yscaletext,"100\nPlanck", color='C1', va='top',alpha=1, size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-        ax2.text(130, ymax2*yscaletext,"143",          color='C1', va='top',alpha=1, size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-        ax2.text(195, ymax2*yscaletext,"217",          color='C1', va='top',alpha=1, size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-        ax2.text(320, ymax2*yscaletext,"353",          color='C1', va='top',alpha=1, size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-    
-        ax.axvspan(band_range8[0] ,band_range8[1], color='C1',alpha=baralpha, zorder=0, label="Planck")
-        ax.axvspan(band_range9[0] ,band_range9[1], color='C1',alpha=baralpha, zorder=0)
-        ax.axvspan(band_range10[0],band_range10[1],color='C1',alpha=baralpha, zorder=0)
-        ax.axvspan(band_range11[0],band_range11[1],color='C1',alpha=baralpha, zorder=0)
-        ax.axvspan(band_range12[0],band_range12[1],color='C1',alpha=baralpha, zorder=0)
-        ax.axvspan(band_range13[0],band_range13[1],color='C1',alpha=baralpha, zorder=0)
-        ax.axvspan(band_range14[0],band_range14[1],color='C1',alpha=baralpha, zorder=0)
-    
-        if long:
-            ax2.axvspan(band_range8[0] ,band_range8[1], color='C1',alpha=baralpha, zorder=0)
-            ax2.axvspan(band_range9[0] ,band_range9[1], color='C1',alpha=baralpha, zorder=0)
-            ax2.axvspan(band_range10[0],band_range10[1],color='C1',alpha=baralpha, zorder=0)
-            ax2.axvspan(band_range11[0],band_range11[1],color='C1',alpha=baralpha, zorder=0)
-            ax2.axvspan(band_range12[0],band_range12[1],color='C1',alpha=baralpha, zorder=0)
-            ax2.axvspan(band_range13[0],band_range13[1],color='C1',alpha=baralpha, zorder=0)
-            ax2.axvspan(band_range14[0],band_range14[1],color='C1',alpha=baralpha, zorder=0)
-    
-        if not pol:
-            ax2.text(490, ymax2*yscaletext,"545", color='C1', va='top',alpha=1, size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-            ax2.text(730, ymax2*yscaletext,"857", color='C1', va='top',alpha=1, size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-            ax.axvspan(band_range15[0],band_range15[1],color='C1',alpha=baralpha, zorder=0)
-            ax.axvspan(band_range16[0],band_range16[1],color='C1',alpha=baralpha, zorder=0)
-            if long:
-                ax2.axvspan(band_range15[0],band_range15[1],color='C1',alpha=baralpha, zorder=0)
-                ax2.axvspan(band_range16[0],band_range16[1],color='C1',alpha=baralpha, zorder=0)
-    
-    # ---- Plotting WMAP ----
-    if wmap:
-        ax.text(22.8  -1, ymin*yscaletextup,"WMAP\nK", color='C9' ,va='bottom',alpha=1, size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-        ax.text(31.5   ,   ymin*yscaletextup,"Ka ",        color='C9', va='bottom',alpha=1, size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-        ax.text(39.  ,     ymin*yscaletextup,"Q",         color='C9' ,va='bottom',alpha=1, size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-        ax.text(58.    ,   ymin*yscaletextup,"V",         color='C9' ,va='bottom',alpha=1, size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-        ax.text(90.   ,  ymin*yscaletextup,"W",         color='C9' ,va='bottom',alpha=1, size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-    
-        ax.axvspan(band_range3[0],band_range3[1],color='C9',alpha=baralpha, zorder=0,label='WMAP')
-        ax.axvspan(band_range4[0],band_range4[1],color='C9',alpha=baralpha, zorder=0)
-        ax.axvspan(band_range5[0],band_range5[1],color='C9',alpha=baralpha, zorder=0)
-        ax.axvspan(band_range6[0],band_range6[1],color='C9',alpha=baralpha, zorder=0)
-        ax.axvspan(band_range7[0],band_range7[1],color='C9',alpha=baralpha, zorder=0)
-        if long:
-            ax2.axvspan(band_range3[0],band_range3[1],color='C9',alpha=baralpha, zorder=0)
-            ax2.axvspan(band_range4[0],band_range4[1],color='C9',alpha=baralpha, zorder=0)
-            ax2.axvspan(band_range5[0],band_range5[1],color='C9',alpha=baralpha, zorder=0)
-            ax2.axvspan(band_range6[0],band_range6[1],color='C9',alpha=baralpha, zorder=0)
-            ax2.axvspan(band_range7[0],band_range7[1],color='C9',alpha=baralpha, zorder=0)
-    
-    # ---- Plotting DIRBE ----
-    if dirbe and not pol and long and not lowfreq:
-        ax2.text(1000  ,ymax2*yscaletext,"1249\nDIRBE",color='C3', va='top',alpha=1, size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-        ax2.text(1750  ,ymax2*yscaletext,"2141",color='C3', va='top',alpha=1, size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-        ax2.text(2500  ,ymax2*yscaletext,"2998",color='C3', va='top',alpha=1, size = freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1, -1))])
-    
-        ax.axvspan(band_range17[0],band_range17[1],color='C3',alpha=baralpha, zorder=0,label='DIRBE')
-        ax.axvspan(band_range18[0],band_range18[1],color='C3',alpha=baralpha, zorder=0)
-        ax.axvspan(band_range19[0],band_range19[1],color='C3',alpha=baralpha, zorder=0)
-    
-        ax2.axvspan(band_range17[0],band_range17[1],color='C3',alpha=baralpha, zorder=0)
-        ax2.axvspan(band_range18[0],band_range18[1],color='C3',alpha=baralpha, zorder=0)
-        ax2.axvspan(band_range19[0],band_range19[1],color='C3',alpha=baralpha, zorder=0)
-    
-    # ---- Axis label stuff ----
-    ax.set_xticks(list(ax.get_xticks()) + [3,30,300,3000]) #???
-    #ax.set_xticklabels(np.append(ax.get_xticks(),300))
+    # Set databands from dictonary
+    for experiment, bands in databands.items():
+        for label, band in bands.items():
+            if band["show"]:
+                if pol and not band["pol"]:
+                    continue # Skip non-polarization bands
+                if band["position"][0]>xmax or band["position"][0]<xmin:
+                    continue # Skip databands outside range
+                va = "bottom" if experiment == "WMAP" else "top" # VA for WMAP on bottom
+                ha = "left" if experiment in ["Planck", "WMAP", "DIRBE"] else "center"
+                ax.axvspan(*band["range"], color=band["color"], alpha=0.3, zorder=0, label=experiment)
+                if long:
+                    ax2.axvspan(*band["range"], color=band["color"], alpha=0.3, zorder=0, label=experiment)
+                    if experiment == "WMAP":
+                        ax.text(*band["position"], label, color=band["color"], va=va, ha=ha, size=freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1,-1))])
+                    else:
+                        ax2.text(*band["position"], label, color=band["color"], va=va, ha=ha, size=freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1,-1))])
+                else:
+                    ax.text(*band["position"], label, color=band["color"], va=va, ha=ha, size=freqtext, path_effects=[path_effects.withSimplePatchShadow(offset=(1,-1))])
+
+    # ---- Axis stuff ----
+    lsize=20
+    ax.set(xscale='log', yscale='log', ylim=(ymin, ymax), xlim=(xmin,xmax), xticks=[10,30,100,300,1000,])
     ax.xaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
-    ax.tick_params(axis='both', which='major', labelsize=ticksize, direction='in')
+    ax.tick_params(axis='both', which='major', labelsize=lsize, direction='in')
     ax.tick_params(which="both",direction="in")
-    
-    ax2.tick_params(axis='both', which='major', labelsize=ticksize, direction='in')
-    ax2.tick_params(which="both",direction="in")
-    
-    plt.ylabel(r"RMS brightness temperature [$\mu$K]",fontsize=labelsize)
-    plt.xlabel(r"Frequency [GHz]",fontsize=labelsize)
-    
-    if lowfreq:
-        xmax = 1000
     if long:
-        ax2.set_ylim(ymax15,ymax2)
-        ax2.set_xlim(xmin,xmax)
-    
-    ax.set_xlim(xmin,xmax)
-    ax.set_ylim(ymin,ymax)
+        ax2.set(xscale='log', yscale='log', ylim=(ymax15, ymax2), xlim=(xmin,xmax), yticks=[1e4,1e6,])
+        ax.set_xticks([1,3,10,30,100,300,1000,3000])
+        ax2.tick_params(axis='both', which='major', labelsize=lsize, direction='in')
+        ax2.tick_params(which="both",direction="in")
+
+    # Axis labels
+    plt.ylabel(r"RMS brightness temperature [$\mu$K]",fontsize=lsize)
+    plt.xlabel(r"Frequency [GHz]",fontsize=lsize)
+
     #ax.legend(loc=6,prop={'size': 20}, frameon=False)
 
     # ---- Plotting ----
@@ -478,13 +279,12 @@ def Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, masks, nside):
     filename = "spectrum"
     filename += "_pol" if pol else ""
     filename += "_long" if long else ""
-    filename += "_lowfreq" if lowfreq else ""
     filename += "_darkmode" if darkmode else ""
     filename += ".png" if png else ".pdf"
     print("Plotting {}".format(filename))
     plt.savefig(filename, bbox_inches='tight',  pad_inches=0.02, transparent=True)
-    #plt.savefig(filename, transparent=True)
-    #plt.show()
+
+
 	
 def gradient_fill(x, y, fill_color=None, ax=None, **kwargs):
     """
@@ -543,3 +343,75 @@ def find_nearest(array, value):
     array = np.asarray(array)
     idx = (np.abs(array - value)).argmin()
     return array[idx], idx
+
+
+# This function calculates the intensity spectra
+# Alternative 1 uses 2 masks to calculate spatial variations
+# Alternative 2 uses only scalar values
+def getspec(nu, fg, params, function, field, nside, npix, idx, m):
+    val = []
+    # Alternative 1
+    if any([str(x).endswith(".fits") for x in params]):
+        if fg == "Spinning Dust":
+            from pathlib import Path
+            ame_template = Path(__file__).parent / "spdust2_cnm.dat"
+            fnu, f_ = np.loadtxt(ame_template, unpack=True)
+            fnu *= 1e9
+            field = 0
+
+        temp = []
+        nsides = []
+        # Read all maps and record nsides
+        
+        for i, p in enumerate(params):
+            if str(p).endswith(".fits"):
+                if field==1 and i==0: # If polarization amplitude map
+                    s1 = hp.read_map(p, field=1, dtype=None, verbose=False)
+                    s2 = hp.read_map(p, field=2, dtype=None, verbose=False)
+                    p = np.sqrt(s1**2+s2**2)
+                else:
+                    p = hp.read_map(p, field=field, dtype=None, verbose=False)
+                nsides.append(hp.npix2nside(len(p)))
+            else:
+                nsides.append(0)
+            temp.append(p)  
+
+
+        # Create dataset and convert to same resolution
+        params = np.zeros(( len(params), npix ))
+        for i, t in enumerate(temp):
+            if nsides[i] == 0:
+                params[i,:] = t
+            elif nsides[i] != nside:
+                params[i,:] = hp.ud_grade(t, nside)
+
+        # Only calculate outside masked region    
+        N = 1000
+        map_ = np.zeros((N, npix))
+
+        for i, nu_ in enumerate(tqdm(nu, desc = fg, ncols=80)):
+            if fg == "Spinning Dust":
+                map_[i, idx] = getattr(tls, function)(nu_, *params[:,idx], fnu, f_) #fgs.fg(nu, *params[pix])
+            else:
+                map_[i, idx] = getattr(tls, function)(nu_, *params[:,idx]) #fgs.fg(nu, *params[pix])
+
+        # Apply mask to all frequency points
+        # calculate mean 
+        rmss = []
+        for i in range(2):
+            n = np.sum(m[i])            
+            masked = hp.ma(map_)
+            masked.mask = np.logical_not(m[i])
+            mono = masked.mean(axis=1)
+            masked -= mono.reshape(-1,1)
+        
+            rms = np.sqrt( ( (masked**2).sum(axis=1) ) /n)
+            val.append(rms)
+
+        vals = np.sort(np.array(val), axis=0) 
+    else:
+        # Alternative 2
+        val = getattr(tls, function)(nu, *params) #fgs.fg(nu, *params))
+        #vals = np.stack((val, val),)
+        vals = val.reshape(1,-1)
+    return vals

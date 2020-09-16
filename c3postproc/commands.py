@@ -1007,7 +1007,6 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
 
     if not skipdust:
         try:
-            print("lol")
             # Full-mission thermal dust IQU map
             format_fits(
                 chain,
@@ -1296,7 +1295,6 @@ def makespec():
 @commands.command()
 @click.option("-pol", is_flag=True, help="",)
 @click.option("-long", is_flag=True, help="",)
-@click.option("-lowfreq", is_flag=True, help="",)
 @click.option("-darkmode", is_flag=True, help="",)
 @click.option("-png", is_flag=True, help="",)
 @click.option("-nside", type=click.INT, help="",)
@@ -1313,7 +1311,7 @@ def makespec():
 @click.option("-t_d", help="",)
 @click.option("-mask1",  help="",)
 @click.option("-mask2",  help="",)
-def output_sky_model(pol, long, lowfreq, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e, a_ame1, a_ame2, nup, a_d, b_d, t_d, mask1, mask2):
+def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e, a_ame1, a_ame2, nup, a_d, b_d, t_d, mask1, mask2):
     """
     Outputs spectrum plots
     c3pp output-sky-model -a_s synch_c0001_k000100.fits -b_s synch_beta_c0001_k000100.fits -a_d dust_init_kja_n1024.fits -b_d dust_beta_init_kja_n1024.fits -t_d dust_T_init_kja_n1024.fits -a_ame1 ame_c0001_k000100.fits -nup ame_nu_p_c0001_k000100.fits -a_ff ff_c0001_k000100.fits -t_e ff_Te_c0001_k000100.fits -mask1 mask_70GHz_t70.fits -mask2 mask_70GHz_t7.fits -nside 16
@@ -1321,7 +1319,7 @@ def output_sky_model(pol, long, lowfreq, darkmode, png, nside, a_cmb, a_s, b_s, 
     from c3postproc.spectrum import Spectrum
 
     if not a_cmb:
-        a_cmb = 0.45 if pol else 45
+        a_cmb = 0.67 if pol else 45
     if not a_s:
         a_s = 12 if pol else 76
     if not b_s:
@@ -1342,12 +1340,119 @@ def output_sky_model(pol, long, lowfreq, darkmode, png, nside, a_cmb, a_s, b_s, 
         b_d = 1.6
     if not t_d:
         t_d = 18.5
+    
 
     if pol:
-        foregrounds = {"cmb": [a_cmb], "lf": [a_s, b_s,], "tdust": [a_d, b_d, t_d, 353]}# "sdust": [a_ame1, nup]}
+        foregrounds = {
+            "CMB EE":       {"function": "rspectrum", 
+                             "params"  : [1, "EE"],
+                             "position": 15,
+                             "color"   : "C9",
+                             "sum"     : False,
+                             "linestyle": "solid",
+                             "gradient": False,
+                         },
+            "Synchrotron" : {"function": "lf", 
+                             "params"  : [a_s, b_s,],
+                             "position": 20,
+                             "color"   : "C2",
+                             "sum"     : True,
+                             "linestyle": "solid",
+                             "gradient": False,
+                         },
+            "Thermal Dust": {"function": "tdust", 
+                             "params": [a_d, b_d, t_d, 353],
+                             "position": 200,
+                             "color":    "C3",
+                             "sum"     : True,
+                             "linestyle": "solid",
+                             "gradient": False,
+                         }, 
+            "Sum fg."      : {"function": "sum", 
+                             "params"  : [],
+                             "position": 60,
+                             "color"   : "black",
+                             "sum"     : False,
+                             "linestyle": "--",
+                             "gradient": False,
+                          },
+            "BB r=0.01"   :  {"function": "rspectrum", 
+                             "params"  : [0.01, "BB",],
+                             "position": 15,
+                             "color"   : "black",
+                             "sum"     : False,
+                             "linestyle": "dotted",
+                             "gradient": True,
+                         },
+            "BB r=1e-4"   :  {"function": "rspectrum", 
+                             "params"  : [1e-4, "BB",],
+                             "position": 15,
+                             "color"   : "black",
+                             "sum"     : False,
+                             "linestyle": "dotted",
+                             "gradient": True,
+                         },
+
+            }
+    else:
+        foregrounds = {
+            "CMB":          {"function": "rspectrum", 
+                             "params"  : [1., "TT"],
+                             "position": 70,
+                             "color"   : "C9",
+                             "sum"     : False,
+                             "linestyle": "solid",
+                             "gradient": False,
+                         },
+            "Synchrotron" : {"function": "lf", 
+                             "params"  : [a_s, b_s,],
+                             "position": 150,
+                             "color"   : "C2",
+                             "sum"     : True,
+                             "linestyle": "solid",
+                             "gradient": False,
+                         },
+            "Thermal Dust": {"function": "tdust", 
+                             "params": [a_d, b_d, t_d, 545],
+                             "position": 200,
+                             "color":    "C3",
+                             "sum"     : True,
+                             "linestyle": "solid",
+                             "gradient": False,
+                         }, 
+            "Free-Free"  : {"function": "ff", 
+                             "params"  : [a_ff, t_e,],
+                             "position": 150,
+                             "color"   : "C0",
+                             "sum"     : True,
+                             "linestyle": "solid",
+                             "gradient": False,
+                         },
+            "Spinning dust" : {"function": "lf", 
+                             "params"  : [a_ame1, nu_p,],
+                             "position": 60,
+                             "color"   : "C1",
+                             "sum"     : True,
+                             "linestyle": "solid",
+                             "gradient": False,
+                         },
+            "Sum fg."      : {"function": "sum", 
+                             "params"  : [],
+                             "position": 30,
+                             "color"   : "black",
+                             "sum"     : False,
+                             "linestyle": "--",
+                             "gradient": False,
+                          },
+            }
+
+    """ 
+    if pol:
+        foregrounds = {"rspectrum1": [1.], "lf": [a_s, b_s,], "tdust": [a_d, b_d, t_d, 353], "rspectrum2": [0.01],"rspectrum3": [1e-4]}# "sdust": [a_ame1, nup]}
     else:
         foregrounds = {"cmb": [a_cmb], "ff": [a_ff, t_e], "lf": [a_s, b_s,], "sdust": [a_ame1, nup], "tdust": [a_d, b_d, t_d, 545],}
-    Spectrum(pol, long, lowfreq, darkmode, png, foregrounds, [mask1,mask2], nside)
+    """
+    Spectrum(pol, long, darkmode, png, foregrounds, [mask1,mask2], nside)
 
 
 

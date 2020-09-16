@@ -35,6 +35,7 @@ setuptools.setup(
         'seaborn',
         'cmasher',
         'brokenaxes',
+        'camb',
     ],
     python_requires=">=3.6",
 )
