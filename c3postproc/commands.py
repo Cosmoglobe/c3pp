@@ -10,7 +10,9 @@ from c3postproc.tools import *
 def commands():
     pass
 
-
+"""
+FITS COMMANDS GO HERE
+"""
 
 @commands.command()
 @click.argument("input", type=click.STRING)
@@ -38,6 +40,7 @@ def printdata(input,):
         for hdu in hdulist:
             print(repr(hdu.data))
 
+
 @commands.command()
 @click.argument("input", type=click.STRING)
 @click.argument("output", type=click.STRING)
@@ -54,6 +57,22 @@ def rmcolumn(input, output, columns):
             hdu.data.del_col(columns)        
         hdulist.writeto(output, overwrite=True)
         
+
+@commands.command()
+@click.argument("input", type=click.STRING)
+@click.argument("output", type=click.STRING)
+def QU2ang(input, output,):
+    """
+    remove columns in fits file
+    """
+    import healpy as hp
+    Q, U = hp.read_map(input, field=(1,2), dtype=None, verbose=False)
+    phi = 0.5*np.arctan(U,Q)
+    hp.write_map(output, phi, dtype=None, overwrite=True)
+
+
+
+
 
 @commands.command()
 @click.argument("input1", type=click.STRING)
@@ -1087,8 +1106,9 @@ def traceplot(filename, max, min, nbins):
 @click.option('-burnin', default=0, help='Min sample of dataset (burnin)')
 @click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]",)
 @click.option('-plot', is_flag=True, default=False, help= 'Plots trace')
+@click.option('-freeze', is_flag=True, help= 'Freeze top regions')
 @click.option('-nbins', default=1, help='Bins for plotting')
-def pixreg2trace(chainfile, dataset, burnin, maxchain, plot, nbins,):
+def pixreg2trace(chainfile, dataset, burnin, maxchain, plot, freeze, nbins,):
     """
     Outputs the values of the pixel regions for each sample to a dat file.
     ex. pixreg2trace chain_c0001.h5 synch/beta_pixreg_val -burnin 30 -maxchain 4 
@@ -1106,7 +1126,7 @@ def pixreg2trace(chainfile, dataset, burnin, maxchain, plot, nbins,):
         with h5py.File(chainfile_, "r") as f:
             max_ = len(f.keys()) - 1
             print("{:-^48}".format(f" Samples {min_} to {max_} in {chainfile_} "))
-            for sample in tqdm(range(min_, max_ + 1), ncols=80):
+            for sample in tqdm(range(0, max_ + 1), ncols=80):
                 # Identify dataset
                 # HDF dataset path formatting
                 s = str(sample).zfill(6)
@@ -1139,10 +1159,14 @@ def pixreg2trace(chainfile, dataset, burnin, maxchain, plot, nbins,):
     
         if plot:
             xlabel = 'Gibbs Sample'
-            combined_hilat = 'High lat.'
-            df2 = df2.drop(columns=['Top left', 'Top right', 'Bot. left',])
-            df2 = df2.rename(columns={'Bot. right':combined_hilat})
-            header_ = [combined_hilat] + header[4:]
+            if freeze:
+                combined_hilat = 'High lat.'
+                df2 = df2.drop(columns=['Top left', 'Top right', 'Bot. left',])
+                df2 = df2.rename(columns={'Bot. right':combined_hilat})
+                header_ = [combined_hilat] + header[4:]
+            else:
+                header_ = header.copy()
+
             traceplotter(df2, header_, xlabel, nbins, f"{outname}.pdf", min_=burnin*maxchain)
 
 def traceplotter(df, header, xlabel, nbins, outname, min_):
@@ -1156,9 +1180,6 @@ def traceplotter(df, header, xlabel, nbins, outname, min_):
         'grid.linewidth': 0.5,
     }
     sns.set_style(custom_style)
-
-    prior=-3.0
-    stddev=0.05
 
     #df.columns = y
     N = df.values.shape[0]
@@ -1309,9 +1330,12 @@ def makespec():
 @click.option("-a_d", help="",)
 @click.option("-b_d", help="",)
 @click.option("-t_d", help="",)
+@click.option("-a_co10", help="",)
+@click.option("-a_co21", help="",)
+@click.option("-a_co32", help="",)
 @click.option("-mask1",  help="",)
 @click.option("-mask2",  help="",)
-def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e, a_ame1, a_ame2, nup, a_d, b_d, t_d, mask1, mask2):
+def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e, a_ame1, a_ame2, nup, a_d, b_d, t_d, a_co10, a_co21, a_co32, mask1, mask2):
     """
     Outputs spectrum plots
     c3pp output-sky-model -a_s synch_c0001_k000100.fits -b_s synch_beta_c0001_k000100.fits -a_d dust_init_kja_n1024.fits -b_d dust_beta_init_kja_n1024.fits -t_d dust_T_init_kja_n1024.fits -a_ame1 ame_c0001_k000100.fits -nup ame_nu_p_c0001_k000100.fits -a_ff ff_c0001_k000100.fits -t_e ff_Te_c0001_k000100.fits -mask1 mask_70GHz_t70.fits -mask2 mask_70GHz_t7.fits -nside 16
@@ -1340,21 +1364,28 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
         b_d = 1.6
     if not t_d:
         t_d = 18.5
-    
+    if not a_co10:
+        a_co10=50
+    if not a_co21:
+        a_co21=25
+    if not a_co32:
+        a_co32=10
+
 
     if pol:
+        p = 1.5 if long else 12
         foregrounds = {
             "CMB EE":       {"function": "rspectrum", 
                              "params"  : [1, "EE"],
-                             "position": 15,
-                             "color"   : "C9",
+                             "position": p,
+                             "color"   : "C5",
                              "sum"     : False,
                              "linestyle": "solid",
                              "gradient": False,
                          },
             "Synchrotron" : {"function": "lf", 
                              "params"  : [a_s, b_s,],
-                             "position": 20,
+                             "position": 15,
                              "color"   : "C2",
                              "sum"     : True,
                              "linestyle": "solid",
@@ -1362,32 +1393,32 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
                          },
             "Thermal Dust": {"function": "tdust", 
                              "params": [a_d, b_d, t_d, 353],
-                             "position": 200,
-                             "color":    "C3",
+                             "position": 150,
+                             "color":    "C1",
                              "sum"     : True,
                              "linestyle": "solid",
                              "gradient": False,
                          }, 
             "Sum fg."      : {"function": "sum", 
                              "params"  : [],
-                             "position": 60,
-                             "color"   : "black",
+                             "position": 45,
+                             "color"   : "grey",
                              "sum"     : False,
                              "linestyle": "--",
                              "gradient": False,
                           },
-            "BB r=0.01"   :  {"function": "rspectrum", 
+            r"BB $r=0.001$"   :  {"function": "rspectrum", 
                              "params"  : [0.01, "BB",],
-                             "position": 15,
-                             "color"   : "black",
+                             "position": p,
+                             "color"   : "grey",
                              "sum"     : False,
                              "linestyle": "dotted",
                              "gradient": True,
                          },
-            "BB r=1e-4"   :  {"function": "rspectrum", 
+            r"BB $r=0.0001$"   :  {"function": "rspectrum", 
                              "params"  : [1e-4, "BB",],
-                             "position": 15,
-                             "color"   : "black",
+                             "position": p,
+                             "color"   : "grey",
                              "sum"     : False,
                              "linestyle": "dotted",
                              "gradient": True,
@@ -1395,18 +1426,19 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
 
             }
     else:
+        p = 3 if long else 57
         foregrounds = {
             "CMB":          {"function": "rspectrum", 
                              "params"  : [1., "TT"],
                              "position": 70,
-                             "color"   : "C9",
+                             "color"   : "C5",
                              "sum"     : False,
                              "linestyle": "solid",
                              "gradient": False,
                          },
             "Synchrotron" : {"function": "lf", 
                              "params"  : [a_s, b_s,],
-                             "position": 150,
+                             "position": 120,
                              "color"   : "C2",
                              "sum"     : True,
                              "linestyle": "solid",
@@ -1414,32 +1446,56 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
                          },
             "Thermal Dust": {"function": "tdust", 
                              "params": [a_d, b_d, t_d, 545],
-                             "position": 200,
-                             "color":    "C3",
+                             "position": 12,
+                             "color":    "C1",
                              "sum"     : True,
                              "linestyle": "solid",
                              "gradient": False,
                          }, 
             "Free-Free"  : {"function": "ff", 
                              "params"  : [a_ff, t_e,],
-                             "position": 150,
+                             "position": 40,
                              "color"   : "C0",
                              "sum"     : True,
                              "linestyle": "solid",
                              "gradient": False,
                          },
-            "Spinning dust" : {"function": "lf", 
-                             "params"  : [a_ame1, nu_p,],
-                             "position": 60,
-                             "color"   : "C1",
+            "Spinning dust" : {"function": "sdust", 
+                             "params"  : [a_ame1, nup,],
+                             "position": p,
+                             "color"   : "C4",
                              "sum"     : True,
                              "linestyle": "solid",
                              "gradient": False,
                          },
+            r"CO$_{1\rightarrow 0}$": {"function": "line", 
+                                       "params"  : [a_co10, 115, 11.06],
+                                       "position": p,
+                                       "color"   : "C9",
+                                       "sum"     : True,
+                                       "linestyle": "solid",
+                                       "gradient": False,
+                         },
+            r"CO$_{2\rightarrow 1}$": {"function": "line", 
+                                       "params"  : [a_co21, 230., 14.01],
+                                       "position": p,
+                                       "color"   : "C9",
+                                       "sum"     : True,
+                                       "linestyle": "solid",
+                                       "gradient": False,
+                         },
+            r"CO$_{3\rightarrow 2}$":      {"function": "line", 
+                                            "params"  : [a_co32, 345., 12.24],
+                                            "position": p,
+                                            "color"   : "C9",
+                                            "sum"     : True,
+                                            "linestyle": "solid",
+                                            "gradient": False,
+                         },
             "Sum fg."      : {"function": "sum", 
                              "params"  : [],
-                             "position": 30,
-                             "color"   : "black",
+                             "position": 20,
+                             "color"   : "grey",
                              "sum"     : False,
                              "linestyle": "--",
                              "gradient": False,

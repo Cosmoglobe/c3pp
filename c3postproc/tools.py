@@ -1,6 +1,5 @@
 import numba
 import numpy as np
-
 #######################
 # HELPFUL TOOLS BELOW #
 #######################
@@ -445,32 +444,45 @@ def tdust(nu,Ad,betad,Td,nuref=545.):
 def lf(nu,Alf,betalf,nuref=30e9):
     return Alf*(nu/nuref)**(betalf)
 
+def line(nu, A, freq, conversion=1.0):
+    if isinstance(nu, np.ndarray):
+        return np.where(np.isclose(nu, 1e9*freq), A*conversion, 0.0)
+    else:
+        if np.isclose(nu, 1e9*freq[0]):
+            return A*conversion
+        else:
+            return 0.0
+
 def rspectrum(nu, r, sig, scaling=1.0):
     import camb
     from camb import model, initialpower
+    import healpy as hp
     #Set up a new set of parameters for CAMB
     pars = camb.CAMBparams()
     #This function sets up CosmoMC-like settings, with one massive neutrino and helium set using BBN consistency
     pars.set_cosmology(H0=67.5, ombh2=0.022, omch2=0.122, mnu=0.06, omk=0, tau=0.06)
+    pars.InitPower.set_params(As=2e-9, ns=0.965, r=r)
     lmax=6000
-    pars.set_for_lmax(lmax)
+    pars.set_for_lmax(lmax,  lens_potential_accuracy=0)
     pars.WantTensors = True
-    results = camb.get_transfer_functions(pars)
-    inflation_params = initialpower.InitialPowerLaw()
-    inflation_params.set_params(ns=0.96, r=r)
-    results.power_spectra_from_transfer(inflation_params) #warning OK here, not changing scalars
+    results = camb.get_results(pars)
+    powers = results.get_cmb_power_spectra(params=pars, lmax=lmax, CMB_unit='muK', raw_cl=True,)
 
-    cl = results.get_total_cls(lmax, raw_cl=True, CMB_unit='muK')
+
     l = np.arange(2,lmax+1)
 
     if sig == "TT":
+        cl = powers['unlensed_scalar']
         signal = 0
     elif sig == "EE":
+        cl = powers['unlensed_scalar']
         signal = 1
     elif sig == "BB":
+        cl = powers['tensor']
         signal = 2
 
-    A = np.sqrt(sum( 4*np.pi * cl[2:,signal]/(2*l+1) ))
+    bl = hp.gauss_beam(40/(180/np.pi*60), lmax,pol=True)
+    A = np.sqrt(sum( 4*np.pi * cl[2:,signal]*bl[2:,signal]**2/(2*l+1) ))
     return cmb(nu, A*scaling)
 
 
