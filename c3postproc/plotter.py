@@ -14,7 +14,7 @@ from astropy.io import fits
 print("Importtime:", (time.time() - totaltime))
 
 
-def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, outdir, verbose,):
+def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, outdir, verbose, data, ):
     rcParams["backend"] = "pdf" if pdf else "agg"
     rcParams["legend.fancybox"] = True
     rcParams["lines.linewidth"] = 2
@@ -72,32 +72,34 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
     print("{:#^48}".format(""))
     for polt in sig:
         signal_label = get_signallabel(polt)
-        
-        try:
-            if input.endswith(".fits"):
-                map, header = hp.read_map(input, field=polt, verbose=False, h=True, dtype=None,)
-                header = dict(header)
-                try:
-                    signal_label = header[f"TTYPE{polt+1}"]
-                    if signal_label == "TEMPERATURE":
-                        signal_label = "T"
-                    if signal_label == "Q-POLARISATION":
-                        signal_label = "Q"
-                    if signal_label == "U-POLARISATION":
-                        signal_label = "U"
-                    
-                except:
-                    pass
-
-                m = hp.ma(map)  # Dont use header for this
-                nsid = hp.npix2nside(len(m))
-                outfile = input.replace(".fits", "")
-
-            elif input.endswith(".h5"):
-                m = maps[polt]
-        except:
-            print(f"{polt} not found")
-            sys.exit()
+        if data:
+            m = data.copy()
+        else:
+            try:
+                if input.endswith(".fits"):
+                    map, header = hp.read_map(input, field=polt, verbose=False, h=True, dtype=None,)
+                    header = dict(header)
+                    try:
+                        signal_label = header[f"TTYPE{polt+1}"]
+                        if signal_label == "TEMPERATURE":
+                            signal_label = "T"
+                        if signal_label == "Q-POLARISATION":
+                            signal_label = "Q"
+                        if signal_label == "U-POLARISATION":
+                            signal_label = "U"
+                        
+                    except:
+                        pass
+            
+                    m = hp.ma(map)  # Dont use header for this
+                    nsid = hp.npix2nside(len(m))
+                    outfile = input.replace(".fits", "")
+            
+                elif input.endswith(".h5"):
+                    m = maps[polt]
+            except:
+                print(f"{polt} not found")
+                sys.exit()
 
         ############
         #  SMOOTH  #

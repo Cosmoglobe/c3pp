@@ -313,10 +313,9 @@ def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, lmax, fwhm
         print("Specify Nside when plotting alms!")
         sys.exit()
         
-
+    data = None # Only used if calling plotter directly for plotting data array
     from c3postproc.plotter import Plotter
-
-    Plotter(input, dataset, nside, auto, min, max, mid, range, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, outdir, verbose,)
+    Plotter(input, dataset, nside, auto, min, max, mid, range, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, outdir, verbose,data)
 
 
 @commands.command()
