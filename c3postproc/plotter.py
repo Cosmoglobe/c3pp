@@ -807,6 +807,8 @@ def get_params(m, outfile, polt, signal_label):
 def not_identified(m, signal_label, logscale, title):
     print("{:-^48}".format(f"Map not recognized, plotting with min and max values"))
     title["comp"] = signal_label.split("_")[-1]
+    title["param"] = ""
+    title["unit"] = ""
     scale = 1.0
     vmin, vmax = get_ticks(m, 97.5)
     ticks = [vmin, vmax]
