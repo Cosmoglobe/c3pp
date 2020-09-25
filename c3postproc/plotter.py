@@ -72,8 +72,10 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
     print("{:#^48}".format(""))
     for polt in sig:
         signal_label = get_signallabel(polt)
-        if data:
+        if data is not None:
             m = data.copy()
+            nsid = hp.get_nside(m)
+            outfile = input
         else:
             try:
                 if input.endswith(".fits"):
@@ -770,7 +772,7 @@ def get_params(m, outfile, polt, signal_label):
         sys.exit()
     else:
         # Run map autoset
-        return not_identified(m, signal_label, logscale,)
+        return not_identified(m, signal_label, logscale, title)
 
     # If signal is an RMS map, add tag.
     if signal_label.endswith("RMS"):
@@ -802,7 +804,7 @@ def get_params(m, outfile, polt, signal_label):
     return (title, ticks, cmap, logscale, scale,)
 
 
-def not_identified(m, signal_label, logscale):
+def not_identified(m, signal_label, logscale, title):
     print("{:-^48}".format(f"Map not recognized, plotting with min and max values"))
     title["comp"] = signal_label.split("_")[-1]
     scale = 1.0

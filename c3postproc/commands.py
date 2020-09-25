@@ -1311,6 +1311,61 @@ def makespec():
                     f[nu,m] = np.log( np.sqrt(np.sum( (map_[:,sig]*mask[:,sig,m]-mu)**2) / (np.sum(mask[:,sig,m])-1.d0)) )
 """
 
+@commands.command()
+@click.argument('dir1', type=click.STRING)
+@click.argument('type1', type=click.Choice(['ml', 'mean']))
+@click.argument('dir2', type=click.STRING)
+@click.argument('type2', type=click.Choice(['ml', 'mean']))
+@click.pass_context
+
+def make_diff_plots(ctx, dir1, dir2, type1, type2):
+    '''
+    Produces standard c3pp plots from the differences between
+    two output directories given by dir1 and dir2
+    '''
+
+    comps = ['030', '044', '070', 'ame', 'cmb', 'freefree', 'synch']
+
+    filenames = {dir1:'', dir2:''}
+
+    import glob
+    import healpy as hp
+
+
+    for dirtype, dirloc in zip([type1, type2],[dir1, dir2]):
+        if dirtype == 'ml':
+            #determine largest sample number
+            cmbs = glob.glob(os.path.join(dirloc, 'cmb_c0001_k??????.fits'))
+            indexes = [int(cmb[-11:-5]) for cmb in cmbs]
+            intdexes = [int(index) for index in indexes]
+            index = max(intdexes)
+            
+            filenames[dirloc] = '_c0001_k' + str(index).zfill(6) + '.fits'
+
+    for comp in comps:
+        mapn = {dir1:'', dir2:''}
+
+        for dirtype, dirloc in zip([type1, type2],[dir1, dir2]): 
+            print(filenames[dirloc])
+            if len(filenames[dirloc]) == 0:
+                mapn[dirloc] = glob.glob(os.path.join(dirloc, 'BP_' + comp + '_I*.fits'))[0]
+            else:
+                if comp in ['ame', 'cmb', 'synch', 'dust']:
+                    mapn[dirloc] = comp + filenames[dirloc]
+                elif comp in ['freefree']:
+                    mapn[dirloc] = 'ff' + filenames[dirloc]
+                else:
+                    mapn[dirloc] = 'tod_' + comp + '_map' + filenames[dirloc]
+      
+        print(mapn) 
+        map1 = hp.read_map(os.path.join(dir1, mapn[dir1]))
+        map2 = hp.read_map(os.path.join(dir2, mapn[dir2]))
+
+        diff_map = map1 - map2 
+  
+        from c3postproc.plotter import Plotter
+ 
+        Plotter(input=comp + '_diff' + '.fits', dataset='', nside=None, auto=True, min=None, max=None, mid=0.0, rng='auto', colorbar=True, lmax=None, fwhm=0.0, mask=None, mfill=None, sig=[0,], remove_dipole=None, logscale=None, size='m', white_background=True, darkmode=False, pdf=True, cmap=None, title=None, ltitle=None, unit=None, scale=1.0, outdir='.', verbose=False, data=diff_map)
 
 @commands.command()
 @click.option("-pol", is_flag=True, help="",)
