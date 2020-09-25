@@ -74,8 +74,9 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
         signal_label = get_signallabel(polt)
         if data is not None:
             m = data.copy()
+            m = hp.ma(m)
             nsid = hp.get_nside(m)
-            outfile = input
+            outfile = input.replace(".fits", "")
         else:
             try:
                 if input.endswith(".fits"):
@@ -94,7 +95,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
                         pass
             
                     m = hp.ma(map)  # Dont use header for this
-                    nsid = hp.npix2nside(len(m))
+                    nsid = hp.get_nside(m)
                     outfile = input.replace(".fits", "")
             
                 elif input.endswith(".h5"):
