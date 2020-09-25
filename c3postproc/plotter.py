@@ -795,6 +795,11 @@ def get_params(m, outfile, polt, signal_label):
             title["diff_label"] = "\mathrm{NPIPE}"
         else:
             title["diff_label"] = ""
+
+        vmin, vmax = get_ticks(m, 97.5)
+        logscale = False
+        #vmin = 0
+        ticks = [vmin, vmax]
         title["diff"] = True 
     else:
         title["diff"] = False
