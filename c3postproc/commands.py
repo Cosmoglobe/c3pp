@@ -1317,7 +1317,6 @@ def makespec():
 @click.argument('dir2', type=click.STRING)
 @click.argument('type2', type=click.Choice(['ml', 'mean']))
 @click.pass_context
-
 def make_diff_plots(ctx, dir1, dir2, type1, type2):
     '''
     Produces standard c3pp plots from the differences between
@@ -1365,7 +1364,10 @@ def make_diff_plots(ctx, dir1, dir2, type1, type2):
   
         from c3postproc.plotter import Plotter
  
-        Plotter(input=comp + '_diff' + '.fits', dataset='', nside=None, auto=True, min=None, max=None, mid=0.0, rng='auto', colorbar=True, lmax=None, fwhm=0.0, mask=None, mfill=None, sig=[0,], remove_dipole=None, logscale=None, size='m', white_background=True, darkmode=False, pdf=True, cmap=None, title=None, ltitle=None, unit=None, scale=1.0, outdir='.', verbose=False, data=diff_map)
+        Plotter(input=comp + '_diff' + '.fits', dataset='', nside=None, auto=True, min=None, max=None, mid=0.0,
+                rng='auto', colorbar=True, lmax=None, fwhm=0.0, mask=None, mfill=None, sig=[0,], remove_dipole=None,
+                logscale=None, size='m', white_background=True, darkmode=False, pdf=True, cmap=None, title=None,
+                ltitle=None, unit=None, scale=1.0, outdir='.', verbose=False, data=diff_map)
 
 @commands.command()
 @click.option("-pol", is_flag=True, help="",)

@@ -772,7 +772,7 @@ def get_params(m, outfile, polt, signal_label):
         sys.exit()
     else:
         # Run map autoset
-        return not_identified(m, signal_label, logscale, title)
+        title, ticks, cmap, logscale, scale = not_identified(m, signal_label, logscale, title)
 
     # If signal is an RMS map, add tag.
     if signal_label.endswith("RMS"):
