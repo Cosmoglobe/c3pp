@@ -28,21 +28,21 @@ is in your path.
 The tool uses command line arguments and has many different tools built in (and more coming).
 In order to get an overview of the available tools and how to access them, simply type
 ```bash
-c3pp
+c3pp --help
 ````
 in your terminal. This will display a list of all available tools.
 For more information on each specific tool, simply type
 ```bash
-c3pp [toolname]
+c3pp [toolname] --help
 ````
 and a description will be printed.
 
-### Currently available tools
+### Some available functionality
 #### Mean and stddev
 Both these tools take a .h5-file and calculate either mean or standard deviation of a signal (such as CMB or dust, or sigma_l) over a range of samples specified by the command line arguments. Depending on wether the input signal is a map or a list of numbers, the 
 data will be stored in a .fits or a .dat file. Map values can also be smoothed using the -smooth function. For stddev, these are smoothed per sample before calculation, for mean, the mean map is smoothed.
 
-#### plot and ploth5
+#### plot
 Allows for plotting any .h5 map signal to a pdf or png file with in a style similar to that of the Planck collaboration. Many features are availble here, such as plotting with white outlines, transparent background. Additionally, when applying this to commander data, the input name is automatically identified and range, color and scale is automatically set to the standard plotting format if the tag "-auto" is applied, which means you may simply specify the filename and any optional arguments such as which sky signal, size of plot etc.
 
 Furthermore, this script allows for plotting alms directly with smoothing and max-alm.
@@ -57,6 +57,9 @@ Takes Dl signals from an .h5 file and calculates mean and standard deviation per
 
 #### h5map2fits
 Exports a .h5 map signal to a separate .fits file.
+
+#### output-sky-model
+Creates a full RMS SED plot per frequency given a set of component maps.
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
