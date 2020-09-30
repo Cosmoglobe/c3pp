@@ -519,17 +519,18 @@ def alm2fits(input, dataset, nside, lmax, fwhm):
 @click.argument("procver", type=click.STRING)
 @click.option("-mask", type=click.Path(exists=True), help="Mask for calculating cmb",)
 @click.option("-defaultmask", is_flag=True, help="Use default dx12 mask",)
-@click.option("-skipfreqmaps", is_flag=True, help="Don't output freqmaps",)
-@click.option("-skipcmb", is_flag=True, help="Don't output cmb",)
-@click.option("-skipsynch", is_flag=True, help="Don't output synch",)
-@click.option("-skipame", is_flag=True, help="Don't output ame",)
-@click.option("-skipff", is_flag=True, help="Don't output ff",)
-@click.option("-skipdust", is_flag=True, help="Don't output dust",)
-@click.option("-skipdiff", is_flag=True, help="Creates diff maps to dx12 and npipe")
-@click.option("-skipdiffcmb", is_flag=True, help="Creates diff maps with cmb maps")
-@click.option("-skipspec", is_flag=True, help="Creates emission plot")
+@click.option("-freqmaps", is_flag=True, help=" output freqmaps",)
+@click.option("-cmb", is_flag=True, help=" output cmb",)
+@click.option("-synch", is_flag=True, help=" output synch",)
+@click.option("-ame", is_flag=True, help=" output ame",)
+@click.option("-ff", is_flag=True, help=" output ff",)
+@click.option("-dust", is_flag=True, help=" output dust",)
+@click.option("-diff", is_flag=True, help="Creates diff maps to dx12 and npipe")
+@click.option("-diffcmb", is_flag=True, help="Creates diff maps with cmb maps")
+@click.option("-spec", is_flag=True, help="Creates emission plot")
+@click.option("-all", "all_", is_flag=True, help="Output all")
 @click.pass_context
-def plotrelease(ctx, procver, mask, defaultmask, skipfreqmaps, skipcmb, skipsynch, skipame, skipff, skipdust, skipdiff, skipdiffcmb, skipspec,):
+def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, synch, ame, ff, dust, diff, diffcmb, spec, all_):
     """
     \b
     Plots all release files\n
@@ -538,13 +539,13 @@ def plotrelease(ctx, procver, mask, defaultmask, skipfreqmaps, skipcmb, skipsync
     if not os.path.exists("figs"):
         os.mkdir("figs")
 
-
-    #if not skipspec:
-    #    ctx.invoke(output_sky_model, )
+    if all_:
+        freqmaps = cmb = synch = ame = ff = dust = diff = diffcmb = spec = True
+        defaultmask = True if not mask else False
         
     for size in ["m", "l", "s",]:
         for colorbar in [True, False]:
-            if not skipcmb and mask or defaultmask:
+            if cmb and mask or defaultmask:
                 outdir = "figs/cmb/"
                 if not os.path.exists(outdir):
                     os.mkdir(outdir)
@@ -567,7 +568,7 @@ def plotrelease(ctx, procver, mask, defaultmask, skipfreqmaps, skipcmb, skipsync
                 # RMS maps
                 ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[4, 5, 6,], )
 
-            if not skipfreqmaps:
+            if freqmaps:
                 outdir = "figs/freqmaps/"
                 if not os.path.exists(outdir):
                     os.mkdir(outdir)
@@ -595,7 +596,7 @@ def plotrelease(ctx, procver, mask, defaultmask, skipfreqmaps, skipcmb, skipsync
                 ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[5, 6,],  fwhm=60.0,min=0.0, max=20.0)
                 ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[7,],  fwhm=60.0,min=0.0, max=40.0)
 
-            if not skipsynch:
+            if synch:
                 outdir = "figs/synchrotron/"
                 if not os.path.exists(outdir):
                     os.mkdir(outdir)
@@ -603,7 +604,7 @@ def plotrelease(ctx, procver, mask, defaultmask, skipfreqmaps, skipcmb, skipsync
                 # Synch IQU
                 ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], )
 
-            if not skipff:
+            if ff:
                 outdir = "figs/freefree/"
                 if not os.path.exists(outdir):
                     os.mkdir(outdir)
@@ -611,7 +612,7 @@ def plotrelease(ctx, procver, mask, defaultmask, skipfreqmaps, skipcmb, skipsync
                 # freefree mean and rms
                 ctx.invoke(plot, input=f"BP_freefree_I_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3], )
 
-            if not skipame:
+            if ame:
                 outdir = "figs/ame/"
                 if not os.path.exists(outdir):
                     os.mkdir(outdir)
@@ -619,7 +620,7 @@ def plotrelease(ctx, procver, mask, defaultmask, skipfreqmaps, skipcmb, skipsync
                 # ame mean and rms
                 ctx.invoke(plot, input=f"BP_ame_I_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3], )
 
-            if not skipdust:
+            if dust:
                 outdir = "figs/dust/"
                 if not os.path.exists(outdir):
                     os.mkdir(outdir)
@@ -627,7 +628,7 @@ def plotrelease(ctx, procver, mask, defaultmask, skipfreqmaps, skipcmb, skipsync
                 # dust IQU
                 ctx.invoke(plot, input=f"BP_dust_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], )
 
-            if not skipdiff:
+            if diff:
                 outdir = "figs/freqmap_difference/"
                 if not os.path.exists(outdir):
                     os.mkdir(outdir)
@@ -648,7 +649,7 @@ def plotrelease(ctx, procver, mask, defaultmask, skipfreqmaps, skipcmb, skipsync
                 ctx.invoke(plot, input=f"BP_070_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=10)
                 ctx.invoke(plot, input=f"BP_070_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
 
-            if not skipdiffcmb:
+            if diffcmb:
                 outdir = "figs/cmb_difference/"
                 if not os.path.exists(outdir):
                     os.mkdir(outdir)
@@ -659,23 +660,67 @@ def plotrelease(ctx, procver, mask, defaultmask, skipfreqmaps, skipcmb, skipsync
                     ctx.invoke(plot, input=input, size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask, sig=[0,],  range=10, title=method, ltitle=" ",)
                     ctx.invoke(plot, input=input, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4, title=method, ltitle=" ",)
 
+            if spec: 
+                print("Plotting sky model SED spectrum")
+                print("Reading data")
+                import healpy as hp
+                maskpath="/mn/stornext/u3/trygvels/compsep/cdata/like/sky-model/masks"
+                fg_path="/mn/stornext/u3/trygvels/compsep/cdata/like/sky-model/fgs_60arcmin"
+
+                a_cmb = None
+
+                a_s = hp.read_map(f"BP_synch_IQU_full_n1024_{procver}.fits", field=(0,1,2), dtype=None, verbose=False)
+                b_s = hp.read_map(f"BP_synch_IQU_full_n1024_{procver}.fits", field=(4,5), dtype=None, verbose=False)
+                
+                a_ff = hp.read_map(f"BP_freefree_I_full_n1024_{procver}.fits", field=(0,), dtype=None, verbose=False)
+                a_ff = hp.smoothing(a_ff, fwhm=arcmin2rad(np.sqrt(60.0**2-30**2)), verbose=False)
+                t_e  = hp.read_map(f"BP_freefree_I_full_n1024_{procver}.fits", field=(1,), dtype=None, verbose=False)
+
+                a_ame1 = hp.read_map(f"BP_ame_I_full_n1024_{procver}.fits", field=(0,), dtype=None, verbose=False)
+                a_ame1 = hp.smoothing(a_ame1, fwhm=arcmin2rad(np.sqrt(60.0**2-30**2)), verbose=False)
+                nup    = hp.read_map(f"BP_ame_I_full_n1024_{procver}.fits", field=(1,), dtype=None, verbose=False)                
+                a_ame2 = None
+
+                a_d = hp.read_map(f"BP_dust_IQU_full_n1024_{procver}.fits", field=(0,1,2), dtype=None, verbose=False)
+                a_d = hp.smoothing(a_d, fwhm=arcmin2rad(np.sqrt(60.0**2-10**2)), verbose=False)
+                b_d = hp.read_map(f"BP_dust_IQU_full_n1024_{procver}.fits", field=(4,5,), dtype=None, verbose=False)                                
+                t_d = hp.read_map(f"BP_dust_IQU_full_n1024_{procver}.fits", field=(6,7,), dtype=None, verbose=False)                                
+
+                a_co10=f"{fg_path}/co10_npipe_60arcmin.fits"
+                a_co21=f"{fg_path}/co21_npipe_60arcmin.fits"
+                a_co32=f"{fg_path}/co32_npipe_60arcmin.fits"
+                
+                mask1=f"{maskpath}/mask_70GHz_t7.fits"
+                mask2=f"{maskpath}/mask_70GHz_t100.fits"
+                
+                print("Data read, making plots, this may take a while")
+                for long in [True, False]:
+                    for pol in [True, False]:
+                        ctx.invoke(output_sky_model, long=long,
+                                   darkmode=False, png=False,
+                                   nside=64, a_cmb=a_cmb, a_s=a_s, b_s=b_s, a_ff=a_ff,
+                                   t_e=t_e, a_ame1=a_ame1, a_ame2=a_ame2, nup=nup, a_d=a_d, b_d=b_d,
+                                   t_d=t_d, a_co10=a_co10, a_co21=a_co21, a_co32=a_co32, mask1=mask1,
+                                   mask2=mask2,)
+
 @commands.command()
 @click.argument("chain", type=click.Path(exists=True), nargs=-1,)
 @click.argument("burnin", type=click.INT)
 @click.argument("procver", type=click.STRING)
 @click.option("-resamp", type=click.Path(exists=True), help="Include resampled chain file",)
-@click.option("-skipcopy", is_flag=True, help="Don't copy full .h5 file",)
-@click.option("-skipfreqmaps", is_flag=True, help="Don't output freqmaps",)
-@click.option("-skipame", is_flag=True, help="Don't output ame",)
-@click.option("-skipff", "-skipfreefree", "skipff", is_flag=True, help="Don't output freefree",)
-@click.option("-skipcmb", is_flag=True, help="Don't output cmb",)
-@click.option("-skipsynch", is_flag=True, help="Don't output synchrotron",)
-@click.option("-skipdust", is_flag=True, help="Don't output dust",)
-@click.option("-skipbr", is_flag=True, help="Don't output BR",)
-@click.option("-skipdiff", is_flag=True, help="Creates diff maps to dx12 and npipe")
-@click.option("-skipdiffcmb", is_flag=True, help="Creates diff maps cmb")
+@click.option("-copy", "copy_", is_flag=True, help=" copy full .h5 file",)
+@click.option("-freqmaps", is_flag=True, help=" output freqmaps",)
+@click.option("-ame", is_flag=True, help=" output ame",)
+@click.option("-ff", "-freefree", "ff", is_flag=True, help=" output freefree",)
+@click.option("-cmb", is_flag=True, help=" output cmb",)
+@click.option("-synch", is_flag=True, help=" output synchrotron",)
+@click.option("-dust", is_flag=True, help=" output dust",)
+@click.option("-br", is_flag=True, help=" output BR",)
+@click.option("-diff", is_flag=True, help="Creates diff maps to dx12 and npipe")
+@click.option("-diffcmb", is_flag=True, help="Creates diff maps cmb")
+@click.option("-all", "all_", is_flag=True, help="Output all")
 @click.pass_context
-def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame, skipff, skipcmb, skipsynch, skipdust, skipbr, skipdiff, skipdiffcmb,):
+def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, synch, dust, br, diff, diffcmb, all_):
     """
     Creates a release file-set on the BeyondPlanck format.\n
     https://gitlab.com/BeyondPlanck/repo/-/wikis/BeyondPlanck-Release-Candidate-2\n    
@@ -711,21 +756,25 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
     from pathlib import Path
     import shutil
 
+    if all_: # sets all other flags to true
+        copy_ = freqmaps = ame = ff = cmb = synch = dust = br = diff = diffcmb = True
+
     # Make procver directory if not exists
     print("{:#^80}".format(""))
     print(f"Creating directory {procver}")
     Path(procver).mkdir(parents=True, exist_ok=True)
     chains = chain
     maxchain = len(chains)
+
     """
     Copying chains files
     """
-    if not skipcopy:
+    if copy_:
         # Commander3 parameter file for main chain
         for i, chainfile in enumerate(chains, 1):
             path = os.path.split(chainfile)[0]
             for file in os.listdir(path):
-                if file.startswith("param") and i == 0:  # Copy only first
+                if file.startswith("param") and i == 1:  # Copy only first
                     print(f"Copying {path}/{file} to {procver}/BP_param_full_c" + str(i).zfill(4) + ".txt")
                     shutil.copyfile(f"{path}/{file}", f"{procver}/BP_param_full_c" + str(i).zfill(4) + ".txt",)
 
@@ -760,7 +809,7 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
     Run mean and stddev from min to max sample (Choose min manually or start at 1?)
     """
     chain = f"{procver}/BP_c0001_full_{procver}.h5"
-    if not skipfreqmaps:
+    if freqmaps:
         try:
             # Full-mission 30 GHz IQU frequency map
             # BP_030_IQU_full_n0512_{procver}.fits
@@ -830,7 +879,7 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
             print("Continuing...")
 
     
-    if not skipdiff:
+    if diff:
         import healpy as hp
         try:
             print("Creating frequency difference maps")
@@ -873,7 +922,7 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
             print(e)
             print("Continuing...")
 
-    if not skipdiffcmb:
+    if diffcmb:
         import healpy as hp
         try:
             print("Creating cmb difference maps")
@@ -916,7 +965,7 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
     FOREGROUND MAPS
     """
     # Full-mission CMB IQU map
-    if not skipcmb:
+    if cmb:
         fname = f"{procver}/BP_resamp_c0001_full_Cl_{procver}.h5" if resamp else chain
         try:
             format_fits(
@@ -942,7 +991,7 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
             print(e)
             print("Continuing...")
 
-    if not skipff:
+    if ff:
         try:
             # Full-mission free-free I map
             format_fits(
@@ -968,7 +1017,7 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
             print(e)
             print("Continuing...")
 
-    if not skipame:
+    if ame:
         try:
             # Full-mission AME I map
             format_fits(
@@ -994,7 +1043,7 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
             print(e)
             print("Continuing...")
 
-    if not skipsynch:
+    if synch:
         try:
             # Full-mission synchrotron IQU map
             format_fits(
@@ -1020,7 +1069,7 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
             print(e)
             print("Continuing...")
 
-    if not skipdust:
+    if dust:
         try:
             # Full-mission thermal dust IQU map
             format_fits(
@@ -1048,7 +1097,7 @@ def release(ctx, chain, burnin, procver, resamp, skipcopy, skipfreqmaps, skipame
 
     """ As implemented by Simone
     """
-    if not skipbr and resamp:
+    if br and resamp:
         # Gaussianized TT Blackwell-Rao input file
         print()
         print("{:-^50}".format("CMB GBR"))
@@ -1394,7 +1443,7 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
     c3pp output-sky-model -a_s synch_c0001_k000100.fits -b_s synch_beta_c0001_k000100.fits -a_d dust_init_kja_n1024.fits -b_d dust_beta_init_kja_n1024.fits -t_d dust_T_init_kja_n1024.fits -a_ame1 ame_c0001_k000100.fits -nup ame_nu_p_c0001_k000100.fits -a_ff ff_c0001_k000100.fits -t_e ff_Te_c0001_k000100.fits -mask1 mask_70GHz_t70.fits -mask2 mask_70GHz_t7.fits -nside 16
     """
     from c3postproc.spectrum import Spectrum
-
+    """
     if not a_cmb:
         a_cmb = 0.67 if pol else 45
     if not a_s:
@@ -1423,7 +1472,7 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
         a_co21=25
     if not a_co32:
         a_co32=10
-
+    """
 
     if pol:
         p = 1.5 if long else 12
@@ -1555,12 +1604,7 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
                           },
             }
 
-    """ 
-    if pol:
-        foregrounds = {"rspectrum1": [1.], "lf": [a_s, b_s,], "tdust": [a_d, b_d, t_d, 353], "rspectrum2": [0.01],"rspectrum3": [1e-4]}# "sdust": [a_ame1, nup]}
-    else:
-        foregrounds = {"cmb": [a_cmb], "ff": [a_ff, t_e], "lf": [a_s, b_s,], "sdust": [a_ame1, nup], "tdust": [a_d, b_d, t_d, 545],}
-    """
+
     Spectrum(pol, long, darkmode, png, foregrounds, [mask1,mask2], nside)
 
 

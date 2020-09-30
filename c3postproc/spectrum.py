@@ -399,7 +399,7 @@ def find_nearest(array, value):
 def getspec(nu, fg, params, function, field, nside, npix, idx, m):
     val = []
     # Alternative 1
-    if any([str(x).endswith(".fits") for x in params]):
+    if any([str(x).endswith(".fits") for x in params]) or any([isinstance(x,np.ndarray) for x in params]):
         if fg == "Spinning Dust":
             from pathlib import Path
             ame_template = Path(__file__).parent / "spdust2_cnm.dat"
@@ -419,6 +419,13 @@ def getspec(nu, fg, params, function, field, nside, npix, idx, m):
                     p = np.sqrt(s1**2+s2**2)
                 else:
                     p = hp.read_map(p, field=field, dtype=None, verbose=False)
+                nsides.append(hp.npix2nside(len(p)))
+            elif isinstance(p, np.ndarray):
+                if field==1 and i==0:
+                    p = np.sqrt(p[1]**2+p[2]**2)
+                elif p.ndim > 1 and p.shape[0]>1:
+                    p = p[field]
+
                 nsides.append(hp.npix2nside(len(p)))
             else:
                 nsides.append(0)
