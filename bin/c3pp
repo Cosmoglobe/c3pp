@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 import click
 
-from c3postproc.commands import *
+from src.commands import *
 
-from c3postproc.commands import commands
+from src.commands import commands
 
 CONTEXT_SETTINGS = dict(
     max_content_width=100
