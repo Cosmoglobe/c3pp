@@ -593,7 +593,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, synch, ame, ff, 
         
         files = os.listdir(".")
         for f in files:
-            if f.startswith("spectrum_"):
+            if f.startswith("spectrum"):
                 os.rename(f, f"{outdir}{f}")
 
     for size in ["m", "l", "s",]:
