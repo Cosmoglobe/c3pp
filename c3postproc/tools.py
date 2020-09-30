@@ -647,7 +647,6 @@ def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_
                     
                 if (lowmem):
                     if (first_samp):
-                        first_samp=False
                         if (command==np.mean):
                             dats=data.copy()
                         elif (command==np.std):
@@ -664,6 +663,7 @@ def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_
                 else:
                     # Append sample to list
                     dats.append(data)
+                first_samp=False
 
     if (lowmem):
         if (command == np.mean):

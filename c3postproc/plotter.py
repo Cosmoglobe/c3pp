@@ -724,9 +724,19 @@ def get_params(m, outfile, polt, signal_label):
             tit = str(findall(r"res_(.*?)_", outfile)[0])
         else:
             tit = str(findall(r"residual_(.*?)_", outfile)[0])
+        
+        if sl == "T":
+            ticks = [-3, 0, 3]
+        else:
+            ticks = [-1, 0, 1]
+
+        if "WMAP" in outfile:
+            tit = outfile.split("_")[2]
+            if "_P_" in outfile and sl != "T":
+                ticks = [-0.01, 0, 0.01]
+            
         title["comp"] = fr"{tit}"
-        title["param"] = r"$res$"
-        ticks = [-10, 0, 10]
+        title["param"] = r"$r$"
         title["unit"] = r"$\mu\mathrm{K}$"
 
         if "545" in outfile:
@@ -804,7 +814,11 @@ def get_params(m, outfile, polt, signal_label):
     else:
         title["diff"] = False
 
-    title["mean"] = True if signal_label.endswith("MEAN") else False
+    if signal_label.endswith("MEAN") or "_mean" in outfile:
+        title["mean"] = True 
+    else:
+        title["mean"] = False
+
     title["comp"] = title["comp"].lstrip('0')    
 
     return (title, ticks, cmap, logscale, scale,)
