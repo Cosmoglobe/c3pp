@@ -487,7 +487,7 @@ def rspectrum(nu, r, sig, scaling=1.0):
 
 
 
-def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_missing, lowmem, pixweight, return_mean, command):
+def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_missing, pixweight, return_mean, command, lowmem=True):
     # Check if you want to output a map
     import healpy as hp
     from tqdm import tqdm
@@ -498,7 +498,7 @@ def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_
         exit()
 
     if (lowmem and command == np.std): #need to compute mean first
-        mean_data = fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_missing, lowmem, pixweight, True, np.mean)
+        mean_data = fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_missing, pixweight, True, np.mean)
 
     aline=input.split('/')
     dataset=aline[-1]
