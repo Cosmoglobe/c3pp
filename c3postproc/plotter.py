@@ -14,8 +14,8 @@ from astropy.io import fits
 print("Importtime:", (time.time() - totaltime))
 
 
-def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, pdf, cmap, title, ltitle, unit, scale, outdir, verbose, data, ):
-    rcParams["backend"] = "pdf" if pdf else "agg"
+def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, verbose, data, ):
+    rcParams["backend"] = "agg" if png else "pdf"
     rcParams["legend.fancybox"] = True
     rcParams["lines.linewidth"] = 2
     rcParams["savefig.dpi"] = 300
@@ -84,11 +84,11 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
                     header = dict(header)
                     try:
                         signal_label = header[f"TTYPE{polt+1}"]
-                        if signal_label == "TEMPERATURE":
+                        if signal_label in ["TEMPERATURE", "TEMP"]:
                             signal_label = "T"
-                        if signal_label == "Q-POLARISATION":
+                        if signal_label in ["Q-POLARISATION", "Q_POLARISATION"]:
                             signal_label = "Q"
-                        if signal_label == "U-POLARISATION":
+                        if signal_label in ["U-POLARISATION", "U_POLARISATION"]:
                             signal_label = "U"
                         
                     except:
@@ -460,7 +460,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             #### SAVE ####
             ##############
             plt.tight_layout()
-            filetype = "pdf" if pdf else "png"
+            filetype = "png" if png else "pdf"
             # Turn on transparency unless told otherwise
             tp = False if white_background else True  
 
@@ -786,7 +786,7 @@ def get_params(m, outfile, polt, signal_label):
         title, ticks, cmap, logscale, scale = not_identified(m, signal_label, logscale, title)
 
     # If signal is an RMS map, add tag.
-    if signal_label.endswith("RMS"):
+    if signal_label.endswith("RMS") or "_stddev" in outfile:
         print("{:-^48}".format(f"Plotting RMS map {signal_label}"))
         title["stddev"] = True
         vmin, vmax = get_ticks(m, 97.5)
