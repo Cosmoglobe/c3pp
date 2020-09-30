@@ -577,8 +577,9 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, synch, ame, ff, 
         mask2=f"{maskpath}/mask_70GHz_t100.fits"
                 
         print("Data read, making plots, this may take a while")
-        for long in [True, False]:
-            for pol in [True, False]:
+
+        for long in [False,True]:
+            for pol in [True,False]:
                 ctx.invoke(output_sky_model, pol=pol, long=long,
                            darkmode=False, png=False,
                            nside=64, a_cmb=a_cmb, a_s=a_s, b_s=b_s, a_ff=a_ff,
@@ -586,6 +587,15 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, synch, ame, ff, 
                            t_d=t_d, a_co10=a_co10, a_co21=a_co21, a_co32=a_co32, mask1=mask1,
                            mask2=mask2,)
         
+        outdir = "figs/sky-model/"
+        if not os.path.exists(outdir):
+            os.mkdir(outdir)
+        
+        files = os.listdir(".")
+        for f in files:
+            if f.startswith("spectrum_"):
+                os.rename(f, f"{outdir}{f}")
+
     for size in ["m", "l", "s",]:
         for colorbar in [True, False]:
             if cmb and mask or defaultmask:
