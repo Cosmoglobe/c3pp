@@ -542,6 +542,49 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, synch, ame, ff, 
     if all_:
         freqmaps = cmb = synch = ame = ff = dust = diff = diffcmb = spec = True
         defaultmask = True if not mask else False
+
+    if spec: 
+        print("Plotting sky model SED spectrum")
+        print("Reading data")
+        import healpy as hp
+        maskpath="/mn/stornext/u3/trygvels/compsep/cdata/like/sky-model/masks"
+        fg_path="/mn/stornext/u3/trygvels/compsep/cdata/like/sky-model/fgs_60arcmin"
+        
+        a_cmb = None
+        
+        a_s = hp.read_map(f"BP_synch_IQU_full_n1024_{procver}.fits", field=(0,1,2), dtype=None, verbose=False)
+        b_s = hp.read_map(f"BP_synch_IQU_full_n1024_{procver}.fits", field=(4,5), dtype=None, verbose=False)
+        
+        a_ff = hp.read_map(f"BP_freefree_I_full_n1024_{procver}.fits", field=(0,), dtype=None, verbose=False)
+        a_ff = hp.smoothing(a_ff, fwhm=arcmin2rad(np.sqrt(60.0**2-30**2)), verbose=False)
+        t_e  = hp.read_map(f"BP_freefree_I_full_n1024_{procver}.fits", field=(1,), dtype=None, verbose=False)
+        
+        a_ame1 = hp.read_map(f"BP_ame_I_full_n1024_{procver}.fits", field=(0,), dtype=None, verbose=False)
+        a_ame1 = hp.smoothing(a_ame1, fwhm=arcmin2rad(np.sqrt(60.0**2-30**2)), verbose=False)
+        nup    = hp.read_map(f"BP_ame_I_full_n1024_{procver}.fits", field=(1,), dtype=None, verbose=False)                
+        a_ame2 = None
+        
+        a_d = hp.read_map(f"BP_dust_IQU_full_n1024_{procver}.fits", field=(0,1,2), dtype=None, verbose=False)
+        a_d = hp.smoothing(a_d, fwhm=arcmin2rad(np.sqrt(60.0**2-10**2)), verbose=False)
+        b_d = hp.read_map(f"BP_dust_IQU_full_n1024_{procver}.fits", field=(4,5,), dtype=None, verbose=False)                                
+        t_d = hp.read_map(f"BP_dust_IQU_full_n1024_{procver}.fits", field=(6,7,), dtype=None, verbose=False)                                
+        
+        a_co10=f"{fg_path}/co10_npipe_60arcmin.fits"
+        a_co21=f"{fg_path}/co21_npipe_60arcmin.fits"
+        a_co32=f"{fg_path}/co32_npipe_60arcmin.fits"
+        
+        mask1=f"{maskpath}/mask_70GHz_t7.fits"
+        mask2=f"{maskpath}/mask_70GHz_t100.fits"
+                
+        print("Data read, making plots, this may take a while")
+        for long in [True, False]:
+            for pol in [True, False]:
+                ctx.invoke(output_sky_model, pol=pol, long=long,
+                           darkmode=False, png=False,
+                           nside=64, a_cmb=a_cmb, a_s=a_s, b_s=b_s, a_ff=a_ff,
+                           t_e=t_e, a_ame1=a_ame1, a_ame2=a_ame2, nup=nup, a_d=a_d, b_d=b_d,
+                           t_d=t_d, a_co10=a_co10, a_co21=a_co21, a_co32=a_co32, mask1=mask1,
+                           mask2=mask2,)
         
     for size in ["m", "l", "s",]:
         for colorbar in [True, False]:
@@ -660,49 +703,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, synch, ame, ff, 
                     ctx.invoke(plot, input=input, size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask, sig=[0,],  range=10, title=method, ltitle=" ",)
                     ctx.invoke(plot, input=input, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4, title=method, ltitle=" ",)
 
-            if spec: 
-                print("Plotting sky model SED spectrum")
-                print("Reading data")
-                import healpy as hp
-                maskpath="/mn/stornext/u3/trygvels/compsep/cdata/like/sky-model/masks"
-                fg_path="/mn/stornext/u3/trygvels/compsep/cdata/like/sky-model/fgs_60arcmin"
-
-                a_cmb = None
-
-                a_s = hp.read_map(f"BP_synch_IQU_full_n1024_{procver}.fits", field=(0,1,2), dtype=None, verbose=False)
-                b_s = hp.read_map(f"BP_synch_IQU_full_n1024_{procver}.fits", field=(4,5), dtype=None, verbose=False)
-                
-                a_ff = hp.read_map(f"BP_freefree_I_full_n1024_{procver}.fits", field=(0,), dtype=None, verbose=False)
-                a_ff = hp.smoothing(a_ff, fwhm=arcmin2rad(np.sqrt(60.0**2-30**2)), verbose=False)
-                t_e  = hp.read_map(f"BP_freefree_I_full_n1024_{procver}.fits", field=(1,), dtype=None, verbose=False)
-
-                a_ame1 = hp.read_map(f"BP_ame_I_full_n1024_{procver}.fits", field=(0,), dtype=None, verbose=False)
-                a_ame1 = hp.smoothing(a_ame1, fwhm=arcmin2rad(np.sqrt(60.0**2-30**2)), verbose=False)
-                nup    = hp.read_map(f"BP_ame_I_full_n1024_{procver}.fits", field=(1,), dtype=None, verbose=False)                
-                a_ame2 = None
-
-                a_d = hp.read_map(f"BP_dust_IQU_full_n1024_{procver}.fits", field=(0,1,2), dtype=None, verbose=False)
-                a_d = hp.smoothing(a_d, fwhm=arcmin2rad(np.sqrt(60.0**2-10**2)), verbose=False)
-                b_d = hp.read_map(f"BP_dust_IQU_full_n1024_{procver}.fits", field=(4,5,), dtype=None, verbose=False)                                
-                t_d = hp.read_map(f"BP_dust_IQU_full_n1024_{procver}.fits", field=(6,7,), dtype=None, verbose=False)                                
-
-                a_co10=f"{fg_path}/co10_npipe_60arcmin.fits"
-                a_co21=f"{fg_path}/co21_npipe_60arcmin.fits"
-                a_co32=f"{fg_path}/co32_npipe_60arcmin.fits"
-                
-                mask1=f"{maskpath}/mask_70GHz_t7.fits"
-                mask2=f"{maskpath}/mask_70GHz_t100.fits"
-                
-                print("Data read, making plots, this may take a while")
-                for long in [True, False]:
-                    for pol in [True, False]:
-                        ctx.invoke(output_sky_model, long=long,
-                                   darkmode=False, png=False,
-                                   nside=64, a_cmb=a_cmb, a_s=a_s, b_s=b_s, a_ff=a_ff,
-                                   t_e=t_e, a_ame1=a_ame1, a_ame2=a_ame2, nup=nup, a_d=a_d, b_d=b_d,
-                                   t_d=t_d, a_co10=a_co10, a_co21=a_co21, a_co32=a_co32, mask1=mask1,
-                                   mask2=mask2,)
-
+            
 @commands.command()
 @click.argument("chain", type=click.Path(exists=True), nargs=-1,)
 @click.argument("burnin", type=click.INT)
