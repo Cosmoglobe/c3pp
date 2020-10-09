@@ -2,9 +2,9 @@
 
 A python code for processing and plotting _commander3_ files.
 
-![Masterpiece](https://github.com/trygvels/c3pp/blob/master/imgs/spectrum.pdf)
+![Masterpiece](https://github.com/trygvels/c3pp/blob/master/imgs/spectrum.png)
 
-![Masterpiece](https://github.com/trygvels/c3pp/blob/master/imgs/spectrum_pol.pdf)
+![Masterpiece](https://github.com/trygvels/c3pp/blob/master/imgs/spectrum_pol.png)
 
 
 ## Installation
