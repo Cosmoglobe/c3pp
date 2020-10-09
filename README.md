@@ -35,31 +35,39 @@ For more information on each specific tool, simply type
 ```bash
 c3pp [toolname] --help
 ````
-and a description will be printed.
+and a description will be printed:
+```
+[command prompt]$ c3pp --help
+Usage: c3pp [OPTIONS] COMMAND [ARGS]...
 
-### Some available functionality
-#### Mean and stddev
-Both these tools take a .h5-file and calculate either mean or standard deviation of a signal (such as CMB or dust, or sigma_l) over a range of samples specified by the command line arguments. Depending on wether the input signal is a map or a list of numbers, the 
-data will be stored in a .fits or a .dat file. Map values can also be smoothed using the -smooth function. For stddev, these are smoothed per sample before calculation, for mean, the mean map is smoothed.
+Options:
+  --help  Show this message and exit.
 
-#### plot
-Allows for plotting any .h5 map signal to a pdf or png file with in a style similar to that of the Planck collaboration. Many features are availble here, such as plotting with white outlines, transparent background. Additionally, when applying this to commander data, the input name is automatically identified and range, color and scale is automatically set to the standard plotting format if the tag "-auto" is applied, which means you may simply specify the filename and any optional arguments such as which sky signal, size of plot etc.
-
-Furthermore, this script allows for plotting alms directly with smoothing and max-alm.
-#### alm2fits
-Exports alms from .h5 to a separate fits file.
-
-#### sigma_l2fits
-Exports sigma_ls from .h5 to a separate .fits file.
-
-#### dlbin2dat
-Takes Dl signals from an .h5 file and calculates mean and standard deviation per bin given a binfile and outputs to a .dat.
-
-#### h5map2fits
-Exports a .h5 map signal to a separate .fits file.
-
-#### output-sky-model
-Creates a full RMS SED plot per frequency given a set of component maps.
+Commands:
+  alm2fits          Converts c3 alms in .h5 file to fits with given nside and optional...
+  crosspec          This function calculates a powerspectrum from polspice using this path:...
+  dlbin2dat         Outputs a .dat file of binned powerspectra averaged over a range of output...
+  fits-mean         Calculates the mean over sample range from fits-files.
+  fits-stddev       Calculates the standard deviation over sample range from fits-files.
+  generate-sky      Generate sky maps from separate input maps.
+  gnomplot
+  h52fits           Outputs a .h5 map to fits on the form 000001_cmb_amp_n1024.fits
+  make-diff-plots   Produces standard c3pp plots from the differences between two output...
+  mean              Calculates the mean over sample range from .h5 file.
+  output-sky-model  Outputs spectrum plots c3pp output-sky-model -a_s synch_c0001_k000100.fits...
+  pixreg2trace      Outputs the values of the pixel regions for each sample to a dat file.
+  plot              Plots map from .fits or h5 file.
+  plotrelease       Plots all release files
+  printdata         Prints the data of a fits file
+  printheader       Prints the header of a fits file.
+  qu2ang            remove columns in fits file
+  release           Creates a release file-set on the BeyondPlanck format.
+  rmcolumn          remove columns in fits file
+  sigma-l2fits      Converts c3-h5 dataset to fits suitable for c1 BR and GBR estimator...
+  specplot          This function plots the file output by the Crosspec function.
+  stddev            Calculates the stddev over sample range from .h5 file.
+  traceplot         This function plots a traceplot of samples from min to max with optional...
+```
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
