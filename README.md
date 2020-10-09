@@ -6,7 +6,7 @@ Temperature             |  Polarization
 ![Masterpiece](https://github.com/trygvels/c3pp/blob/master/imgs/spectrum.png) |  ![Masterpiece](https://github.com/trygvels/c3pp/blob/master/imgs/spectrum_pol.png)
 Foregrounds             |  
 :-------------------------:|:-------------------------:
-![Masterpiece](https://github.com/trygvels/c3pp/blob/master/imgs/BP_dust_full_BP7_I_MEAN_w12_n1024_c-sunburst.pdf) |  ![Masterpiece](https://github.com/trygvels/c3pp/blob/master/imgs/BP_synch_full_BP7_I_MEAN_w12_n1024_c-swamp.png)
+![Masterpiece](https://github.com/trygvels/c3pp/blob/master/imgs/BP_dust_full_BP7_I_MEAN_w12_n1024_c-sunburst.png) |  ![Masterpiece](https://github.com/trygvels/c3pp/blob/master/imgs/BP_synch_full_BP7_I_MEAN_w12_n1024_c-swamp.png)
 :-------------------------:|:-------------------------:
 ![Masterpiece](https://github.com/trygvels/c3pp/blob/master/imgs/BP_ame_full_BP7_I_MEAN_w12_n1024_c-amber.png) |  ![Masterpiece](https://github.com/trygvels/c3pp/blob/master/imgs/BP_freefree_full_BP7_I_MEAN_w12_n1024_c-freeze.png)
 
