@@ -56,13 +56,14 @@ def alm2fits_tool(input, dataset, nside, lmax, fwhm, save=True):
     alms_unpacked = unpack_alms(alms, lmax)  # Unpack alms
 
     print("Making map from alms")
-    maps = hp.sphtfunc.alm2map(alms_unpacked, nside, lmax=lmax, mmax=mmax, fwhm=arcmin2rad(fwhm), pixwin=True,)
+    pol=False if alms_unpacked.shape[0] == 1 else True
+    maps = hp.sphtfunc.alm2map(alms_unpacked, nside, lmax=lmax, mmax=mmax, fwhm=arcmin2rad(fwhm),pol=pol, pixwin=True,)
 
     outfile = dataset.replace("/", "_")
     outfile = outfile.replace("_alm", "")
     if save:
         outfile += f"_{str(int(fwhm))}arcmin" if fwhm > 0.0 else ""
-        hp.write_map(outfile + f"_n{str(nside)}_lmax{lmax}.fits", maps, overwrite=True,)
+        hp.write_map(outfile + f"_n{str(nside)}_lmax{lmax}.fits", maps, overwrite=True, dtype=None)
     return maps, nside, lmax, fwhm, outfile
 
 
@@ -333,7 +334,7 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command, 
 def arcmin2rad(arcmin):
     return arcmin * (2 * np.pi) / 21600
 
-def legend_positions(df, y):
+def legend_positions(df, y, scaling):
     """ Calculate position of labels to the right in plot... """
     positions = {}
     for column in y:
@@ -349,7 +350,7 @@ def legend_positions(df, y):
             for column2, value2 in positions.items():
                 if column1 != column2:
                     dist = abs(value1-value2)
-                    if dist < 0.075: #0.023:
+                    if dist < scaling:# 0.075: #0.075: #0.023:
                         collisions += 1
                         if value1 < value2:
                             positions[column1] -= .001

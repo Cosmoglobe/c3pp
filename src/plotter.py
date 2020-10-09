@@ -354,7 +354,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
 
             # Apply mask
             hp.ma(m)
-            m.mask = np.logical_not(hp.read_map(mask))
+            m.mask = np.logical_not(hp.read_map(mask, field=polt))
 
             # Don't know what this does, from paperplots by Zonca.
             grid_mask = m.mask[grid_pix]
@@ -725,11 +725,8 @@ def get_params(m, outfile, polt, signal_label):
         else:
             tit = str(findall(r"residual_(.*?)_", outfile)[0])
         
-        if sl == "T":
-            ticks = [-3, 0, 3]
-        else:
-            ticks = [-1, 0, 1]
-
+        ticks = [-3, 0, 3]
+        
         if "WMAP" in outfile:
             tit = outfile.split("_")[2]
             if "_P_" in outfile and sl != "T":

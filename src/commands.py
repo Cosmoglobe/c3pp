@@ -133,17 +133,20 @@ def specplot(input,):
     import matplotlib.pyplot as plt
     import numpy as np
     import seaborn as sns
-
-    sns.set_context("notebook", font_scale=1.2, rc={"lines.linewidth": 1.2})
+    from cycler import cycler
+    sns.set_context("notebook", font_scale=2, rc={"lines.linewidth": 2})
     sns.set_style("whitegrid")
     custom_style = {
         'grid.color': '0.8',
         'grid.linestyle': '--',
         'grid.linewidth': 0.5,
+        'savefig.dpi':300,
+        'font.size': 20, 
+        'axes.linewidth': 1.5,
+        'axes.prop_cycle': cycler(color=['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52'])
     }
     sns.set_style(custom_style)
-
-    lmax = 350
+    lmax = 200
     ell, ee, bb, eb = np.loadtxt(input, usecols=(0,2,3,6), skiprows=3, max_rows=lmax, unpack=True)
                                  
     ee = ee*(ell*(ell+1)/(2*np.pi))
@@ -152,24 +155,26 @@ def specplot(input,):
 	
     f, (ax1, ax2) = plt.subplots(2, 1, figsize=(12,8), gridspec_kw={'height_ratios': [3, 1]}, sharex=True)
 
-    ax1.loglog(ell, ee, linewidth=2, label="EE")
-    ax1.loglog(ell, bb, linewidth=2, label="BB")
-    ax1.set_ylabel(r"$D_l$ [$\mu K^2$]")
+    l1 = ax1.loglog(ell, ee, linewidth=2, label="EE", color='#636EFA')
+    l2 = ax1.loglog(ell, bb, linewidth=2, label="BB", color= '#EF553B')
+    ax1.set_ylabel(r"$D_l$ [$\mu K^2$]",)
 
-    ax2.semilogx(ell, bb/ee, linewidth=2, label="BB/EE")
-    ax2.set_ylabel(r"BB/EE")
-    ax2.set_xlabel(r'Multipole moment, $l$')
+    l3 = ax2.semilogx(ell, bb/ee, linewidth=2, label="BB/EE", color='#00CC96')
+    ax2.set_ylabel(r"BB/EE",)
+    ax2.set_xlabel(r'Multipole moment, $l$',)
     #plt.semilogx(ell, eb, label="EB")
 	
-    ax1.axhline(y=0, color="black", linestyle='--', zorder=5, linewidth=0.5)
-    sns.despine(top=True, right=True, left=False, bottom=False, ax=ax1)
-    sns.despine(top=True, right=True, left=False, bottom=False, ax=ax2)
-    #plt.xlim(0,lmax)
-    ax1.set_ylim(0.1,150)
-    ax2.set_ylim(-1,2.5)
+    sns.despine(top=True, right=True, left=True, bottom=False, ax=ax1)
+    sns.despine(top=True, right=True, left=True, bottom=True, ax=ax2)
+    #plt.xlim(0,200)
+    ax1.set_ylim(0.11,150)
+    ax2.set_ylim(-0.,2.)
     #ax.axes.xaxis.grid()
-    ax1.legend(frameon=False)
-
+    ls = l1+l2+l3
+    labs = [l.get_label() for l in ls]
+    ax1.legend(ls, labs, frameon=False,)
+    #ax1.legend(frameon=False)
+    plt.tight_layout(h_pad=0.3)
     plt.subplots_adjust(wspace=0, hspace=0.01)
     plt.savefig(input.replace(".dat",".pdf"), dpi=300)
     plt.show()
@@ -408,6 +413,76 @@ def sigma_l2fits(filename, nchains, burnin, path, outname, save=True,):
 
 @commands.command()
 @click.argument("filename", type=click.STRING)
+@click.argument("lon", type=click.INT)
+@click.argument("lat", type=click.INT)
+@click.argument("size", type=click.INT)
+@click.option("-sig", default=0, help="Which sky signal to plot",)
+@click.option("-min", "min_", help="Min value of colorbar, overrides autodetector.",)
+@click.option("-max", "max_", help="Max value of colorbar, overrides autodetector.",)
+@click.option("-unit", default=None, type=click.STRING, help="Set unit (Under color bar), has LaTeX functionality. Ex. $\mu$",)
+@click.option("-cmap", default="planck", help="Choose different color map (string), such as Jet or planck",)
+@click.option("-graticule", is_flag=True, help="Add graticule",)
+@click.option("-log", is_flag=True, help="Add graticule",)
+@click.option("-nobar", is_flag=True, help="remove colorbar",)
+@click.option("-outname", help="Output filename, else, filename with different format.",)
+def gnomplot(filename, lon, lat, sig, size, min_, max_, unit, cmap, graticule, log, nobar, outname):
+    import healpy as hp
+    import matplotlib.pyplot as plt
+    from src.plotter import fmt
+    from functools import partial
+    
+    from matplotlib import rcParams, rc
+    rcParams["backend"] = "pdf"
+    rcParams["legend.fancybox"] = True
+    rcParams["lines.linewidth"] = 2
+    rcParams["savefig.dpi"] = 300
+    rcParams["axes.linewidth"] = 1
+    rc("text.latex", preamble=r"\usepackage{sfmath}",)
+
+    if cmap == "planck":
+        import matplotlib.colors as col
+        from pathlib import Path
+        cmap = Path(__file__).parent / "parchment1.dat"
+        cmap = col.ListedColormap(np.loadtxt(cmap) / 255.0, "planck")
+    else:
+        try:
+            import cmasher
+            cmap = eval(f"cmasher.{cmap}")
+        except:
+            cmap = plt.get_cmap(cmap)
+
+    xsize = 5000
+    reso = size*60/xsize
+    fontsize=10
+    x = hp.read_map(filename, field=sig, verbose=False, dtype=None)
+    nside=hp.get_nside(x)
+
+    half = size/2
+    proj = hp.projector.CartesianProj(lonra=[lon-half,lon+half], latra=[lat-half, lat+half], coord='G', xsize=xsize, ysize=xsize)
+    reproj_im = proj.projmap(x, vec2pix_func=partial(hp.vec2pix, nside))
+
+    #norm="log" if log else None
+    image = plt.imshow(reproj_im, origin='lower', interpolation='nearest', vmin=min_,vmax=max_, cmap=cmap)
+    plt.xticks([])
+    plt.yticks([])
+
+    if not nobar:
+        # colorbar
+        from matplotlib.ticker import FuncFormatter
+        cb = plt.colorbar(image, orientation="horizontal", shrink=0.5, pad=0.03, format=FuncFormatter(fmt))
+        cb.ax.tick_params(which="both", axis="x", direction="in", labelsize=fontsize)
+        cb.ax.xaxis.set_label_text(unit)
+        cb.ax.xaxis.label.set_size(fontsize+2)
+
+    if graticule:
+        hp.graticule()
+    if not outname:
+        outname = filename.replace(".fits", ".pdf")
+
+    plt.savefig(outname, bbox_inches="tight", pad_inches=0.02, transparent=True, format="pdf",)
+
+@commands.command()
+@click.argument("filename", type=click.STRING)
 @click.argument("min", type=click.INT)
 @click.argument("max", type=click.INT)
 @click.argument("binfile", type=click.STRING)
@@ -506,7 +581,7 @@ def h52fits(filename, dataset,):
 @click.argument("input", type=click.STRING)
 @click.argument("dataset", type=click.STRING)
 @click.argument("nside", type=click.INT)
-@click.option("-lmax", default=None)
+@click.option("-lmax", default=None, type=click.INT)
 @click.option("-fwhm", default=0.0, type=click.FLOAT)
 def alm2fits(input, dataset, nside, lmax, fwhm):
     """
@@ -521,6 +596,7 @@ def alm2fits(input, dataset, nside, lmax, fwhm):
 @click.option("-defaultmask", is_flag=True, help="Use default dx12 mask",)
 @click.option("-freqmaps", is_flag=True, help=" output freqmaps",)
 @click.option("-cmb", is_flag=True, help=" output cmb",)
+@click.option("-cmbresamp", is_flag=True, help=" output cmbresamp",)
 @click.option("-synch", is_flag=True, help=" output synch",)
 @click.option("-ame", is_flag=True, help=" output ame",)
 @click.option("-ff", is_flag=True, help=" output ff",)
@@ -530,7 +606,7 @@ def alm2fits(input, dataset, nside, lmax, fwhm):
 @click.option("-spec", is_flag=True, help="Creates emission plot")
 @click.option("-all", "all_", is_flag=True, help="Output all")
 @click.pass_context
-def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, synch, ame, ff, dust, diff, diffcmb, spec, all_):
+def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch, ame, ff, dust, diff, diffcmb, spec, all_):
     """
     \b
     Plots all release files\n
@@ -598,7 +674,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, synch, ame, ff, 
 
     for size in ["m", "l", "s",]:
         for colorbar in [True, False]:
-            if cmb and mask or defaultmask:
+            if (cmbresamp and mask) or (cmbresamp and defaultmask):
                 outdir = "figs/cmb/"
                 if not os.path.exists(outdir):
                     os.mkdir(outdir)
@@ -606,6 +682,19 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, synch, ame, ff, 
                 if defaultmask:
                     mask = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/masks/dx12_v3_common_mask_int_005a_1024_TQU.fits"
 
+                # CMB I with dip
+                ctx.invoke(plot, input=f"BP_cmb_resamp_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, range=3400)
+                # CMB I without dip
+                ctx.invoke(plot, input=f"BP_cmb_resamp_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask,)
+                
+            if (cmb and mask) or (cmb and defaultmask):
+                outdir = "figs/cmb/"
+                if not os.path.exists(outdir):
+                    os.mkdir(outdir)
+
+                if defaultmask:
+                    mask = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/masks/dx12_v3_common_mask_int_005a_1024_TQU.fits"
+                    
                 # CMB I with dip
                 ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True,  range=3400)
                 # CMB I no dip
@@ -718,7 +807,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, synch, ame, ff, 
 @click.argument("chain", type=click.Path(exists=True), nargs=-1,)
 @click.argument("burnin", type=click.INT)
 @click.argument("procver", type=click.STRING)
-@click.option("-resamp", type=click.Path(exists=True), help="Include resampled chain file",)
+@click.option("-resamp", is_flag=True, help="data interpreted as resampled data",)
 @click.option("-copy", "copy_", is_flag=True, help=" copy full .h5 file",)
 @click.option("-freqmaps", is_flag=True, help=" output freqmaps",)
 @click.option("-ame", is_flag=True, help=" output ame",)
@@ -787,11 +876,19 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
             for file in os.listdir(path):
                 if file.startswith("param") and i == 1:  # Copy only first
                     print(f"Copying {path}/{file} to {procver}/BP_param_full_c" + str(i).zfill(4) + ".txt")
-                    shutil.copyfile(f"{path}/{file}", f"{procver}/BP_param_full_c" + str(i).zfill(4) + ".txt",)
+                    if resamp:
+                        shutil.copyfile(f"{path}/{file}", f"{procver}/BP_param_resamp_Cl_c" + str(i).zfill(4) + ".txt",)
+                    else:
+                        shutil.copyfile(f"{path}/{file}", f"{procver}/BP_param_full_c" + str(i).zfill(4) + ".txt",)
 
-            # Full-mission Gibbs chain file
-            print(f"Copying {chainfile} to {procver}/BP_c" + str(i).zfill(4) + f"_full_{procver}.h5")
-            shutil.copyfile(chainfile, f"{procver}/BP_c" + str(i).zfill(4) + f"_full_{procver}.h5",)
+            if resamp:
+                # Resampled CMB-only full-mission Gibbs chain file with Cls (for BR estimator)
+                print(f"Copying {chainfile} to {procver}/BP_resamp_c" + str(i).zfill(4) + f"_full_Cl_{procver}.h5")
+                shutil.copyfile(chainfile, f"{procver}/BP_resamp_c" + str(i).zfill(4) + f"_full_Cl_{procver}.h5",)
+            else:
+                # Full-mission Gibbs chain file
+                print(f"Copying {chainfile} to {procver}/BP_c" + str(i).zfill(4) + f"_full_{procver}.h5")
+                shutil.copyfile(chainfile, f"{procver}/BP_c" + str(i).zfill(4) + f"_full_{procver}.h5",)
 
      #if halfring:
      #   # Copy halfring files
@@ -799,27 +896,15 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
      #       # Copy halfring files
      #       print(f"Copying {resamp} to {procver}/BP_halfring_c" + str(i).zfill(4) + f"_full_Cl_{procver}.h5")
      #       shutil.copyfile(halfring, f"{procver}/BP_halfring_c" + str(i).zfill(4) + f"_full_Cl_{procver}.h5",)
-        
-
-    if resamp:
-        # Commander3 parameter file for main chain
-        for i, chainfile in enumerate([resamp], 1):
-            # Commander3 parameter file for CMB resampling chain with Cls (for BR)
-            path = os.path.split(chainfile)[0]
-            for file in os.listdir(path):
-                if file.startswith("param") and i == 0:
-                    print(f"Copying {path}/{file} to {procver}/BP_param_resamp_Cl_c" + str(i).zfill(4) + ".txt")
-                    shutil.copyfile(f"{path}/{file}", f"{procver}/BP_param_resamp_Cl_c" + str(i).zfill(4) + ".txt",)
-
-            # Resampled CMB-only full-mission Gibbs chain file with Cls (for BR estimator)
-            print(f"Copying {resamp} to {procver}/BP_resamp_c" + str(i).zfill(4) + f"_full_Cl_{procver}.h5")
-            shutil.copyfile(resamp, f"{procver}/BP_resamp_c" + str(i).zfill(4) + f"_full_Cl_{procver}.h5",)
 
     """
     IQU mean, IQU stdev, (Masks for cmb)
     Run mean and stddev from min to max sample (Choose min manually or start at 1?)
     """
-    chain = f"{procver}/BP_c0001_full_{procver}.h5"
+    if resamp:
+        chain = f"{procver}/BP_resamp_c0001_full_Cl_{procver}.h5"
+    else:
+        chain = f"{procver}/BP_c0001_full_{procver}.h5"
     if freqmaps:
         try:
             # Full-mission 30 GHz IQU frequency map
@@ -977,30 +1062,55 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
     """
     # Full-mission CMB IQU map
     if cmb:
-        fname = f"{procver}/BP_resamp_c0001_full_Cl_{procver}.h5" if resamp else chain
-        try:
-            format_fits(
-                fname,
-                extname="COMP-MAP-CMB",
-                types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS", "mask1", "mask2",],
-                units=["uK_cmb", "uK_cmb", "uK", "uK", "NONE", "NONE",],
-                nside=1024,
-                burnin=burnin,
-                maxchain=maxchain,
-                polar=True,
-                component="CMB",
-                fwhm=14.0,
-                nu_ref_t="NONE",
-                nu_ref_p="NONE",
-                procver=procver,
-                filename=f"BP_cmb_IQU_full_n1024_{procver}.fits",
-                bndctr=None,
-                restfreq=None,
-                bndwid=None,
-            )
-        except Exception as e:
-            print(e)
-            print("Continuing...")
+        if resamp:
+            try:
+                format_fits(
+                    chain,
+                    extname="COMP-MAP-CMB-RESAMP",
+                    types=["I_MEAN", "I_RMS",],
+                    units=["uK_cmb", "uK_cmb",],
+                    nside=1024,
+                    burnin=burnin,
+                    maxchain=maxchain,
+                    polar=True,
+                    component="CMB",
+                    fwhm=14.0,
+                    nu_ref_t="NONE",
+                    nu_ref_p="NONE",
+                    procver=procver,
+                    filename=f"BP_cmb_resamp_IQU_full_n1024_{procver}.fits",
+                    bndctr=None,
+                    restfreq=None,
+                    bndwid=None,
+                )
+            except Exception as e:
+                print(e)
+                print("Continuing...")
+
+        else:
+            try:
+                format_fits(
+                    chain,
+                    extname="COMP-MAP-CMB",
+                    types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS", "mask1", "mask2",],
+                    units=["uK_cmb", "uK_cmb", "uK", "uK", "NONE", "NONE",],
+                    nside=1024,
+                    burnin=burnin,
+                    maxchain=maxchain,
+                    polar=True,
+                    component="CMB",
+                    fwhm=14.0,
+                    nu_ref_t="NONE",
+                    nu_ref_p="NONE",
+                    procver=procver,
+                    filename=f"BP_cmb_IQU_full_n1024_{procver}.fits",
+                    bndctr=None,
+                    restfreq=None,
+                    bndwid=None,
+                )
+            except Exception as e:
+                print(e)
+                print("Continuing...")
 
     if ff:
         try:
@@ -1164,10 +1274,12 @@ def traceplot(filename, max, min, nbins):
 @click.option('-plot', is_flag=True, default=False, help= 'Plots trace')
 @click.option('-freeze', is_flag=True, help= 'Freeze top regions')
 @click.option('-nbins', default=1, help='Bins for plotting')
-def pixreg2trace(chainfile, dataset, burnin, maxchain, plot, freeze, nbins,):
+@click.option("-f", "priorsamp",  multiple=True, help="These are sampled around prior and will be marked",)
+@click.option('-scale', default=0.023, help='scale factor for labels')
+def pixreg2trace(chainfile, dataset, burnin, maxchain, plot, freeze, nbins, priorsamp, scale):
     """
     Outputs the values of the pixel regions for each sample to a dat file.
-    ex. pixreg2trace chain_c0001.h5 synch/beta_pixreg_val -burnin 30 -maxchain 4 
+    ex. c3pp pixreg2trace chain_c0001.h5 synch/beta_pixreg_val -burnin 30 -maxchain 4 
     """
     
     # Check if you want to output a map
@@ -1176,13 +1288,13 @@ def pixreg2trace(chainfile, dataset, burnin, maxchain, plot, freeze, nbins,):
     import pandas as pd
     from tqdm import tqdm
     dats = []
-    min_=burnin
     for c in range(1, maxchain + 1):
         chainfile_ = chainfile.replace("c0001", "c" + str(c).zfill(4))
+        min_=burnin if c>1 else 0
         with h5py.File(chainfile_, "r") as f:
             max_ = len(f.keys()) - 1
             print("{:-^48}".format(f" Samples {min_} to {max_} in {chainfile_} "))
-            for sample in tqdm(range(0, max_ + 1), ncols=80):
+            for sample in tqdm(range(min_, max_ + 1), ncols=80):
                 # Identify dataset
                 # HDF dataset path formatting
                 s = str(sample).zfill(6)
@@ -1203,9 +1315,22 @@ def pixreg2trace(chainfile, dataset, burnin, maxchain, plot, freeze, nbins,):
 
     sigs = ["T","P"]
     df = pd.DataFrame.from_records(dats, columns=sigs)
-    header = ['Top left', 'Top right', 'Bot. left', 'Bot. right', 'NGS',
-              'Gal. center', 'Fan region', 'Gal. anti-center',
-              'Gum nebula']
+    nregs = len(df["P"][0])
+    if nregs == 9:
+        header = ['Top left', 'Top right', 'Bot. left', 'Bot. right', 'NGS',
+                  'Gal. center', 'Fan region', 'Gal. anti-center',
+                  'Gum nebula']
+    elif nregs == 6:
+        header = ['High lat.', 'NGS',
+                  'Gal. center', 'Fan region', 'Gal. anti-center',
+                  'Gum nebula']
+    elif nregs == 4:
+        header = ['High lat.', 'NGS',
+                  'Gal. center', 'Gal. plane']
+    else:
+        print("Number of columns not supported", nregs)
+        sys.exit()
+    
 
     for sig in sigs:
         df2 = pd.DataFrame(df[sig].to_list(), columns=header)
@@ -1223,74 +1348,107 @@ def pixreg2trace(chainfile, dataset, burnin, maxchain, plot, freeze, nbins,):
             else:
                 header_ = header.copy()
 
-            traceplotter(df2, header_, xlabel, nbins, f"{outname}.pdf", min_=burnin*maxchain)
+            traceplotter(df2, header_, xlabel, nbins, f"{outname}.pdf", min_=burnin, priorsamp=priorsamp, scale=scale)
 
-def traceplotter(df, header, xlabel, nbins, outname, min_):
+def traceplotter(df, header, xlabel, nbins, outname, min_, priorsamp=None, scale=0.023):
     import seaborn as sns
     import matplotlib.pyplot as plt
-    sns.set_context("notebook", font_scale=1.2, rc={"lines.linewidth": 1.2})
+    sns.set_context("notebook", font_scale=1.5, rc={"lines.linewidth": 1.2})
     sns.set_style("whitegrid")
     custom_style = {
         'grid.color': '0.8',
         'grid.linestyle': '--',
         'grid.linewidth': 0.5,
+        'savefig.dpi':300,
+        'font.size': 20, 
+        'axes.linewidth': 1.5,
     }
     sns.set_style(custom_style)
 
     #df.columns = y
     N = df.values.shape[0]
+    nregs = len(header)
+    """
     df['Mean'] = df.mean(axis=1)
-    df[xlabel] = range(N)
     header.append('Mean')
-
+    """
+    df[xlabel] = range(N)
     f, ax = plt.subplots(figsize=(16,8))
-    cmap = plt.cm.get_cmap('tab10')# len(y))
+    
+    #cmap = plt.cm.get_cmap('tab20')# len(y))
+    import matplotlib as mpl
+    cmap = mpl.colors.ListedColormap(['#636EFA', '#EF553B', '#00CC96', '#FFA15A', '#19D3F3', '#FF6692', '#B6E880', '#FECB52', '#FF97FF',  '#AB63FA',])
+    #cmap = plt.cm.get_cmap('tab10')# len(y))
 
-    means = df.mean()
-    stds = df.std()
+    means = df[min_:].mean()
+    stds = df[min_:].std()
     # Reduce points
     if nbins>1:
         df = df.groupby(np.arange(len(df))//nbins).mean()
-
-    positions = legend_positions(df, header)
+    
+    #longestlab = max([len(x) for x in header])
+    # scale = 0.075 for 9 regions worked well.
+    positions = legend_positions(df, header, scaling=scale)
     c = 0
     for i, (column, position) in enumerate(positions.items()):
-        linestyle = '-'
+        linestyle = ':' if str(i) in priorsamp else '-'
         linewidth = 2
         fontweight = 'normal'
         if column == "Mean":
-            color="grey"
+            color="#a6a6a6" #"grey"
             linewidth = 4
             fontweight='bold'
         else:
             color = cmap(c)#float(i-1)/len(positions))
             c += 1
         # Plot each line separatly so we can be explicit about color
-        ax = df.plot(x=xlabel, y=column, legend=False, ax=ax, color=color, linestyle=linestyle, linewidth=linewidth)
-
+        ax = df.plot(x=xlabel, y=column, legend=False, ax=ax, color=color, linestyle=linestyle, linewidth=linewidth,)
+        """
         label = rf'{column} {means[i]:.2f}$\pm${stds[i]:.2f}'
-        if len(label) > 24:
-            label = f'{column} \n' + fr'{means[i]:.2f}$\pm${stds[i]:.2f}'
+        #if len(label) > 1: #24:
+        #    label = f'{column} \n' + fr'{means[i]:.2f}$\pm${stds[i]:.2f}'
 
         # Add the text to the right
         plt.text(
             df[xlabel][df[column].last_valid_index()]+N*0.01,
-            position, label, fontsize=12,
+            position, label, fontsize=15,
             color=color, fontweight=fontweight
+        )
+        """
+        label1 = rf'{column}'
+        label2 = rf'{means[i]:.2f}$\pm${stds[i]:.2f}'
+        #if len(label) > 1: #24:
+        #    label = f'{column} \n' + fr'{means[i]:.2f}$\pm${stds[i]:.2f}'
+
+        # Add the text to the right
+        plt.text(
+            df[xlabel][df[column].last_valid_index()]+N*0.01,
+            position, label1, fontsize=15,
+            color=color, fontweight=fontweight
+        )
+        if nregs > 4:
+            r = 0.16
+        else:
+            r = 0.12
+        plt.text(
+            df[xlabel][df[column].last_valid_index()]+N*r,
+            position, label2, fontsize=15,
+            color=color, fontweight='normal'
         )
 
     #if min_:
     #    plt.xticks(list(plt.xticks()[0]) + [min_])
 
     ax.set_ylabel('Region spectral index')
-
+    #plt.yticks(rotation=90)
+    plt.gca().set_xlim(right=N)
     #ax.axes.xaxis.grid()
     #ax.axes.yaxis.grid()
     # Add percent signs
     #ax.set_yticklabels(['{:3.0f}%'.format(x) for x in ax.get_yticks()])
     sns.despine(top=True, right=True, left=True, bottom=True)
-
-    #plt.xlim(min_, max_)
+    plt.subplots_adjust(wspace=0, hspace=0.01, right=0.81)
+    plt.tight_layout()
     plt.savefig(outname, dpi=300)
     plt.show()
 
@@ -1520,7 +1678,7 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
                              "linestyle": "--",
                              "gradient": False,
                           },
-            r"BB $r=0.001$"   :  {"function": "rspectrum", 
+            r"BB $r=0.01$"   :  {"function": "rspectrum", 
                              "params"  : [0.01, "BB",],
                              "position": p,
                              "color"   : "grey",
