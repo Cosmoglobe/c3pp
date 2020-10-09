@@ -1,7 +1,8 @@
 # Commander3 postprocessing tool (c3pp)
 
 A python code for processing and plotting _commander3_ files.
-
+Temperature             |  Polarization
+:-------------------------:|:-------------------------:
 ![Masterpiece](https://github.com/trygvels/c3pp/blob/master/imgs/spectrum.png) |  ![Masterpiece](https://github.com/trygvels/c3pp/blob/master/imgs/spectrum_pol.png)
 
 
