@@ -1,6 +1,9 @@
 # Commander3 postprocessing tool (c3pp)
 
-A python code for processing commander3 files
+A python code for processing and plotting _commander3_ files.
+![Masterpiece](https://github.com/trygvels/c3pp/blob/master/imgs/spectrum.pdf  =250x)
+![Masterpiece](https://github.com/trygvels/c3pp/blob/master/imgs/spectrum_pol.pdf  =250x)
+
 
 ## Installation
 
