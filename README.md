@@ -44,36 +44,36 @@ c3pp [toolname] --help
 ````
 and a description will be printed:
 ```
-[command prompt]$ c3pp --help
+[command prompt]$ c3pp
 Usage: c3pp [OPTIONS] COMMAND [ARGS]...
 
 Options:
   --help  Show this message and exit.
 
 Commands:
-  alm2fits          Converts c3 alms in .h5 file to fits with given nside and optional...
-  crosspec          This function calculates a powerspectrum from polspice using this path:...
-  dlbin2dat         Outputs a .dat file of binned powerspectra averaged over a range of output...
+  alm2fits          Converts c3 alms in .h5 file to fits.
+  crosspec          Calculates a powerspectrum from polspice.
+  dlbin2dat         Outputs binned powerspectra averaged over a range of output samples.
   fits-mean         Calculates the mean over sample range from fits-files.
   fits-stddev       Calculates the standard deviation over sample range from fits-files.
   generate-sky      Generate sky maps from separate input maps.
-  gnomplot
+  gnomplot          Gnomonic view plotting.
   h52fits           Outputs a .h5 map to fits on the form 000001_cmb_amp_n1024.fits
-  make-diff-plots   Produces standard c3pp plots from the differences between two output...
+  make-diff-plots   Produces difference maps between output directories.
   mean              Calculates the mean over sample range from .h5 file.
-  output-sky-model  Outputs spectrum plots c3pp output-sky-model -a_s synch_c0001_k000100.fits...
+  output-sky-model  Outputs spectrum plots.
   pixreg2trace      Outputs the values of the pixel regions for each sample to a dat file.
   plot              Plots map from .fits or h5 file.
-  plotrelease       Plots all release files
+  plotrelease       Plots all release files.
   printdata         Prints the data of a fits file
   printheader       Prints the header of a fits file.
-  qu2ang            remove columns in fits file
+  qu2ang            Calculates polarization angle map from QU signals.
   release           Creates a release file-set on the BeyondPlanck format.
-  rmcolumn          remove columns in fits file
-  sigma-l2fits      Converts c3-h5 dataset to fits suitable for c1 BR and GBR estimator...
-  specplot          This function plots the file output by the Crosspec function.
+  rmcolumn          Removes columns in fits file
+  sigma-l2fits      Converts c3-h5 dataset to fits for c1 BR and GBR estimator analysis.
+  specplot          Plots the file output by the Crosspec function.
   stddev            Calculates the stddev over sample range from .h5 file.
-  traceplot         This function plots a traceplot of samples from min to max with optional...
+  traceplot         Traceplot of samples from .dat.
 ```
 
 ## Contributing
