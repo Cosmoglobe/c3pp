@@ -317,7 +317,7 @@ def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, lmax, fwhm
     ex. c3pp plot coolhdf.h5 -dataset 000007/cmb/amp_alm -nside 512 -remove_dipole maskfile.fits -cmap cmasher.arctic 
 
     Uses 97.5 percentile values for min and max by default!\n
-    RECCOMENDED: Use -auto to autodetect map type and set parameters.\n
+    RECOMMENDED: Use -auto to autodetect map type and set parameters.\n
     Some autodetected maps use logscale, you will be warned.
     """
     if input.endswith(".h5") and not dataset and not nside:
