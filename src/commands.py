@@ -16,7 +16,8 @@ def commands():
 @click.argument("binfile", type=click.STRING)
 def dlbin2dat(filename, min, max, binfile):
     """
-    Outputs a .dat file of binned powerspectra averaged over a range of output samples with tilename Dl_[signal]_binned.dat.
+    Outputs binned powerspectra averaged over a range of output samples.
+    Filename Dl_[signal]_binned.dat.
     """
     signal = "cmb/Dl"
 
@@ -67,7 +68,7 @@ def dlbin2dat(filename, min, max, binfile):
 #@click.option("-skipcopy", is_flag=True, help="Don't copy full .h5 file",)
 def generate_sky(label, freqs, nside, cmb, synch, dust, ff, ame):
     """
-    Generate sky maps from separate input maps. 
+    Generate sky maps from separate input maps.
     Reference frequencies from BP: CMB 1, SYNCH 30, DUST 545 353, FF 40, AME 22,
     Example:
     "c3pp generate-sky test 22 30 44 1024 -cmb BP_cmb_IQU_full_n1024_v1.0.fits -synch BP_synch_IQU_full_n1024_v1.0.fits"

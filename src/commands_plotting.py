@@ -14,7 +14,7 @@ def commands_plotting():
 @click.argument("input", type=click.STRING)
 def specplot(input,):
     """
-    This function plots the file output by the Crosspec function.
+    Plots the file output by the Crosspec function.
     """
     import matplotlib.pyplot as plt
     import numpy as np
@@ -95,7 +95,6 @@ def specplot(input,):
 @click.option("-verbose", is_flag=True, help="Verbose mode")
 def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, verbose,):
     """
-    \b
     Plots map from .fits or h5 file.
     ex. c3pp plot coolmap.fits -bar -auto -lmax 60 -darkmode -pdf -title $\beta_s$
     ex. c3pp plot coolhdf.h5 -dataset 000007/cmb/amp_alm -nside 512 -remove_dipole maskfile.fits -cmap cmasher.arctic 
@@ -128,6 +127,9 @@ def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, lmax, fwhm
 @click.option("-nobar", is_flag=True, help="remove colorbar",)
 @click.option("-outname", help="Output filename, else, filename with different format.",)
 def gnomplot(filename, lon, lat, sig, size, min_, max_, unit, cmap, graticule, log, nobar, outname):
+    """
+    Gnomonic view plotting. 
+    """
     import healpy as hp
     import matplotlib.pyplot as plt
     from src.plotter import fmt
@@ -202,8 +204,7 @@ def gnomplot(filename, lon, lat, sig, size, min_, max_, unit, cmap, graticule, l
 @click.pass_context
 def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch, ame, ff, dust, diff, diffcmb, spec, all_):
     """
-    \b
-    Plots all release files\n
+    Plots all release files.
     """
     import os
     if not os.path.exists("figs"):
@@ -437,7 +438,8 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
 @click.option('-nbins', default=1, help='Bins')
 def traceplot(filename, max, min, nbins):
     """
-    This function plots a traceplot of samples from min to max with optional bins.
+    Traceplot of samples from .dat. 
+    Accepts min to max with optional bins.
     Useful to plot sample progression of spectral indexes.
     """
     header = ['Prior', 'High lat.', 'NGS',
@@ -645,10 +647,9 @@ def traceplotter(df, header, xlabel, nbins, outname, min_, priorsamp=None, scale
 @click.argument('type2', type=click.Choice(['ml', 'mean']))
 @click.pass_context
 def make_diff_plots(ctx, dir1, dir2, type1, type2):
-    '''
-    Produces standard c3pp plots from the differences between
-    two output directories given by dir1 and dir2
-    '''
+    """
+    Produces difference maps between output directories.
+    """
 
     comps = ['030', '044', '070', 'ame', 'cmb', 'freefree', 'synch']
 
@@ -720,7 +721,7 @@ def make_diff_plots(ctx, dir1, dir2, type1, type2):
 @click.option("-mask2",  help="",)
 def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e, a_ame1, a_ame2, nup, a_d, b_d, t_d, a_co10, a_co21, a_co32, mask1, mask2):
     """
-    Outputs spectrum plots
+    Outputs spectrum plots.
     c3pp output-sky-model -a_s synch_c0001_k000100.fits -b_s synch_beta_c0001_k000100.fits -a_d dust_init_kja_n1024.fits -b_d dust_beta_init_kja_n1024.fits -t_d dust_T_init_kja_n1024.fits -a_ame1 ame_c0001_k000100.fits -nup ame_nu_p_c0001_k000100.fits -a_ff ff_c0001_k000100.fits -t_e ff_Te_c0001_k000100.fits -mask1 mask_70GHz_t70.fits -mask2 mask_70GHz_t7.fits -nside 16
     """
     from src.spectrum import Spectrum

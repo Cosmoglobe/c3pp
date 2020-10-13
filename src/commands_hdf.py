@@ -24,9 +24,9 @@ def commands_hdf():
 @click.option("-pixweight", default=None, type=click.STRING, help="Path to healpy pixel weights.",)
 def mean(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, pixweight):
     """
-    Calculates the mean over sample range from .h5 file.\n
-    ex. chains_c0001.h5 dust/amp_map 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40 -maxchain 3\n
-    ex. chains_c0001.h5 dust/amp_alm 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40 -nside 512\n
+    Calculates the mean over sample range from .h5 file.
+    ex. chains_c0001.h5 dust/amp_map 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40 -maxchain 3
+    ex. chains_c0001.h5 dust/amp_alm 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40 -nside 512
     If output name is set to .dat, data will not be converted to map.
     """
     if dataset.endswith("alm") and nside == None:
@@ -49,9 +49,9 @@ def mean(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, pixw
 @click.option("-pixweight", default=None, type=click.STRING, help="Path to healpy pixel weights.",)
 def stddev(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, pixweight,):
     """
-    Calculates the stddev over sample range from .h5 file.\n
-    ex. chains_c0001.h5 dust/amp_map 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40 -maxchain 3\n
-    ex. chains_c0001.h5 dust/amp_alm 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40 -nside 512\n
+    Calculates the stddev over sample range from .h5 file.
+    ex. chains_c0001.h5 dust/amp_map 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40 -maxchain 3
+    ex. chains_c0001.h5 dust/amp_alm 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40 -nside 512
 
     If output name is set to .dat, data will not be converted to map.
     """
@@ -71,12 +71,10 @@ def stddev(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, pi
 @click.argument("outname", type=click.STRING)
 def sigma_l2fits(filename, nchains, burnin, path, outname, save=True,):
     """
-    \b
-    Converts c3-h5 dataset to fits suitable for c1 BR and GBR estimator analysis.\n
+    Converts c3-h5 dataset to fits for c1 BR and GBR estimator analysis.
 
-    ex. c3pp sigma-l2fits chains_v1/chain 5 10 cmb_sigma_l_GBRlike.fits \n
-
-    If "chain_c0001.h5", filename is cut to "chain" and will look in same directory for "chain_c*****.h5".\n
+    ex. c3pp sigma-l2fits chains_v1/chain 5 10 cmb_sigma_l_GBRlike.fits 
+    If "chain_c0001.h5", filename is cut to "chain" and will look in same directory for "chain_c*****.h5".
     See comm_like_tools for further information about BR and GBR post processing
     """
     #data = h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.mean, pixweight, zerospin,)
@@ -185,7 +183,8 @@ def h52fits(filename, dataset,):
 @click.option("-fwhm", default=0.0, type=click.FLOAT)
 def alm2fits(input, dataset, nside, lmax, fwhm):
     """
-    Converts c3 alms in .h5 file to fits with given nside and optional smoothing.
+    Converts c3 alms in .h5 file to fits.
+    Specify nside and optional smoothing.
     """
     alm2fits_tool(input, dataset, nside, lmax, fwhm)
 
@@ -209,29 +208,29 @@ def alm2fits(input, dataset, nside, lmax, fwhm):
 @click.pass_context
 def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, synch, dust, br, diff, diffcmb, all_):
     """
-    Creates a release file-set on the BeyondPlanck format.\n
-    https://gitlab.com/BeyondPlanck/repo/-/wikis/BeyondPlanck-Release-Candidate-2\n    
+    Creates a release file-set on the BeyondPlanck format.
+    https://gitlab.com/BeyondPlanck/repo/-/wikis/BeyondPlanck-Release-Candidate-2
 
-    ex. c3pp release chains_v1_c{1,2}/chain_c000{1,2}.h5 30 BP_r1 \n
-    Will output formatted files using all chains specified, \n
+    ex. c3pp release chains_v1_c{1,2}/chain_c000{1,2}.h5 30 BP_r1
+    Will output formatted files using all chains specified,
     with a burnin of 30 to a directory called BP_r1
 
-    This function outputs the following files to the {procver} directory:\n
-    BP_chain01_full_{procver}.h5\n
-    BP_resamp_chain01_full_Cl_{procver}.h5\n
-    BP_resamp_chain01_full_noCl_{procver}.h5\n
-    BP_param_full_v1.txt\n
-    BP_param_resamp_Cl_v1.txt\n
-    BP_param_resamp_noCl_v1.txt\n
+    This function outputs the following files to the {procver} directory:
+    BP_chain01_full_{procver}.h5
+    BP_resamp_chain01_full_Cl_{procver}.h5
+    BP_resamp_chain01_full_noCl_{procver}.h5
+    BP_param_full_v1.txt
+    BP_param_resamp_Cl_v1.txt
+    BP_param_resamp_noCl_v1.txt
 
-    BP_030_IQU_full_n0512_{procver}.fits\n
-    BP_044_IQU_full_n0512_{procver}.fits\n
-    BP_070_IQU_full_n1024_{procver}.fits\n
+    BP_030_IQU_full_n0512_{procver}.fits
+    BP_044_IQU_full_n0512_{procver}.fits
+    BP_070_IQU_full_n1024_{procver}.fits
 
-    BP_cmb_IQU_full_n1024_{procver}.fits\n
-    BP_synch_IQU_full_n1024_{procver}.fits\n
-    BP_freefree_I_full_n1024_{procver}.fits\n
-    BP_ame_I_full_n1024_{procver}.fits\n
+    BP_cmb_IQU_full_n1024_{procver}.fits
+    BP_synch_IQU_full_n1024_{procver}.fits
+    BP_freefree_I_full_n1024_{procver}.fits
+    BP_ame_I_full_n1024_{procver}.fits
 
     BP_cmb_GBRlike_{procver}.fits
     """

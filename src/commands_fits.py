@@ -42,7 +42,7 @@ def printdata(input,):
 @click.argument("columns", type=click.INT)
 def rmcolumn(input, output, columns):
     """
-    remove columns in fits file
+    Removes columns in fits file
     """
     from astropy.io import fits
 
@@ -58,7 +58,7 @@ def rmcolumn(input, output, columns):
 @click.argument("output", type=click.STRING)
 def QU2ang(input, output,):
     """
-    remove columns in fits file
+    Calculates polarization angle map from QU signals.
     """
     import healpy as hp
     Q, U = hp.read_map(input, field=(1,2), dtype=None, verbose=False)
@@ -78,8 +78,8 @@ def QU2ang(input, output,):
 @click.option("-mask", type=click.STRING, help="Mask",)
 def crosspec(input1, input2, output, beam1, beam2, mask,):
     """
-    This function calculates a powerspectrum from polspice using this path:
-    /mn/stornext/u3/trygvels/PolSpice_v03-03-02/
+    Calculates a powerspectrum from polspice.
+    Using this path /mn/stornext/u3/trygvels/PolSpice_v03-03-02/
     """
     sys.path.append("/mn/stornext/u3/trygvels/PolSpice_v03-03-02/")
     from ispice import ispice
@@ -135,7 +135,7 @@ def crosspec(input1, input2, output, beam1, beam2, mask,):
 def fits_mean(
         input, output, min, max, minchain, maxchain, chaindir, fwhm, nside, zerospin, missing, pixweight):
     """
-    Calculates the mean over sample range from fits-files.\n
+    Calculates the mean over sample range from fits-files.
     ex. res_030_c0001_k000001.fits res_030_20-100_mean_40arcmin.fits -min 20 -max 100 -fwhm 40 -maxchain 3\n
     If output name is set to .dat, data will not be converted to map.
 
@@ -160,8 +160,8 @@ def fits_mean(
 def fits_stddev(
         input, output, min, max, minchain, maxchain, chaindir, fwhm, nside, zerospin, missing, pixweight):
     """
-    Calculates the standard deviation over sample range from fits-files.\n
-    ex. res_030_c0001_k000001.fits res_030_20-100_mean_40arcmin.fits -min 20 -max 100 -fwhm 40 -maxchain 3\n
+    Calculates the standard deviation over sample range from fits-files.
+    ex. res_030_c0001_k000001.fits res_030_20-100_mean_40arcmin.fits -min 20 -max 100 -fwhm 40 -maxchain 3
     If output name is set to .dat, data will not be converted to map.
 
     Note: the input file name must have the 'c0001' chain identifier and the 'k000001' sample identifier. The -min/-max and -chainmin/-chainmax options set the actual samples/chains to be used in the calculation 
