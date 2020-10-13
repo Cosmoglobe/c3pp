@@ -34,6 +34,9 @@ def unpack_alms(maps, lmax):
 
 
 def alm2fits_tool(input, dataset, nside, lmax, fwhm, save=True):
+    """
+    Function for converting alms in hdf file to fits
+    """
     import h5py
     import healpy as hp
 
@@ -67,119 +70,10 @@ def alm2fits_tool(input, dataset, nside, lmax, fwhm, save=True):
     return maps, nside, lmax, fwhm, outfile
 
 
-def h5handler_old(input, dataset, min, max, maxchain, output, fwhm, nside, command,):
-    # Check if you want to output a map
-    import h5py
-    import healpy as hp
-    from tqdm import tqdm
-
-    print()
-    print("{:-^48}".format(f" {dataset} calculating {command.__name__} "))
-    print("{:-^48}".format(f" nside {nside}, {fwhm} arcmin smoothing "))
-
-    if dataset.endswith("map"):
-        type = "map"
-    elif dataset.endswith("alm"):
-        type = "alm"
-    elif dataset.endswith("sigma"):
-        type = "sigma"
-    else:
-        print(f"Type {type} not recognized")
-        sys.exit()
-
-    dats = []
-    maxnone = True if max == None else False  # set length of keys for maxchains>1
-    for c in range(1, maxchain + 1):
-        filename = input.replace("c0001", "c" + str(c).zfill(4))
-        with h5py.File(filename, "r") as f:
-            if maxnone:
-                # If no max is specified, chose last sample
-                max = len(f.keys()) - 1
-
-            print("{:-^48}".format(f" Samples {min} to {max} in {filename}"))
-
-            for sample in tqdm(range(min, max + 1), ncols=80):
-                # Identify dataset
-                # alm, map or (sigma_l, which is recognized as l)
-
-                # Unless output is ".fits" or "map", don't convert alms to map.
-                alm2map = True if output.endswith((".fits", "map")) else False
-
-                # HDF dataset path formatting
-                s = str(sample).zfill(6)
-
-                # Sets tag with type
-                tag = f"{s}/{dataset}"
-                #print(f"Reading c{str(c).zfill(4)} {tag}")
-
-                # Check if map is available, if not, use alms.
-                # If alms is already chosen, no problem
-                try:
-                    data = f[tag][()]
-                    if len(data[0]) == 0:
-                        tag = f"{tag[:-3]}map"
-                        print(f"WARNING! No {type} data found, switching to map.")
-                        data = f[tag][()]
-                        type = "map"
-                except:
-                    print(f"Found no dataset called {dataset}")
-                    print(f"Trying alms instead {tag}")
-                    try:
-                        # Use alms instead (This takes longer and is not preferred)
-                        tag = f"{tag[:-3]}alm"
-                        type = "alm"
-                        data = f[tag][()]
-                    except:
-                        print("Dataset not found.")
-
-                # If data is alm, unpack.
-                if type == "alm":
-                    lmax_h5 = f[f"{tag[:-3]}lmax"][()]
-                    data = unpack_alms(data, lmax_h5)  # Unpack alms
-
-                if data.shape[0] == 1:
-                    # Make sure its interprated as I by healpy
-                    # For non-polarization data, (1,npix) is not accepted by healpy
-                    data = data.ravel()
-
-                # If data is alm and calculating std. Bin to map and smooth first.
-                if type == "alm" and command == np.std and alm2map:
-                    #print(f"#{sample} --- alm2map with {fwhm} arcmin, lmax {lmax_h5} ---")
-                    data = hp.alm2map(data, nside=nside, lmax=lmax_h5, fwhm=arcmin2rad(fwhm), pixwin=True,verbose=False,)
-
-                # If data is map, smooth first.
-                elif type == "map" and fwhm > 0.0 and command == np.std:
-                    #print(f"#{sample} --- Smoothing map ---")
-                    data = hp.sphtfunc.smoothing(data, fwhm=arcmin2rad(fwhm),verbose=False,)
-
-                # Append sample to list
-                dats.append(data)
-
-    # Convert list to array
-    dats = np.array(dats)
-    # Calculate std or mean
-    outdata = command(dats, axis=0)
-
-    # Smoothing afterwards when calculating mean
-    if type == "alm" and command == np.mean and alm2map:
-        #print(f"# --- alm2map mean with {fwhm} arcmin, lmax {lmax_h5} ---")
-        outdata = hp.alm2map(outdata, nside=nside, lmax=lmax_h5, fwhm=arcmin2rad(fwhm), pixwin=True,verbose=False,)
-
-    # Smoothing can be done after for np.mean
-    if type == "map" and fwhm > 0.0 and command == np.mean:
-        #print(f"--- Smoothing mean map with {fwhm} arcmin,---")
-        outdata = hp.sphtfunc.smoothing(outdata, fwhm=arcmin2rad(fwhm), verbose=False,)
-
-    # Outputs fits map if output name is .fits
-    if output.endswith(".fits"):
-        hp.write_map(output, outdata, overwrite=True)
-    elif output.endswith(".dat"):
-        np.savetxt(output, outdata)
-    else:
-        return outdata
-
 def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command, pixweight=None, zerospin=False, lowmem=False,):
-
+    """
+    Function for calculating mean and stddev of signals in hdf file
+    """
     # Check if you want to output a map
     import h5py
     import healpy as hp
@@ -335,7 +229,9 @@ def arcmin2rad(arcmin):
     return arcmin * (2 * np.pi) / 21600
 
 def legend_positions(df, y, scaling):
-    """ Calculate position of labels to the right in plot... """
+    """
+    Calculate position of labels to the right in plot... 
+    """
     positions = {}
     for column in y:
         positions[column] = df[column].values[-1] - 0.005
@@ -366,14 +262,10 @@ def legend_positions(df, y, scaling):
 
     return positions
 
-def forward(x):
-    return x/100
-def inverse(x):
-    return x*100
-
-
-
 def cmb(nu, A):
+    """
+    CMB blackbody spectrum
+    """
     h = 6.62607e-34 # Planck's konstant
     k_b  = 1.38065e-23 # Boltzmanns konstant
     Tcmb = 2.7255      # K CMB Temperature
@@ -384,6 +276,9 @@ def cmb(nu, A):
     return s_cmb
 
 def sync(nu, As, alpha, nuref=0.408):
+    """
+    Synchrotron spectrum using template
+    """
     #alpha = 1., As = 30 K (30*1e6 muK)
     nu_0 = nuref*1e9 # 408 MHz
     from pathlib import Path
@@ -396,6 +291,9 @@ def sync(nu, As, alpha, nuref=0.408):
 
 
 def ffEM(nu,EM,Te):
+    """
+    Freefree spectrum using emission measure
+    """
     #EM = 1 cm-3pc, Te= 500 #K
     T4 = Te*1e-4
     nu9 = nu/1e9 #Hz
@@ -405,6 +303,9 @@ def ffEM(nu,EM,Te):
     return s_ff
 
 def ff(nu,A,Te, nuref=40.):
+    """
+    Freefree spectrum
+    """
     h = 6.62607e-34 # Planck's konstant
     k_b  = 1.38065e-23 # Boltzmanns konstant
 
@@ -415,6 +316,9 @@ def ff(nu,A,Te, nuref=40.):
     return s_ff
 
 def sdust(nu, Asd, nu_p, fnu = None, f_ = None, nuref=22.,):
+    """
+    Spinning dust spectrum using spdust2
+    """
     nuref = nuref*1e9 
     scale = 30./nu_p
 
@@ -435,6 +339,9 @@ def sdust(nu, Asd, nu_p, fnu = None, f_ = None, nuref=22.,):
 
 
 def tdust(nu,Ad,betad,Td,nuref=545.):
+    """
+    Thermal dust modified blackbody spectrum.
+    """
     h = 6.62607e-34 # Planck's konstant
     k_b  = 1.38065e-23 # Boltzmanns konstant
     nu0=nuref*1e9
@@ -443,9 +350,15 @@ def tdust(nu,Ad,betad,Td,nuref=545.):
     return s_d
 
 def lf(nu,Alf,betalf,nuref=30e9):
+    """
+    low frequency component spectrum (power law)
+    """
     return Alf*(nu/nuref)**(betalf)
 
 def line(nu, A, freq, conversion=1.0):
+    """
+    Line emission spectrum
+    """
     if isinstance(nu, np.ndarray):
         return np.where(np.isclose(nu, 1e9*freq), A*conversion, 0.0)
     else:
@@ -455,6 +368,9 @@ def line(nu, A, freq, conversion=1.0):
             return 0.0
 
 def rspectrum(nu, r, sig, scaling=1.0):
+    """
+    Calculates the CMB amplituded given a value of r and requested modes
+    """
     import camb
     from camb import model, initialpower
     import healpy as hp
@@ -489,6 +405,9 @@ def rspectrum(nu, r, sig, scaling=1.0):
 
 
 def fits_handler(input, min, max, minchain, maxchain, chdir, output, fwhm, nside, zerospin, drop_missing, pixweight, return_mean, command, lowmem=True):
+    """
+    Function for handling fits files.
+    """
     # Check if you want to output a map
     import healpy as hp
     from tqdm import tqdm

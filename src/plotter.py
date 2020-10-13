@@ -1,6 +1,7 @@
 import time
 
 totaltime = time.time()
+import click
 import sys
 import os
 import healpy as hp
@@ -37,10 +38,9 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
     rc("text.latex", preamble=r"\usepackage{sfmath}",)
 
     # Which signal to plot
-    print(""); print("");
-    print("{:#^48}".format(""))
-    #if len(input)==1: input = input[0]
-    print("Plotting", input)
+    click.echo("")
+    click.echo(click.style("{:#^48}".format(""), fg="green"))
+    click.echo(click.style("Plotting",fg="green") + f" {input}")
 
     #######################
     ####   READ MAP   #####
@@ -53,23 +53,23 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
 
         # Get maps from alm data in .h5
         if dataset.endswith("alm"):
-            print("Converting alms to map")
+            click.echo(click.style("Converting alms to map",fg="green"))
             (maps, nsid, lmax, fwhm, outfile,) = alm2fits_tool(input, dataset, nside, lmax, fwhm, save=False,)
 
         # Get maps from map data in .h5
         elif dataset.endswith("map"):
-            print("Reading map from h5")
+            click.echo(click.style("Reading map from hdf",fg="green"))
             (maps, nsid, lmax, outfile,) = h5map2fits(input, dataset, save=False)
 
         # Found no data specified kind in .h5
         else:
-            print("Dataset not found. Breaking.")
-            print(f"Does {input}/{dataset} exist?")
+            click.echo(click.style("Dataset not found. Breaking.",fg="red"))
+            click.echo(click.style(f"Does {input}/{dataset} exist?",fg="red"))
             sys.exit()
 
     # Plot all signals specified
-    print(f"Plotting the following signals: {sig}")
-    print("{:#^48}".format(""))
+    click.echo(click.style("Using signals ",fg="green") + f"{sig}")
+    click.echo(click.style("{:#^48}".format(""), fg="green"))
     for polt in sig:
         signal_label = get_signallabel(polt)
         if data is not None:
@@ -101,16 +101,16 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
                 elif input.endswith(".h5"):
                     m = maps[polt]
             except:
-                print(f"{polt} not found")
+                click.echo(click.style(f"{polt} not found",fg="red"))
                 sys.exit()
 
         ############
         #  SMOOTH  #
         ############
         if fwhm > 0 and input.endswith(".fits"):
-            print("")
-            print(f"Smoothing fits map to {fwhm} arcmin fwhm")
-            print("")
+            click.echo("")
+            click.echo(click.style(f"Smoothing fits map to {fwhm} arcmin fwhm",fg="yellow"))
+            click.echo("")
             m = hp.smoothing(m, fwhm=arcmin2rad(fwhm), lmax=lmax,)
 
         ############
@@ -118,7 +118,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
         ############
         if nside is not None and input.endswith(".fits"):
             if nsid != nside:
-                print(f"UDgrading map from {nsid} to {nside}")
+                click.echo(click.style(f"UDgrading map from {nsid} to {nside}", fg="yellow"))
                 m = hp.ud_grade(m, nside,)
         else:
             nside = nsid
@@ -128,7 +128,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
         ########################
         if remove_dipole:
             starttime = time.time()
-            print("Removing dipole:")
+            click.echo(click.style("Removing dipole:", fg="yellow"))
             dip_mask_name = remove_dipole
             # Mask map for dipole estimation
             m_masked = hp.ma(m)
@@ -136,8 +136,8 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
 
             # Fit dipole to masked map
             mono, dip = hp.fit_dipole(m_masked)
-            print(f"Dipole vector: {dip}")
-            print(f"Dipole amplitude: {np.sqrt(np.sum(dip ** 2))}")
+            click.echo(click.style("Dipole vector:",fg="green") + f" {dip}")
+            click.echo(click.style("Dipole amplitude:",fg="green") + f" {np.sqrt(np.sum(dip ** 2))}")
 
             # Create dipole template
             nside = int(nside)
@@ -147,7 +147,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
 
             # Subtract dipole map from data
             m = m - dipole
-            print(f"Dipole removal : {(time.time() - starttime)}") if verbose else None
+            click.echo(f"Dipole removal : {(time.time() - starttime)}") if verbose else None
 
         #######################
         #### Auto-param   #####
@@ -202,41 +202,12 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
         # Scale map
         m *= scale
 
-        # If range has been specified, set.
-        """
-        if rng:
-            if rng == "auto":
-                if minmax:
-                    mn = np.min(m)
-                    mx = np.max(m)
-                else:
-                    mn, mx = get_ticks(m, 97.5)
-                if min is False:
-                    min = mn
-                if max is False:
-                    max = mx
-            else:
-                rng = float(rng)
-                min = -rng
-                max = rng
-            
-            ticks = [min, 0.0, max]
-            print("hihi",rng)
-        else: 
-            print("pre", ticks, min, max)
-            # If min and max have been specified, set.
-            if min is not False:
-                ticks[0] = float(min)
-
-            if max is not False:
-                ticks[-1] = float(max)
-        """
         # If min and max have been specified, set.
         if rng == "auto" and not auto:
-            print("Setting range from 97.5th percentile of data")
+            click.echo(click.style("Setting range from 97.5th percentile of data",fg="yellow"))
             mn, mx = get_ticks(m, 97.5)
         elif rng == "minmax":
-            print("Setting range from min to max of data")
+            click.echo(click.style("Setting range from min to max of data",fg="yellow"))
             mn = np.min(m)
             mx = np.max(m)
         else:
@@ -294,7 +265,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             logscale = lgscale
 
         if logscale:
-            print("Applying logscale")
+            click.echo(click.style("Applying logscale", fg="yellow", blink=True, bold=True))
             starttime = time.time()
 
             m = np.log10(0.5 * (m + np.sqrt(4.0 + m * m)))
@@ -310,7 +281,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
 
             m = np.maximum(np.minimum(m, ticks[-1]), ticks[0])
 
-            print("Logscale", (time.time() - starttime),) if verbose else None
+            click.echo("Logscale", (time.time() - starttime),) if verbose else None
 
         ######################
         #### COLOR SETUP #####
@@ -332,7 +303,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             except:
                 cmap = plt.get_cmap(cmap)
 
-        print(f"Colormap: {cmap.name}")
+        click.echo(click.style("Colormap:", fg="green") + f" {cmap.name}")
         #######################
         ####  Projection? #####
         #######################
@@ -349,7 +320,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
         ######## Mask ########
         ######################
         if mask:
-            print(f"Masking using {mask}")
+            click.echo(click.style(f"Masking using {mask}", fg="yellow"))
             masked = True
 
             # Apply mask
@@ -385,7 +356,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
 
         sizes = get_sizes(size)
         for width in sizes:
-            print("Size: " + str(width))
+            click.echo(click.style("Size: ", fg="green") + str(width))
             height = width / 2.0
 
             # Make sure text doesnt change with colorbar
@@ -425,7 +396,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
                 cb = fig.colorbar(image, orientation="horizontal", shrink=0.3, pad=0.08, ticks=ticks, format=FuncFormatter(fmt),)
 
                 # Format tick labels
-                print("Ticks: ", ticklabels)
+                click.echo(click.style("Ticks: ", fg="green") + ticklabels)
                 ticklabels = [fmt(i, 1) for i in ticklabels]
                 cb.ax.set_xticklabels(ticklabels)
 
@@ -467,7 +438,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             ##############
             ## filename ##
             ##############
-            print(f"Signal label: {signal_label}")
+            click.echo(click.style("Signal label:", fg="green") + f" {signal_label}")
 
             outfile = outfile.replace("_IQU_", "_")
             outfile = outfile.replace("_I_", "_")
@@ -494,12 +465,12 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             if outdir:
                 fn = outdir + "/" + os.path.split(fn)[-1]
 
-            print(f"Output: {fn}")
+            click.echo(click.style("Output:", fg="green") + f" {fn}")
             plt.savefig(fn, bbox_inches="tight", pad_inches=0.02, transparent=tp, format=filetype,)
-            print("Savefig", (time.time() - starttime),) if verbose else None
+            click.echo("Savefig", (time.time() - starttime),) if verbose else None
 
             plt.close()
-            print("Totaltime:", (time.time() - totaltime),) if verbose else None
+            click.echo("Totaltime:", (time.time() - totaltime),) if verbose else None
 
         min = tempmin
         max = tempmax
@@ -511,7 +482,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
 
 
 def get_params(m, outfile, polt, signal_label):
-    print()
+    click.echo()
     logscale = False
 
     # Everything listed here will be recognized
@@ -553,7 +524,7 @@ def get_params(m, outfile, polt, signal_label):
 
     # ------ CMB ------
     if tag_lookup(cmb_tags, outfile,):
-        print("{:-^48}".format(f"Plotting CMB signal {sl}"))
+        click.echo(click.style("{:-^48}".format(f"Detected CMB signal {sl}"),fg="yellow"))
         title["unit"]  = r"$\mu\mathrm{K}_{\mathrm{CMB}}$"
         title["comp"]  = "cmb" 
         title["param"] = r"$A$"
@@ -570,20 +541,20 @@ def get_params(m, outfile, polt, signal_label):
             ticks = [0, 32]
         else:
             ticks = [0, 76]
-        print("{:-^48}".format(f"Plotting chisq with vmax = {str(ticks[-1])} {sl}"))
+        click.echo(click.style("{:-^48}".format(f"Detected chisq with vmax = {str(ticks[-1])} {sl}"),fg="yellow"))
         cmap = col.LinearSegmentedColormap.from_list("BkWh", ["black", "white"])
 
     # ------ SYNCH ------
     elif tag_lookup(synch_tags, outfile):
         title["comp"] = "s"
         if tag_lookup(synch_beta_tags, outfile+signal_label,):
-            print("{:-^48}".format(f"Plotting Synchrotron beta"))
-            print("Plotting Synchrotron beta")
+            click.echo(click.style("{:-^48}".format(f"Detected Synchrotron beta"),fg="yellow"))
+            click.echo("Detected Synchrotron beta")
             ticks = [-3.2, -3.1, -3.0]
             title["unit"]  = ""
             title["param"] = r"$\beta$"
         else:
-            print("{:-^48}".format(f"Plotting Synchrotron {sl}"))            
+            click.echo(click.style("{:-^48}".format(f"Detected Synchrotron {sl}"),fg="yellow"))            
             title["param"] = r"$A$"
             logscale = True
             cmap = "swamp"
@@ -604,18 +575,18 @@ def get_params(m, outfile, polt, signal_label):
     elif tag_lookup(ff_tags, outfile) and not tag_lookup(["diff",], outfile+signal_label,):
         title["comp"]  = "ff" 
         if tag_lookup(ff_Te_tags, outfile+signal_label,):
-            print("{:-^48}".format(f"Plotting free-free Te"))
+            click.echo(click.style("{:-^48}".format(f"Detected free-free Te"),fg="yellow"))
             ticks = [5000, 8000]
             title["unit"]  = r"$\mathrm{K}$"
             title["param"] = r"$T_{e}$"
         elif tag_lookup(ff_EM_tags, outfile+signal_label,):
-            print("Plotting freefree EM MIN AND MAX VALUES UPDATE!")
+            click.echo("Detected freefree EM MIN AND MAX VALUES UPDATE!")
             vmin, vmax = get_ticks(m, 97.5)
             ticks = [vmin, vmax]
             title["unit"]  = r"$\mathrm{K}$"
             title["param"] = r"$T_{e}$"
         else:
-            print("{:-^48}".format(f"Plotting free-free"))
+            click.echo(click.style("{:-^48}".format(f"Detected free-free"),fg="yellow"))
             title["param"] = r"$A$"
             cmap = "freeze"
             ticks = [40, 400, 2000]
@@ -626,12 +597,12 @@ def get_params(m, outfile, polt, signal_label):
     elif tag_lookup(ame_tags, outfile):
         title["comp"]  = "ame"
         if tag_lookup(ame_nup_tags, outfile+signal_label,):
-            print("{:-^48}".format(f"Plotting AME nu_p"))        
+            click.echo(click.style("{:-^48}".format(f"Detected AME nu_p"),fg="yellow"))        
             ticks = [17, 23]
             title["unit"]  = "GHz"
             title["param"] = r"$\nu_{p}$"
         else:
-            print("{:-^48}".format(f"Plotting AME"))
+            click.echo(click.style("{:-^48}".format(f"Detected AME"),fg="yellow"))
             title["param"] = r"$A$"
             title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
             cmap = "amber"
@@ -642,17 +613,17 @@ def get_params(m, outfile, polt, signal_label):
     elif tag_lookup(dust_tags, outfile):
         title["comp"]  = "d"
         if tag_lookup(dust_T_tags, outfile+signal_label,):
-            print("{:-^48}".format(f"Plotting Thermal dust temperature"))
+            click.echo(click.style("{:-^48}".format(f"Detected Thermal dust temperature"),fg="yellow"))
             ticks = [14, 30]
             title["unit"]  = r"$\mathrm{K}$"
             title["param"] = r"$T$"
         elif tag_lookup(dust_beta_tags, outfile+signal_label,):
-            print("{:-^48}".format(f"Plotting Thermal dust beta"))
+            click.echo(click.style("{:-^48}".format(f"Detected Thermal dust beta"),fg="yellow"))
             ticks = [1.3, 1.8]
             title["unit"]  = ""
             title["param"] = r"$\beta$"
         else:
-            print("{:-^48}".format(f"Plotting Thermal dust {sl}"))
+            click.echo(click.style("{:-^48}".format(f"Detected Thermal dust {sl}"),fg="yellow"))
             title["param"] = r"$A$"
             title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
             logscale = True
@@ -673,8 +644,8 @@ def get_params(m, outfile, polt, signal_label):
     #######################
 
     elif tag_lookup(co10_tags, outfile):
-        print("{:-^48}".format(f"Plotting CO10"))
-        print("Plotting CO10")
+        click.echo(click.style("{:-^48}".format(f"Detected CO10"),fg="yellow"))
+        click.echo("Detected CO10")
         cmap = "arctic"
         title["comp"] = "co10"
         title["param"] = r"$A$"
@@ -685,7 +656,7 @@ def get_params(m, outfile, polt, signal_label):
         logscale = True
 
     elif tag_lookup(co21_tags, outfile):
-        print("{:-^48}".format(f"Plotting CO21"))
+        click.echo(click.style("{:-^48}".format(f"Detected CO21"),fg="yellow"))
         title["comp"] = "co21"
         title["param"] =r"$A$"
         title["unit"] = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
@@ -694,7 +665,7 @@ def get_params(m, outfile, polt, signal_label):
         logscale = True
 
     elif tag_lookup(co32_tags, outfile):
-        print("{:-^48}".format(f"Plotting CO32"))
+        click.echo(click.style("{:-^48}".format(f"Detected CO32"),fg="yellow"))
         title["comp"] = "co32"
         title["param"] = r"$A$"
         ticks = [0, 10, 100]
@@ -703,7 +674,7 @@ def get_params(m, outfile, polt, signal_label):
         logscale = True
 
     elif tag_lookup(hcn_tags, outfile):
-        print("{:-^48}".format(f"Plotting HCN"))
+        click.echo(click.style("{:-^48}".format(f"Detected HCN"),fg="yellow"))
         title["comp"] = "hcn"
         title["param"] = r"$A$"
         ticks = [0.01, 100]
@@ -717,7 +688,7 @@ def get_params(m, outfile, polt, signal_label):
 
     elif tag_lookup(res_tags, outfile):
         from re import findall
-        print("{:-^48}".format(f"Plotting residual map {sl}"))
+        click.echo(click.style("{:-^48}".format(f"Detected residual map {sl}"),fg="yellow"))
 
         if "res_" in outfile:
             tit = str(findall(r"res_(.*?)_", outfile)[0])
@@ -747,7 +718,7 @@ def get_params(m, outfile, polt, signal_label):
     ############
     elif tag_lookup(tod_tags, outfile):
         from re import findall
-        print("{:-^48}".format(f"Plotting Smap {sl}"))
+        click.echo(click.style("{:-^48}".format(f"Detected Smap {sl}"),fg="yellow"))
         
         tit = str(findall(r"tod_(.*?)_Smap", outfile)[0])
         title["comp"] = fr"{tit}"
@@ -761,7 +732,7 @@ def get_params(m, outfile, polt, signal_label):
 
     elif tag_lookup(freqmap_tags, outfile):
         from re import findall
-        print("{:-^48}".format(f"Plotting frequency map {sl}"))
+        click.echo(click.style("{:-^48}".format(f"Detected frequency map {sl}"),fg="yellow"))
         
         vmin, vmax = get_ticks(m, 97.5)
         ticks = [vmin, vmax]
@@ -775,7 +746,7 @@ def get_params(m, outfile, polt, signal_label):
     # Not idenified or ignored #
     ############################
     elif tag_lookup(ignore_tags, outfile):
-        print(f'{outfile} is on the ignore list, under tags {ignore_tags}. Remove from "ignore_tags" in plotter.py. Breaking.')
+        click.echo(f'{outfile} is on the ignore list, under tags {ignore_tags}. Remove from "ignore_tags" in plotter.py. Breaking.')
         sys.exit()
     else:
         # Run map autoset
@@ -783,7 +754,7 @@ def get_params(m, outfile, polt, signal_label):
 
     # If signal is an RMS map, add tag.
     if signal_label.endswith("RMS") or "_stddev" in outfile:
-        print("{:-^48}".format(f"Plotting RMS map {signal_label}"))
+        click.echo(click.style("{:-^48}".format(f"Detected RMS map {signal_label}"),fg="yellow"))
         title["stddev"] = True
         vmin, vmax = get_ticks(m, 97.5)
         logscale = False
@@ -821,7 +792,7 @@ def get_params(m, outfile, polt, signal_label):
 
 
 def not_identified(m, signal_label, logscale, title):
-    print("{:-^48}".format(f"Map not recognized, plotting with min and max values"))
+    click.echo(click.style("{:-^48}".format(f"Map not recognized, plotting with min and max values"),fg="yellow"))
     title["comp"] = signal_label.split("_")[-1]
     title["param"] = ""
     title["unit"] = ""

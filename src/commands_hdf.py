@@ -10,7 +10,6 @@ from src.tools import *
 def commands_hdf():
     pass
 
-
 @commands_hdf.command()
 @click.argument("input", type=click.STRING)
 @click.argument("dataset", type=click.STRING)
@@ -60,8 +59,6 @@ def stddev(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, pi
         sys.exit()
 
     h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.std, pixweight, zerospin,)
-    #h5handler_old(input, dataset, min, max, maxchain, output, fwhm, nside, np.std,)
-
 
 @commands_hdf.command()
 @click.argument("filename", type=click.STRING)
@@ -77,8 +74,7 @@ def sigma_l2fits(filename, nchains, burnin, path, outname, save=True,):
     If "chain_c0001.h5", filename is cut to "chain" and will look in same directory for "chain_c*****.h5".
     See comm_like_tools for further information about BR and GBR post processing
     """
-    #data = h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.mean, pixweight, zerospin,)
-    print("{:-^48}".format("Formatting sigma_l data to fits file"))
+    click.echo("{:-^48}".format("Formatting sigma_l data to fits file"))
     import h5py
 
     if filename.endswith(".h5"):
@@ -90,12 +86,12 @@ def sigma_l2fits(filename, nchains, burnin, path, outname, save=True,):
             groups = list(f.keys())
             temp[nc - 1] = len(groups)
     nsamples_max = int(max(temp[:]))
-    print(f"Largest chain has {nsamples_max} samples, using burnin {burnin}\n")
+    click.echo(f"Largest chain has {nsamples_max} samples, using burnin {burnin}\n")
 
     for nc in range(1, nchains + 1):
         fn = filename + "_c" + str(nc).zfill(4) + ".h5"
         with h5py.File(fn, "r",) as f:
-            print(f"Reading {fn}")
+            click.echo(f"Reading {fn}")
             groups = list(f.keys())
             nsamples = len(groups)
             if nc == 1:
@@ -104,13 +100,13 @@ def sigma_l2fits(filename, nchains, burnin, path, outname, save=True,):
                 lmax = len(f[groups[0] + "/" + path][0]) - 1
             else:
                 dset = np.append(dset, np.zeros((nsamples_max + 1, 1, nspec, lmax + 1,)), axis=1,)
-            print(f"Dataset: {path} \n# samples: {nsamples} \n# spectra: {nspec} \nlmax: {lmax}")
+            click.echo(f"Dataset: {path} \n# samples: {nsamples} \n# spectra: {nspec} \nlmax: {lmax}")
 
             for i in range(nsamples):
                 for j in range(nspec):
                     dset[i + 1, nc - 1, j, :] = np.asarray(f[groups[i] + "/" + path][j][:])
 
-            print("")
+            click.echo("")
 
     # Optimize with jit?
     ell = np.arange(lmax + 1)
@@ -121,7 +117,7 @@ def sigma_l2fits(filename, nchains, burnin, path, outname, save=True,):
     dset[0, :, :, :] = nsamples - burnin
 
     if save:
-        print(f"Dumping fits file: {outname}")
+        click.echo(f"Dumping fits file: {outname}")
         dset = np.asarray(dset, dtype="f4")
 
         from astropy.io import fits
@@ -246,8 +242,8 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
         copy_ = freqmaps = ame = ff = cmb = synch = dust = br = diff = diffcmb = True
 
     # Make procver directory if not exists
-    print("{:#^80}".format(""))
-    print(f"Creating directory {procver}")
+    click.echo("{:#^80}".format(""))
+    click.echo(f"Creating directory {procver}")
     Path(procver).mkdir(parents=True, exist_ok=True)
     chains = chain
     maxchain = len(chains)
@@ -261,7 +257,7 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
             path = os.path.split(chainfile)[0]
             for file in os.listdir(path):
                 if file.startswith("param") and i == 1:  # Copy only first
-                    print(f"Copying {path}/{file} to {procver}/BP_param_full_c" + str(i).zfill(4) + ".txt")
+                    click.echo(f"Copying {path}/{file} to {procver}/BP_param_full_c" + str(i).zfill(4) + ".txt")
                     if resamp:
                         shutil.copyfile(f"{path}/{file}", f"{procver}/BP_param_resamp_Cl_c" + str(i).zfill(4) + ".txt",)
                     else:
@@ -269,18 +265,18 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
 
             if resamp:
                 # Resampled CMB-only full-mission Gibbs chain file with Cls (for BR estimator)
-                print(f"Copying {chainfile} to {procver}/BP_resamp_c" + str(i).zfill(4) + f"_full_Cl_{procver}.h5")
+                click.echo(f"Copying {chainfile} to {procver}/BP_resamp_c" + str(i).zfill(4) + f"_full_Cl_{procver}.h5")
                 shutil.copyfile(chainfile, f"{procver}/BP_resamp_c" + str(i).zfill(4) + f"_full_Cl_{procver}.h5",)
             else:
                 # Full-mission Gibbs chain file
-                print(f"Copying {chainfile} to {procver}/BP_c" + str(i).zfill(4) + f"_full_{procver}.h5")
+                click.echo(f"Copying {chainfile} to {procver}/BP_c" + str(i).zfill(4) + f"_full_{procver}.h5")
                 shutil.copyfile(chainfile, f"{procver}/BP_c" + str(i).zfill(4) + f"_full_{procver}.h5",)
 
      #if halfring:
      #   # Copy halfring files
      #   for i, chainfile in enumerate([halfring], 1):
      #       # Copy halfring files
-     #       print(f"Copying {resamp} to {procver}/BP_halfring_c" + str(i).zfill(4) + f"_full_Cl_{procver}.h5")
+     #       click.echo(f"Copying {resamp} to {procver}/BP_halfring_c" + str(i).zfill(4) + f"_full_Cl_{procver}.h5")
      #       shutil.copyfile(halfring, f"{procver}/BP_halfring_c" + str(i).zfill(4) + f"_full_Cl_{procver}.h5",)
 
     """
@@ -357,14 +353,14 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
 
 
         except Exception as e:
-            print(e)
-            print("Continuing...")
+            click.secho(e,fg="red")
+            click.secho("Continuing...",fg="yellow")
 
     
     if diff:
         import healpy as hp
         try:
-            print("Creating frequency difference maps")
+            click.echo("Creating frequency difference maps")
             path_dx12 = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/dx12"
             path_npipe = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/npipe"
             maps_dx12 = ["30ghz_2018_n1024_beamscaled_dip.fits","44ghz_2018_n1024_beamscaled_dip.fits","70ghz_2018_n1024_beamscaled_dip.fits"]
@@ -401,13 +397,13 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
                 hp.write_map(f"{procver}/BP_{freq}_diff_dx12_{procver}.fits", np.array(map_BP-map_dx12), overwrite=True, column_names=["I_DIFF", "Q_DIFF", "U_DIFF"], dtype=None)
 
         except Exception as e:
-            print(e)
-            print("Continuing...")
+            click.secho(e,fg="red")
+            click.secho("Continuing...",fg="yellow")
 
     if diffcmb:
         import healpy as hp
         try:
-            print("Creating cmb difference maps")
+            click.echo("Creating cmb difference maps")
             path_cmblegacy = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/cmb-legacy"
             mask_ = hp.read_map("/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/masks/dx12_v3_common_mask_int_005a_1024_TQU.fits", verbose=False, dtype=np.bool,)
             map_BP = hp.read_map(f"{procver}/BP_cmb_IQU_full_n1024_{procver}.fits", field=(0,1,2), verbose=False, dtype=None,)
@@ -424,7 +420,7 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
             for i, method in enumerate(["commander", "sevem", "nilc", "smica",]):
 
                 data = f"COM_CMB_IQU-{method}_2048_R3.00_full.fits"
-                print(f"making difference map with {data}")
+                click.echo(f"making difference map with {data}")
                 map_cmblegacy  = hp.read_map(f"{path_cmblegacy}/{data}", field=(0,1,2), verbose=False,)
                 map_cmblegacy = hp.smoothing(map_cmblegacy, fwhm=arcmin2rad(60.0), verbose=False)
                 map_cmblegacy = hp.ud_grade(map_cmblegacy, nside_out=1024,)
@@ -434,14 +430,14 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
                 map_cmblegacy_masked = hp.ma(map_cmblegacy[0])
                 map_cmblegacy_masked.mask = np.logical_not(mask_)
                 mono = hp.fit_monopole(map_cmblegacy_masked)
-                print(f"{method} subtracting monopole {mono}")
+                click.echo(f"{method} subtracting monopole {mono}")
                 map_cmblegacy[0] = map_cmblegacy[0] - mono #np.mean(map_cmblegacy,axis=1).reshape(-1,1)
 
                 hp.write_map(f"{procver}/BP_cmb_diff_{method}_{procver}.fits", np.array(map_BP-map_cmblegacy), overwrite=True, column_names=["I_DIFF", "Q_DIFF", "U_DIFF"], dtype=None)
 
         except Exception as e:
-            print(e)
-            print("Continuing...")
+            click.secho(e,fg="red")
+            click.secho("Continuing...",fg="yellow")
 
     """
     FOREGROUND MAPS
@@ -470,8 +466,8 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
                     bndwid=None,
                 )
             except Exception as e:
-                print(e)
-                print("Continuing...")
+                click.secho(e,fg="red")
+                click.secho("Continuing...",fg="yellow")
 
         else:
             try:
@@ -495,8 +491,8 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
                     bndwid=None,
                 )
             except Exception as e:
-                print(e)
-                print("Continuing...")
+                click.secho(e,fg="red")
+                click.secho("Continuing...",fg="yellow")
 
     if ff:
         try:
@@ -521,8 +517,8 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
                 bndwid=None,
             )
         except Exception as e:
-            print(e)
-            print("Continuing...")
+            click.secho(e,fg="red")
+            click.secho("Continuing...",fg="yellow")
 
     if ame:
         try:
@@ -547,8 +543,8 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
                 bndwid=None,
             )
         except Exception as e:
-            print(e)
-            print("Continuing...")
+            click.secho(e,fg="red")
+            click.secho("Continuing...",fg="yellow")
 
     if synch:
         try:
@@ -573,8 +569,8 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
                 bndwid=None,
             )
         except Exception as e:
-            print(e)
-            print("Continuing...")
+            click.secho(e,fg="red")
+            click.secho("Continuing...",fg="yellow")
 
     if dust:
         try:
@@ -599,15 +595,14 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
                 bndwid=None,
             )
         except Exception as e:
-            print(e)
-            print("Continuing...")
+            click.secho(e,fg="red")
+            click.secho("Continuing...",fg="yellow")
 
     """ As implemented by Simone
     """
     if br and resamp:
         # Gaussianized TT Blackwell-Rao input file
-        print()
-        print("{:-^50}".format("CMB GBR"))
+        click.echo("{:-^50}".format("CMB GBR"))
         ctx.invoke(sigma_l2fits, filename=resamp, nchains=1, burnin=burnin, path="cmb/sigma_l", outname=f"{procver}/BP_cmb_GBRlike_{procver}.fits", save=True,)
 
     """
