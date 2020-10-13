@@ -76,7 +76,7 @@ def specplot(input,):
 @click.option("-range", default="auto", type=click.STRING, help='Color range. "-range auto" sets to 97.5 percentile of data., or "minmax" which sets to data min and max values.',)  # str until changed to float
 @click.option("-colorbar", "-bar", is_flag=True, help='Adds colorbar ("cb" in filename)',)
 @click.option("-lmax", default=None, type=click.FLOAT, help="This is automatically set from the h5 file. Only available for alm inputs.",)
-@click.option("-fwhm", default=0.0, type=click.FLOAT, help="FWHM of smoothing.",)
+@click.option("-fwhm", default=0.0, type=click.FLOAT, help="FWHM of smoothing, in arcmin.",)
 @click.option("-mask", default=None, type=click.STRING, help="Masks input with specified maskfile.",)
 @click.option("-mfill", default=None, type=click.STRING, help='Color to fill masked area. for example "gray". Transparent by default.',)
 @click.option("-sig", default=[0,], type=click.INT, multiple=True, help="Signal to be plotted 0 by default (0, 1, 2 is interprated as IQU)",)
