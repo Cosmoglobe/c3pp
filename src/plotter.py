@@ -109,7 +109,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
         ############
         if fwhm > 0 and input.endswith(".fits"):
             print("")
-            print(f"Smoothing fits map to {fwhm} degrees fwhm")
+            print(f"Smoothing fits map to {fwhm} arcmin fwhm")
             print("")
             m = hp.smoothing(m, fwhm=arcmin2rad(fwhm), lmax=lmax,)
 
