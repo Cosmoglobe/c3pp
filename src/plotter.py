@@ -596,10 +596,10 @@ def get_params(m, outfile, polt, signal_label):
                 title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
                 ticks = [10, 30, 100]
             else:
-                # BP uses 408 MHz GHz ref freq
+                # BP uses 30 GHz ref freq #(old: 408 MHz GHz ref freq)
                 # scale = 1e-6
                 ticks = [50, 100, 200, 400]
-                title["unit"] = r"$\mathrm{K}_{\mathrm{RJ}}$"
+                title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
 
     # ------ FREE-FREE ------
     elif tag_lookup(ff_tags, outfile) and not tag_lookup(["diff",], outfile+signal_label,):
