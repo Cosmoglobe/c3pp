@@ -488,7 +488,7 @@ def rspectrum(nu, r, sig, scaling=1.0):
 
 
 
-def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_missing, pixweight, return_mean, command, lowmem=True):
+def fits_handler(input, min, max, minchain, maxchain, chdir, output, fwhm, nside, zerospin, drop_missing, pixweight, return_mean, command, lowmem=True):
     # Check if you want to output a map
     import healpy as hp
     from tqdm import tqdm
@@ -499,8 +499,11 @@ def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_
         exit()
 
     if (lowmem and command == np.std): #need to compute mean first
-        mean_data = fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_missing, pixweight, True, np.mean)
+        mean_data = fits_handler(input, min, max, minchain, maxchain, chdir, output, fwhm, nside, zerospin, drop_missing, pixweight, True, np.mean)
 
+    if (minchain > maxchain):
+        print('Minimum chain number larger that maximum chain number. Exiting')
+        exit()
     aline=input.split('/')
     dataset=aline[-1]
     print()
@@ -521,15 +524,12 @@ def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_
     use_pixweights = False if pixweight == None else True
     maxnone = True if max == None else False  # set length of keys for maxchains>1
     pol = True if zerospin == False else False  # treat maps as TQU maps (polarization)
-    for c in range(1, maxchain + 1):
-        filename = input.replace("c0001", "c" + str(c).zfill(4))
-        temp=filename.split('.fits')
-        basefile=temp[0]
-        basefile=basefile[:-6]
-        filename = basefile+str(min).zfill(6)+'.fits'
-        if (not '_k'+str(min).zfill(6)+'.fits' in filename):
-            print("INPUT file name must end with '_k<6-digit-sample>.fits' ")
-            exit()
+    for c in range(minchain, maxchain + 1):
+        if (chdir==None):
+            filename = input.replace("c0001", "c" + str(c).zfill(4))
+        else:
+            filename = chdir+'_c%i/'%(c)+input
+        basefile = filename.split("k000001")
 
         if maxnone:
             # If no max is specified, find last sample of chain
@@ -538,7 +538,7 @@ def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_
             max_found = False
             siter=min
             while (not max_found):
-                filename = basefile+str(siter).zfill(6)+'.fits'
+                filename = basefile[0]+'k'+str(siter).zfill(6)+basefile[1]
 
                 if (os.path.isfile(filename)):
                     siter += 1
@@ -548,13 +548,15 @@ def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_
 
         else:
             if (first_samp):
-                for chiter in range(1,maxchain + 1):
-                    temp = input.replace("c0001", "c" + str(c).zfill(4))
-                    temp=filename.split('.fits')
-                    temp=temp[0]
-                    temp=temp[:-6]
+                for chiter in range(minchain,maxchain + 1):
+                    if (chdir==None):
+                        tempname = input.replace("c0001", "c" + str(c).zfill(4))
+                    else:
+                        tempname = chdir+'_c%i/'%(c)+input
+                        temp = tempname.split("k000001")
+
                     for siter in range(min,max+1):
-                        tempf = temp+str(siter).zfill(6)+'.fits'
+                        tempf = temp[0]+'k'+str(siter).zfill(6)+temp[1]
 
                         if (not os.path.isfile(tempf)):
                             print('chain %i, sample %i missing'%(c,siter))
@@ -567,10 +569,7 @@ def fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, drop_
 
         for sample in tqdm(range(min, max + 1), ncols=80):
                 # dataset sample formatting
-                s = str(sample).zfill(6)
-                
-                filename = basefile+s+'.fits'
-                
+                filename = basefile[0]+'k'+str(sample).zfill(6)+basefile[1]                
                 if (first_samp):
                     # Check which fields the input maps have
                     if (not os.path.isfile(filename)):

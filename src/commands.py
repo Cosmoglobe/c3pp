@@ -236,42 +236,50 @@ def stddev(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, pi
 @click.argument("output", type=click.STRING)
 @click.option("-min", default=1, type=click.INT, help="Start sample, default 1",)
 @click.option("-max", default=None, type=click.INT, help="End sample, calculated automatically if not set",)
-@click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]",)
+@click.option("-minchain", default=1, help="lowest chain number, c0002 [ex. 2] (default=1)",)
+@click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5] (default=1)",)
+@click.option("-chaindir", default=None, type=click.STRING, help="Base of chain directory, overwrites chain iteration from input file name to iteration over chain directories, BP_chain_c15 to BP_chain_c19 [ex. 'BP_chain', with minchain = 15 and maxchain = 19]",)
 @click.option("-fwhm", default=0.0, help="FWHM in arcmin")
 @click.option("-nside", default=None, type=click.INT, help="Nside for down-grading maps before calculation",)
 @click.option("-zerospin", is_flag=True, help="If smoothing, treat maps as zero-spin maps.",)
 @click.option("-missing", is_flag=True, help="If files are missing, drop them. Else, exit computation",)
 @click.option("-pixweight", default=None, type=click.STRING, help="Path to healpy pixel weights.",)
 def fits_mean(
-        input, output, min, max, maxchain, fwhm, nside, zerospin, missing, pixweight):
+        input, output, min, max, minchain, maxchain, chaindir, fwhm, nside, zerospin, missing, pixweight):
     """
     Calculates the mean over sample range from fits-files.\n
-    ex. res_030_c0001_k000020.fits res_030_20-100_mean_40arcmin.fits -min 20 -max 100 -fwhm 40 -maxchain 3\n
+    ex. res_030_c0001_k000001.fits res_030_20-100_mean_40arcmin.fits -min 20 -max 100 -fwhm 40 -maxchain 3\n
     If output name is set to .dat, data will not be converted to map.
+
+    Note: the input file name must have the 'c0001' chain identifier and the 'k000001' sample identifier. The -min/-max and -chainmin/-chainmax options set the actual samples/chains to be used in the calculation 
     """
 
-    fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, missing, pixweight, False, np.mean)
+    fits_handler(input, min, max, minchain, maxchain, chaindir, output, fwhm, nside, zerospin, missing, pixweight, False, np.mean)
 
 @commands.command()
 @click.argument("input", type=click.STRING)
 @click.argument("output", type=click.STRING)
 @click.option("-min", default=1, type=click.INT, help="Start sample, default 1",)
 @click.option("-max", default=None, type=click.INT, help="End sample, calculated automatically if not set",)
-@click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]",)
+@click.option("-minchain", default=1, help="lowest chain number, c0002 [ex. 2] (default=1)",)
+@click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5] (default=1)",)
+@click.option("-chaindir", default=None,type=click.STRING, help="Base of chain directory, overwrites chain iteration from input file name to iteration over chain directories, BP_chain_c15 to BP_chain_c19 [ex. 'BP_chain', with minchain = 15 and maxchain = 19]",)
 @click.option("-fwhm", default=0.0, help="FWHM in arcmin")
 @click.option("-nside", default=None, type=click.INT, help="Nside for down-grading maps before calculation",)
 @click.option("-zerospin", is_flag=True, help="If smoothing, treat maps as zero-spin maps.",)
 @click.option("-missing", is_flag=True, help="If files are missing, drop them. Else, exit computation",)
 @click.option("-pixweight", default=None, type=click.STRING, help="Path to healpy pixel weights.",)
 def fits_stddev(
-        input, output, min, max, maxchain, fwhm, nside, zerospin, missing, pixweight):
+        input, output, min, max, minchain, maxchain, chaindir, fwhm, nside, zerospin, missing, pixweight):
     """
     Calculates the standard deviation over sample range from fits-files.\n
-    ex. res_030_c0001_k000020.fits res_030_20-100_mean_40arcmin.fits -min 20 -max 100 -fwhm 40 -maxchain 3\n
+    ex. res_030_c0001_k000001.fits res_030_20-100_mean_40arcmin.fits -min 20 -max 100 -fwhm 40 -maxchain 3\n
     If output name is set to .dat, data will not be converted to map.
+
+    Note: the input file name must have the 'c0001' chain identifier and the 'k000001' sample identifier. The -min/-max and -chainmin/-chainmax options set the actual samples/chains to be used in the calculation 
     """
 
-    fits_handler(input, min, max, maxchain, output, fwhm, nside, zerospin, missing, pixweight, False, np.std)
+    fits_handler(input, min, max, minchain, maxchain, chaindir, output, fwhm, nside, zerospin, missing, pixweight, False, np.std)
 
 @commands.command()
 @click.argument("input", type=click.Path(exists=True))#, nargs=-1,)
@@ -309,7 +317,7 @@ def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, lmax, fwhm
     ex. c3pp plot coolhdf.h5 -dataset 000007/cmb/amp_alm -nside 512 -remove_dipole maskfile.fits -cmap cmasher.arctic 
 
     Uses 97.5 percentile values for min and max by default!\n
-    RECCOMENDED: Use -auto to autodetect map type and set parameters.\n
+    RECOMMENDED: Use -auto to autodetect map type and set parameters.\n
     Some autodetected maps use logscale, you will be warned.
     """
     if input.endswith(".h5") and not dataset and not nside:
