@@ -1,0 +1,633 @@
+import time
+import os
+import numpy as np
+import sys
+import click
+from src.tools import *
+
+
+@click.group()
+def commands_hdf():
+    pass
+
+
+@commands_hdf.command()
+@click.argument("input", type=click.STRING)
+@click.argument("dataset", type=click.STRING)
+@click.argument("output", type=click.STRING)
+@click.option("-min", default=1, type=click.INT, help="Start sample, default 1",)
+@click.option("-max", default=None, type=click.INT, help="End sample, calculated automatically if not set",)
+@click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]",)
+@click.option("-fwhm", default=0.0, help="FWHM in arcmin")
+@click.option("-nside", default=None, type=click.INT, help="Nside for alm binning",)
+@click.option("-zerospin", is_flag=True, help="If smoothing, treat maps as zero-spin maps.",)
+@click.option("-pixweight", default=None, type=click.STRING, help="Path to healpy pixel weights.",)
+def mean(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, pixweight):
+    """
+    Calculates the mean over sample range from .h5 file.\n
+    ex. chains_c0001.h5 dust/amp_map 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40 -maxchain 3\n
+    ex. chains_c0001.h5 dust/amp_alm 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40 -nside 512\n
+    If output name is set to .dat, data will not be converted to map.
+    """
+    if dataset.endswith("alm") and nside == None:
+        click.echo("Please specify nside when handling alms.")
+        sys.exit()
+
+
+    h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.mean, pixweight, zerospin,)
+
+@commands_hdf.command()
+@click.argument("input", type=click.STRING)
+@click.argument("dataset", type=click.STRING)
+@click.argument("output", type=click.STRING)
+@click.option("-min", default=1, type=click.INT, help="Start sample, default 1",)
+@click.option("-max", default=None, type=click.INT, help="End sample, calculated automatically if not set",)
+@click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]",)
+@click.option("-fwhm", default=0.0, help="FWHM in arcmin")
+@click.option("-nside", default=None, type=click.INT, help="Nside for alm binning",)
+@click.option("-zerospin", is_flag=True, help="If smoothing, treat maps as zero-spin maps.",)
+@click.option("-pixweight", default=None, type=click.STRING, help="Path to healpy pixel weights.",)
+def stddev(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, pixweight,):
+    """
+    Calculates the stddev over sample range from .h5 file.\n
+    ex. chains_c0001.h5 dust/amp_map 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40 -maxchain 3\n
+    ex. chains_c0001.h5 dust/amp_alm 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40 -nside 512\n
+
+    If output name is set to .dat, data will not be converted to map.
+    """
+    if dataset.endswith("alm") and nside == None:
+        click.echo("Please specify nside when handling alms.")
+        sys.exit()
+
+    h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.std, pixweight, zerospin,)
+    #h5handler_old(input, dataset, min, max, maxchain, output, fwhm, nside, np.std,)
+
+
+@commands_hdf.command()
+@click.argument("filename", type=click.STRING)
+@click.argument("nchains", type=click.INT)
+@click.argument("burnin", type=click.INT)
+@click.option("-path", default="cmb/sigma_l", help="Dataset path ex. cmb/sigma_l",)
+@click.argument("outname", type=click.STRING)
+def sigma_l2fits(filename, nchains, burnin, path, outname, save=True,):
+    """
+    \b
+    Converts c3-h5 dataset to fits suitable for c1 BR and GBR estimator analysis.\n
+
+    ex. c3pp sigma-l2fits chains_v1/chain 5 10 cmb_sigma_l_GBRlike.fits \n
+
+    If "chain_c0001.h5", filename is cut to "chain" and will look in same directory for "chain_c*****.h5".\n
+    See comm_like_tools for further information about BR and GBR post processing
+    """
+    #data = h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.mean, pixweight, zerospin,)
+    print("{:-^48}".format("Formatting sigma_l data to fits file"))
+    import h5py
+
+    if filename.endswith(".h5"):
+        filename = filename.rsplit("_", 1)[0]
+
+    temp = np.zeros(nchains)
+    for nc in range(1, nchains + 1):
+        with h5py.File(filename + "_c" + str(nc).zfill(4) + ".h5", "r",) as f:
+            groups = list(f.keys())
+            temp[nc - 1] = len(groups)
+    nsamples_max = int(max(temp[:]))
+    print(f"Largest chain has {nsamples_max} samples, using burnin {burnin}\n")
+
+    for nc in range(1, nchains + 1):
+        fn = filename + "_c" + str(nc).zfill(4) + ".h5"
+        with h5py.File(fn, "r",) as f:
+            print(f"Reading {fn}")
+            groups = list(f.keys())
+            nsamples = len(groups)
+            if nc == 1:
+                dset = np.zeros((nsamples_max + 1, 1, len(f[groups[0] + "/" + path]), len(f[groups[0] + "/" + path][0]),))
+                nspec = len(f[groups[0] + "/" + path])
+                lmax = len(f[groups[0] + "/" + path][0]) - 1
+            else:
+                dset = np.append(dset, np.zeros((nsamples_max + 1, 1, nspec, lmax + 1,)), axis=1,)
+            print(f"Dataset: {path} \n# samples: {nsamples} \n# spectra: {nspec} \nlmax: {lmax}")
+
+            for i in range(nsamples):
+                for j in range(nspec):
+                    dset[i + 1, nc - 1, j, :] = np.asarray(f[groups[i] + "/" + path][j][:])
+
+            print("")
+
+    # Optimize with jit?
+    ell = np.arange(lmax + 1)
+    for nc in range(1, nchains + 1):
+        for i in range(1, nsamples_max + 1):
+            for j in range(nspec):
+                dset[i, nc - 1, j, :] = dset[i, nc - 1, j, :] * ell[:] * (ell[:] + 1.0) / 2.0 / np.pi
+    dset[0, :, :, :] = nsamples - burnin
+
+    if save:
+        print(f"Dumping fits file: {outname}")
+        dset = np.asarray(dset, dtype="f4")
+
+        from astropy.io import fits
+        head = fits.Header()
+        head["FUNCNAME"] = ("Gibbs sampled power spectra",  "Full function name")
+        head["LMAX"]     = (lmax,  "Maximum multipole moment")
+        head["NUMSAMP"]  = (nsamples_max,  "Number of samples")
+        head["NUMCHAIN"] = (nchains,  "Number of independent chains")
+        head["NUMSPEC"]  = (nspec,  "Number of power spectra")
+        fits.writeto(outname, dset, head, overwrite=True)                
+
+        # FITSIO Saving Deprecated (Use astropy)
+        if False:
+            import fitsio
+
+            fits = fitsio.FITS(outname, mode="rw", clobber=True, verbose=True,)
+            h_dict = [
+                {"name": "FUNCNAME", "value": "Gibbs sampled power spectra", "comment": "Full function name",},
+                {"name": "LMAX", "value": lmax, "comment": "Maximum multipole moment",},
+                {"name": "NUMSAMP", "value": nsamples_max, "comment": "Number of samples",},
+                {"name": "NUMCHAIN", "value": nchains, "comment": "Number of independent chains",},
+                {"name": "NUMSPEC", "value": nspec, "comment": "Number of power spectra",},
+            ]
+            fits.write(dset[:, :, :, :], header=h_dict, clobber=True,)
+            fits.close()
+
+    return dset
+
+
+@commands_hdf.command()
+@click.argument("filename", type=click.STRING)
+@click.argument("dataset", type=click.STRING)
+def h52fits(filename, dataset,):
+    """
+    Outputs a .h5 map to fits on the form 000001_cmb_amp_n1024.fits
+    """
+    import healpy as hp
+    import h5py
+
+    dataset, tag = dataset.rsplit("/", 1)
+
+    with h5py.File(filename, "r") as f:
+        maps = f[f"{dataset}/{tag}"][()]
+        if ('aml' in tag):
+            lmax = f[f"{dataset}/amp_lmax"][()]  # Get lmax from h5
+
+    nside = hp.npix2nside(maps.shape[-1])
+    dataset = f"{dataset}/{tag}"
+    outfile = dataset.replace("/", "_")
+    outfile = outfile.replace("_map", "")
+    hp.write_map(outfile + f"_n{str(nside)}.fits", maps, overwrite=True,)
+    
+
+@commands_hdf.command()
+@click.argument("input", type=click.STRING)
+@click.argument("dataset", type=click.STRING)
+@click.argument("nside", type=click.INT)
+@click.option("-lmax", default=None, type=click.INT)
+@click.option("-fwhm", default=0.0, type=click.FLOAT)
+def alm2fits(input, dataset, nside, lmax, fwhm):
+    """
+    Converts c3 alms in .h5 file to fits with given nside and optional smoothing.
+    """
+    alm2fits_tool(input, dataset, nside, lmax, fwhm)
+
+
+@commands_hdf.command()
+@click.argument("chain", type=click.Path(exists=True), nargs=-1,)
+@click.argument("burnin", type=click.INT)
+@click.argument("procver", type=click.STRING)
+@click.option("-resamp", is_flag=True, help="data interpreted as resampled data",)
+@click.option("-copy", "copy_", is_flag=True, help=" copy full .h5 file",)
+@click.option("-freqmaps", is_flag=True, help=" output freqmaps",)
+@click.option("-ame", is_flag=True, help=" output ame",)
+@click.option("-ff", "-freefree", "ff", is_flag=True, help=" output freefree",)
+@click.option("-cmb", is_flag=True, help=" output cmb",)
+@click.option("-synch", is_flag=True, help=" output synchrotron",)
+@click.option("-dust", is_flag=True, help=" output dust",)
+@click.option("-br", is_flag=True, help=" output BR",)
+@click.option("-diff", is_flag=True, help="Creates diff maps to dx12 and npipe")
+@click.option("-diffcmb", is_flag=True, help="Creates diff maps cmb")
+@click.option("-all", "all_", is_flag=True, help="Output all")
+@click.pass_context
+def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, synch, dust, br, diff, diffcmb, all_):
+    """
+    Creates a release file-set on the BeyondPlanck format.\n
+    https://gitlab.com/BeyondPlanck/repo/-/wikis/BeyondPlanck-Release-Candidate-2\n    
+
+    ex. c3pp release chains_v1_c{1,2}/chain_c000{1,2}.h5 30 BP_r1 \n
+    Will output formatted files using all chains specified, \n
+    with a burnin of 30 to a directory called BP_r1
+
+    This function outputs the following files to the {procver} directory:\n
+    BP_chain01_full_{procver}.h5\n
+    BP_resamp_chain01_full_Cl_{procver}.h5\n
+    BP_resamp_chain01_full_noCl_{procver}.h5\n
+    BP_param_full_v1.txt\n
+    BP_param_resamp_Cl_v1.txt\n
+    BP_param_resamp_noCl_v1.txt\n
+
+    BP_030_IQU_full_n0512_{procver}.fits\n
+    BP_044_IQU_full_n0512_{procver}.fits\n
+    BP_070_IQU_full_n1024_{procver}.fits\n
+
+    BP_cmb_IQU_full_n1024_{procver}.fits\n
+    BP_synch_IQU_full_n1024_{procver}.fits\n
+    BP_freefree_I_full_n1024_{procver}.fits\n
+    BP_ame_I_full_n1024_{procver}.fits\n
+
+    BP_cmb_GBRlike_{procver}.fits
+    """
+    # TODO
+    # Use proper masks for output of CMB component
+    # Use inpainted data as well in CMB component
+
+    from src.fitsformatter import format_fits, get_data, get_header
+    from pathlib import Path
+    import shutil
+
+    if all_: # sets all other flags to true
+        copy_ = freqmaps = ame = ff = cmb = synch = dust = br = diff = diffcmb = True
+
+    # Make procver directory if not exists
+    print("{:#^80}".format(""))
+    print(f"Creating directory {procver}")
+    Path(procver).mkdir(parents=True, exist_ok=True)
+    chains = chain
+    maxchain = len(chains)
+
+    """
+    Copying chains files
+    """
+    if copy_:
+        # Commander3 parameter file for main chain
+        for i, chainfile in enumerate(chains, 1):
+            path = os.path.split(chainfile)[0]
+            for file in os.listdir(path):
+                if file.startswith("param") and i == 1:  # Copy only first
+                    print(f"Copying {path}/{file} to {procver}/BP_param_full_c" + str(i).zfill(4) + ".txt")
+                    if resamp:
+                        shutil.copyfile(f"{path}/{file}", f"{procver}/BP_param_resamp_Cl_c" + str(i).zfill(4) + ".txt",)
+                    else:
+                        shutil.copyfile(f"{path}/{file}", f"{procver}/BP_param_full_c" + str(i).zfill(4) + ".txt",)
+
+            if resamp:
+                # Resampled CMB-only full-mission Gibbs chain file with Cls (for BR estimator)
+                print(f"Copying {chainfile} to {procver}/BP_resamp_c" + str(i).zfill(4) + f"_full_Cl_{procver}.h5")
+                shutil.copyfile(chainfile, f"{procver}/BP_resamp_c" + str(i).zfill(4) + f"_full_Cl_{procver}.h5",)
+            else:
+                # Full-mission Gibbs chain file
+                print(f"Copying {chainfile} to {procver}/BP_c" + str(i).zfill(4) + f"_full_{procver}.h5")
+                shutil.copyfile(chainfile, f"{procver}/BP_c" + str(i).zfill(4) + f"_full_{procver}.h5",)
+
+     #if halfring:
+     #   # Copy halfring files
+     #   for i, chainfile in enumerate([halfring], 1):
+     #       # Copy halfring files
+     #       print(f"Copying {resamp} to {procver}/BP_halfring_c" + str(i).zfill(4) + f"_full_Cl_{procver}.h5")
+     #       shutil.copyfile(halfring, f"{procver}/BP_halfring_c" + str(i).zfill(4) + f"_full_Cl_{procver}.h5",)
+
+    """
+    IQU mean, IQU stdev, (Masks for cmb)
+    Run mean and stddev from min to max sample (Choose min manually or start at 1?)
+    """
+    if resamp:
+        chain = f"{procver}/BP_resamp_c0001_full_Cl_{procver}.h5"
+    else:
+        chain = f"{procver}/BP_c0001_full_{procver}.h5"
+    if freqmaps:
+        try:
+            # Full-mission 30 GHz IQU frequency map
+            # BP_030_IQU_full_n0512_{procver}.fits
+            format_fits(
+                chain=chain,
+                extname="FREQMAP",
+                types=["I_MEAN", "Q_MEAN", "U_MEAN", "P_MEAN", "I_RMS", "Q_RMS", "U_RMS", "P_RMS",],
+                units=["uK", "uK", "uK", "uK", "uK", "uK", "uK", "uK",],
+                nside=512,
+                burnin=burnin,
+                maxchain=maxchain,
+                polar=True,
+                component="030",
+                fwhm=0.0,
+                nu_ref_t="30.0 GHz",
+                nu_ref_p="30.0 GHz",
+                procver=procver,
+                filename=f"BP_030_IQU_full_n0512_{procver}.fits",
+                bndctr=30,
+                restfreq=28.456,
+                bndwid=9.899,
+            )
+            # Full-mission 44 GHz IQU frequency map
+            format_fits(
+                chain=chain,
+                extname="FREQMAP",
+                types=["I_MEAN", "Q_MEAN", "U_MEAN", "P_MEAN", "I_RMS", "Q_RMS", "U_RMS", "P_RMS",],
+                units=["uK", "uK", "uK", "uK", "uK", "uK", "uK", "uK",],
+                nside=512,
+                burnin=burnin,
+                maxchain=maxchain,
+                polar=True,
+                component="044",
+                fwhm=0.0,
+                nu_ref_t="44.0 GHz",
+                nu_ref_p="44.0 GHz",
+                procver=procver,
+                filename=f"BP_044_IQU_full_n0512_{procver}.fits",
+                bndctr=44,
+                restfreq=44.121,
+                bndwid=10.719,
+            )
+            # Full-mission 70 GHz IQU frequency map
+            format_fits(
+                chain=chain,
+                extname="FREQMAP",
+                types=["I_MEAN", "Q_MEAN", "U_MEAN", "P_MEAN", "I_RMS", "Q_RMS", "U_RMS", "P_RMS",],
+                units=["uK", "uK", "uK", "uK", "uK", "uK", "uK", "uK",],
+                nside=1024,
+                burnin=burnin,
+                maxchain=maxchain,
+                polar=True,
+                component="070",
+                fwhm=0.0,
+                nu_ref_t="70.0 GHz",
+                nu_ref_p="70.0 GHz",
+                procver=procver,
+                filename=f"BP_070_IQU_full_n1024_{procver}.fits",
+                bndctr=70,
+                restfreq=70.467,
+                bndwid=14.909,
+            )
+
+
+        except Exception as e:
+            print(e)
+            print("Continuing...")
+
+    
+    if diff:
+        import healpy as hp
+        try:
+            print("Creating frequency difference maps")
+            path_dx12 = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/dx12"
+            path_npipe = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/npipe"
+            maps_dx12 = ["30ghz_2018_n1024_beamscaled_dip.fits","44ghz_2018_n1024_beamscaled_dip.fits","70ghz_2018_n1024_beamscaled_dip.fits"]
+            maps_npipe = ["npipe6v20_030_map_uK.fits", "npipe6v20_044_map_uK.fits", "npipe6v20_070_map_uK.fits",]
+            maps_BP = [f"BP_030_IQU_full_n0512_{procver}.fits", f"BP_044_IQU_full_n0512_{procver}.fits", f"BP_070_IQU_full_n1024_{procver}.fits",]
+            beamscaling = [9.8961854E-01, 9.9757886E-01, 9.9113965E-01]
+            for i, freq in enumerate(["030", "044", "070",]):
+                map_BP    = hp.read_map(f"{procver}/{maps_BP[i]}", field=(0,1,2), verbose=False,)
+                map_npipe = hp.read_map(f"{path_npipe}/{maps_npipe[i]}", field=(0,1,2), verbose=False,)
+                map_dx12  = hp.read_map(f"{path_dx12}/{maps_dx12[i]}", field=(0,1,2), verbose=False,)
+                
+                #dx12 dipole values:
+                # 3362.08 pm 0.99, 264.021 pm 0.011, 48.253 ± 0.005
+                # 233.18308357  2226.43833645 -2508.42179665
+                #dipole_dx12 = -3362.08*hp.dir2vec(264.021, 48.253, lonlat=True)
+
+                #map_dx12  = map_dx12/beamscaling[i]
+                # Smooth to 60 arcmin
+                map_BP = hp.smoothing(map_BP, fwhm=arcmin2rad(60.0), verbose=False)
+                map_npipe = hp.smoothing(map_npipe, fwhm=arcmin2rad(60.0), verbose=False)
+                map_dx12 = hp.smoothing(map_dx12, fwhm=arcmin2rad(60.0), verbose=False)
+
+                #ud_grade 30 and 44ghz
+                if i<2:
+                    map_npipe = hp.ud_grade(map_npipe, nside_out=512,)
+                    map_dx12 = hp.ud_grade(map_dx12, nside_out=512,)
+
+                # Remove monopoles
+                map_BP -= np.mean(map_BP,axis=1).reshape(-1,1)
+                map_npipe -= np.mean(map_npipe,axis=1).reshape(-1,1)
+                map_dx12 -= np.mean(map_dx12,axis=1).reshape(-1,1)
+
+                hp.write_map(f"{procver}/BP_{freq}_diff_npipe_{procver}.fits", np.array(map_BP-map_npipe), overwrite=True, column_names=["I_DIFF", "Q_DIFF", "U_DIFF"], dtype=None)
+                hp.write_map(f"{procver}/BP_{freq}_diff_dx12_{procver}.fits", np.array(map_BP-map_dx12), overwrite=True, column_names=["I_DIFF", "Q_DIFF", "U_DIFF"], dtype=None)
+
+        except Exception as e:
+            print(e)
+            print("Continuing...")
+
+    if diffcmb:
+        import healpy as hp
+        try:
+            print("Creating cmb difference maps")
+            path_cmblegacy = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/cmb-legacy"
+            mask_ = hp.read_map("/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/masks/dx12_v3_common_mask_int_005a_1024_TQU.fits", verbose=False, dtype=np.bool,)
+            map_BP = hp.read_map(f"{procver}/BP_cmb_IQU_full_n1024_{procver}.fits", field=(0,1,2), verbose=False, dtype=None,)
+            map_BP_masked = hp.ma(map_BP[0])
+            map_BP_masked.mask = np.logical_not(mask_)
+            mono, dip = hp.fit_dipole(map_BP_masked)
+            nside = 1024
+            ray = range(hp.nside2npix(nside))
+            vecs = hp.pix2vec(nside, ray)
+            dipole = np.dot(dip, vecs)
+            map_BP[0] = map_BP[0] - dipole - mono
+            map_BP = hp.smoothing(map_BP, fwhm=arcmin2rad(np.sqrt(60.0**2-14**2)), verbose=False)
+            #map_BP -= np.mean(map_BP,axis=1).reshape(-1,1)
+            for i, method in enumerate(["commander", "sevem", "nilc", "smica",]):
+
+                data = f"COM_CMB_IQU-{method}_2048_R3.00_full.fits"
+                print(f"making difference map with {data}")
+                map_cmblegacy  = hp.read_map(f"{path_cmblegacy}/{data}", field=(0,1,2), verbose=False,)
+                map_cmblegacy = hp.smoothing(map_cmblegacy, fwhm=arcmin2rad(60.0), verbose=False)
+                map_cmblegacy = hp.ud_grade(map_cmblegacy, nside_out=1024,)
+                map_cmblegacy = map_cmblegacy*1e6
+
+                # Remove monopoles
+                map_cmblegacy_masked = hp.ma(map_cmblegacy[0])
+                map_cmblegacy_masked.mask = np.logical_not(mask_)
+                mono = hp.fit_monopole(map_cmblegacy_masked)
+                print(f"{method} subtracting monopole {mono}")
+                map_cmblegacy[0] = map_cmblegacy[0] - mono #np.mean(map_cmblegacy,axis=1).reshape(-1,1)
+
+                hp.write_map(f"{procver}/BP_cmb_diff_{method}_{procver}.fits", np.array(map_BP-map_cmblegacy), overwrite=True, column_names=["I_DIFF", "Q_DIFF", "U_DIFF"], dtype=None)
+
+        except Exception as e:
+            print(e)
+            print("Continuing...")
+
+    """
+    FOREGROUND MAPS
+    """
+    # Full-mission CMB IQU map
+    if cmb:
+        if resamp:
+            try:
+                format_fits(
+                    chain,
+                    extname="COMP-MAP-CMB-RESAMP",
+                    types=["I_MEAN", "I_RMS",],
+                    units=["uK_cmb", "uK_cmb",],
+                    nside=1024,
+                    burnin=burnin,
+                    maxchain=maxchain,
+                    polar=True,
+                    component="CMB",
+                    fwhm=14.0,
+                    nu_ref_t="NONE",
+                    nu_ref_p="NONE",
+                    procver=procver,
+                    filename=f"BP_cmb_resamp_IQU_full_n1024_{procver}.fits",
+                    bndctr=None,
+                    restfreq=None,
+                    bndwid=None,
+                )
+            except Exception as e:
+                print(e)
+                print("Continuing...")
+
+        else:
+            try:
+                format_fits(
+                    chain,
+                    extname="COMP-MAP-CMB",
+                    types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS", "mask1", "mask2",],
+                    units=["uK_cmb", "uK_cmb", "uK", "uK", "NONE", "NONE",],
+                    nside=1024,
+                    burnin=burnin,
+                    maxchain=maxchain,
+                    polar=True,
+                    component="CMB",
+                    fwhm=14.0,
+                    nu_ref_t="NONE",
+                    nu_ref_p="NONE",
+                    procver=procver,
+                    filename=f"BP_cmb_IQU_full_n1024_{procver}.fits",
+                    bndctr=None,
+                    restfreq=None,
+                    bndwid=None,
+                )
+            except Exception as e:
+                print(e)
+                print("Continuing...")
+
+    if ff:
+        try:
+            # Full-mission free-free I map
+            format_fits(
+                chain,
+                extname="COMP-MAP-FREE-FREE",
+                types=["I_MEAN", "I_TE_MEAN", "I_RMS", "I_TE_RMS",],
+                units=["uK_RJ", "K", "uK_RJ", "K",],
+                nside=1024,
+                burnin=burnin,
+                maxchain=maxchain,
+                polar=False,
+                component="FREE-FREE",
+                fwhm=30.0,
+                nu_ref_t="40.0 GHz",
+                nu_ref_p="40.0 GHz",
+                procver=procver,
+                filename=f"BP_freefree_I_full_n1024_{procver}.fits",
+                bndctr=None,
+                restfreq=None,
+                bndwid=None,
+            )
+        except Exception as e:
+            print(e)
+            print("Continuing...")
+
+    if ame:
+        try:
+            # Full-mission AME I map
+            format_fits(
+                chain,
+                extname="COMP-MAP-AME",
+                types=["I_MEAN", "I_NU_P_MEAN", "I_RMS", "I_NU_P_RMS",],
+                units=["uK_RJ", "GHz", "uK_RJ", "GHz",],
+                nside=1024,
+                burnin=burnin,
+                maxchain=maxchain,
+                polar=False,
+                component="AME",
+                fwhm=30.0,
+                nu_ref_t="22.0 GHz",
+                nu_ref_p="22.0 GHz",
+                procver=procver,
+                filename=f"BP_ame_I_full_n1024_{procver}.fits",
+                bndctr=None,
+                restfreq=None,
+                bndwid=None,
+            )
+        except Exception as e:
+            print(e)
+            print("Continuing...")
+
+    if synch:
+        try:
+            # Full-mission synchrotron IQU map
+            format_fits(
+                chain,
+                extname="COMP-MAP-SYNCHROTRON",
+                types=["I_MEAN", "Q_MEAN", "U_MEAN", "P_MEAN", "I_BETA_MEAN", "QU_BETA_MEAN", "I_RMS", "Q_RMS", "U_RMS", "P_RMS", "I_BETA_RMS", "QU_BETA_RMS",],
+                units=["uK_RJ", "uK_RJ", "uK_RJ", "uK_RJ", "NONE", "NONE", "uK_RJ","uK_RJ","uK_RJ","uK_RJ", "NONE", "NONE",],
+                nside=1024,
+                burnin=burnin,
+                maxchain=maxchain,
+                polar=True,
+                component="SYNCHROTRON",
+                fwhm=60.0,  # 60.0,
+                nu_ref_t="30.0 GHz",
+                nu_ref_p="30.0 GHz",
+                procver=procver,
+                filename=f"BP_synch_IQU_full_n1024_{procver}.fits",
+                bndctr=None,
+                restfreq=None,
+                bndwid=None,
+            )
+        except Exception as e:
+            print(e)
+            print("Continuing...")
+
+    if dust:
+        try:
+            # Full-mission thermal dust IQU map
+            format_fits(
+                chain,
+                extname="COMP-MAP-DUST",
+                types=["I_MEAN", "Q_MEAN", "U_MEAN", "P_MEAN", "I_BETA_MEAN", "QU_BETA_MEAN", "I_T_MEAN", "QU_T_MEAN", "I_RMS", "Q_RMS", "U_RMS", "P_RMS", "I_BETA_RMS", "QU_BETA_RMS", "I_T_RMS", "QU_T_RMS",],
+                units=["uK_RJ", "uK_RJ", "uK_RJ", "uK_RJ", "NONE", "NONE", "K", "K", "uK_RJ","uK_RJ","uK_RJ","uK_RJ", "NONE", "NONE", "K", "K",],
+                nside=1024,
+                burnin=burnin,
+                maxchain=maxchain,
+                polar=True,
+                component="DUST",
+                fwhm=10.0,  # 60.0,
+                nu_ref_t="545 GHz",
+                nu_ref_p="353 GHz",
+                procver=procver,
+                filename=f"BP_dust_IQU_full_n1024_{procver}.fits",
+                bndctr=None,
+                restfreq=None,
+                bndwid=None,
+            )
+        except Exception as e:
+            print(e)
+            print("Continuing...")
+
+    """ As implemented by Simone
+    """
+    if br and resamp:
+        # Gaussianized TT Blackwell-Rao input file
+        print()
+        print("{:-^50}".format("CMB GBR"))
+        ctx.invoke(sigma_l2fits, filename=resamp, nchains=1, burnin=burnin, path="cmb/sigma_l", outname=f"{procver}/BP_cmb_GBRlike_{procver}.fits", save=True,)
+
+    """
+    TODO Generalize this so that they can be generated by Elina and Anna-Stiina
+    """
+    # Full-mission 30 GHz IQU beam symmetrized frequency map
+    # BP_030_IQUdeconv_full_n0512_{procver}.fits
+    # Full-mission 44 GHz IQU beam symmetrized frequency map
+    # BP_044_IQUdeconv_full_n0512_{procver}.fits
+    # Full-mission 70 GHz IQU beam symmetrized frequency map
+    # BP_070_IQUdeconv_full_n1024_{procver}.fits
+
+    """ Both sigma_l's and Dl's re in the h5. (Which one do we use?)
+    """
+    # CMB TT, TE, EE power spectrum
+    # BP_cmb_Cl_{procver}.txt
+
+    """ Just get this from somewhere
+    """
+    # Best-fit LCDM CMB TT, TE, EE power spectrum
+    # BP_cmb_bfLCDM_{procver}.txt
+

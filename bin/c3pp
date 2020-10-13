@@ -1,19 +1,17 @@
 #!/usr/bin/env python
 import click
-
-from src.commands import *
-
 from src.commands import commands
+from src.commands_plotting import commands_plotting
+from src.commands_hdf import commands_hdf
+from src.commands_fits import commands_fits
 
-CONTEXT_SETTINGS = dict(
-    max_content_width=100
-)
+CONTEXT_SETTINGS = dict(max_content_width=100)
 
 @click.group(context_settings=CONTEXT_SETTINGS)
 def cli():
     pass
 
-cli = click.CommandCollection(sources=[commands], context_settings=CONTEXT_SETTINGS)
+cli = click.CommandCollection(sources=[commands,commands_plotting,commands_hdf,commands_fits], context_settings=CONTEXT_SETTINGS)
 
 if __name__ == '__main__':
     cli()
