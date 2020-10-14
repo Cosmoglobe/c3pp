@@ -146,6 +146,26 @@ def sigma_l2fits(filename, nchains, burnin, path, outname, save=True,):
 
     return dset
 
+def h5map2fits(filename, dataset, save=True):
+    """
+    Outputs a .h5 map to fits on the form 000001_cmb_amp_n1024.fits
+    """
+    import healpy as hp
+    import h5py
+
+    dataset, tag = dataset.rsplit("/", 1)
+
+    with h5py.File(filename, "r") as f:
+        maps = f[f"{dataset}/{tag}"][()]
+        lmax = f[f"{dataset}/amp_lmax"][()]  # Get lmax from h5
+
+    nside = hp.npix2nside(maps.shape[-1])
+    dataset = f"{dataset}/{tag}"
+    outfile = dataset.replace("/", "_")
+    outfile = outfile.replace("_map", "")
+    if save:
+        hp.write_map(outfile + f"_n{str(nside)}.fits", maps, overwrite=True,)
+    return maps, nside, lmax, outfile
 
 @commands_hdf.command()
 @click.argument("filename", type=click.STRING)

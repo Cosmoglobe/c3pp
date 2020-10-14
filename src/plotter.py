@@ -396,7 +396,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
                 cb = fig.colorbar(image, orientation="horizontal", shrink=0.3, pad=0.08, ticks=ticks, format=FuncFormatter(fmt),)
 
                 # Format tick labels
-                click.echo(click.style("Ticks: ", fg="green") + ticklabels)
+                click.echo(click.style("Ticks: ", fg="green") + f"{ticklabels}")
                 ticklabels = [fmt(i, 1) for i in ticklabels]
                 cb.ax.set_xticklabels(ticklabels)
 

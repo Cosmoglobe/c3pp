@@ -118,15 +118,16 @@ def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, lmax, fwhm
 @click.argument("lat", type=click.INT)
 @click.argument("size", type=click.INT)
 @click.option("-sig", default=0, help="Which sky signal to plot",)
-@click.option("-min", "min_", help="Min value of colorbar, overrides autodetector.",)
-@click.option("-max", "max_", help="Max value of colorbar, overrides autodetector.",)
+@click.option("-min", "min_", type=click.FLOAT, help="Min value of colorbar, overrides autodetector.",)
+@click.option("-max", "max_", type=click.FLOAT, help="Max value of colorbar, overrides autodetector.",)
+@click.option("-range", "rng", type=click.FLOAT, help="Color bar range")
 @click.option("-unit", default=None, type=click.STRING, help="Set unit (Under color bar), has LaTeX functionality. Ex. $\mu$",)
 @click.option("-cmap", default="planck", help="Choose different color map (string), such as Jet or planck",)
 @click.option("-graticule", is_flag=True, help="Add graticule",)
 @click.option("-log", is_flag=True, help="Add graticule",)
 @click.option("-nobar", is_flag=True, help="remove colorbar",)
 @click.option("-outname", help="Output filename, else, filename with different format.",)
-def gnomplot(filename, lon, lat, sig, size, min_, max_, unit, cmap, graticule, log, nobar, outname):
+def gnomplot(filename, lon, lat, sig, size, min_, max_, rng, unit, cmap, graticule, log, nobar, outname):
     """
     Gnomonic view plotting. 
     """
@@ -165,6 +166,9 @@ def gnomplot(filename, lon, lat, sig, size, min_, max_, unit, cmap, graticule, l
     proj = hp.projector.CartesianProj(lonra=[lon-half,lon+half], latra=[lat-half, lat+half], coord='G', xsize=xsize, ysize=xsize)
     reproj_im = proj.projmap(x, vec2pix_func=partial(hp.vec2pix, nside))
 
+    if rng:
+        min_ = -rng
+        max_ = rng
     #norm="log" if log else None
     image = plt.imshow(reproj_im, origin='lower', interpolation='nearest', vmin=min_,vmax=max_, cmap=cmap)
     plt.xticks([])
@@ -181,8 +185,9 @@ def gnomplot(filename, lon, lat, sig, size, min_, max_, unit, cmap, graticule, l
     if graticule:
         hp.graticule()
     if not outname:
-        outname = filename.replace(".fits", ".pdf")
+        outname = filename.replace(".fits", f"_gnomonic_{lon}lon{lat}lat_{size}x{size}deg.pdf")
 
+    click.echo(f"Outputting {outname}")
     plt.savefig(outname, bbox_inches="tight", pad_inches=0.02, transparent=True, format="pdf",)
 
 
@@ -442,8 +447,8 @@ def traceplot(filename, max, min, nbins):
     Accepts min to max with optional bins.
     Useful to plot sample progression of spectral indexes.
     """
-    header = ['Prior', 'High lat.', 'NGS',
-         'Gal. center', 'Fan region', 'Gal. anti-center',
+    header = ['Prior', 'High lat.', 'Spur',
+         'Center', 'Fan region', 'Anti-center',
          'Gum nebula']
     cols = [4,5,9,10,11,12,13]
     import pandas as pd
@@ -504,15 +509,15 @@ def pixreg2trace(chainfile, dataset, burnin, maxchain, plot, freeze, nbins, prio
     df = pd.DataFrame.from_records(dats, columns=sigs)
     nregs = len(df["P"][0])
     if nregs == 9:
-        header = ['Top left', 'Top right', 'Bot. left', 'Bot. right', 'NGS',
-                  'Gal. center', 'Fan region', 'Gal. anti-center',
+        header = ['Top left', 'Top right', 'Bot. left', 'Bot. right', 'Spur',
+                  'Center', 'Fan region', 'Anti-center',
                   'Gum nebula']
     elif nregs == 6:
-        header = ['High lat.', 'NGS',
-                  'Gal. center', 'Fan region', 'Gal. anti-center',
+        header = ['High lat.', 'Spur',
+                  'Center', 'Fan', 'Anti-center',
                   'Gum nebula']
     elif nregs == 4:
-        header = ['High lat.', 'NGS',
+        header = ['High lat.', 'Spur',
                   'Gal. center', 'Gal. plane']
     else:
         print("Number of columns not supported", nregs)
