@@ -48,7 +48,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
 
     # Get maps array if .h5 file
     if input.endswith(".h5"):
-        from src.commands import h5map2fits
+        from src.commands_hdf import h5map2fits
         from src.tools import alm2fits_tool
 
         # Get maps from alm data in .h5
