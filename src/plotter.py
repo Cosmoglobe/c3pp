@@ -168,6 +168,8 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             # Title
             if _title["stddev"]:
                 ttl =  _title["param"] + r"$_{\mathrm{" + _title["comp"] + "}}^{\sigma}$" 
+            if _title["rms"]:
+                ttl =  _title["param"] + r"$_{\mathrm{" + _title["comp"] + "}}^{\mathrm{RMS}}$" 
             elif _title["mean"]:
                 ttl = r"$\langle$" + _title["param"] + r"$\rangle$" + r"$_{\mathrm{" + _title["comp"] + "}}^{ }$" 
             elif _title["diff"]:
@@ -762,8 +764,8 @@ def get_params(m, outfile, polt, signal_label):
         title, ticks, cmap, logscale, scale = not_identified(m, signal_label, logscale, title)
 
     # If signal is an RMS map, add tag.
-    if signal_label.endswith("RMS") or "_stddev" in outfile:
-        click.echo(click.style("{:-^48}".format(f"Detected RMS map {signal_label}"),fg="yellow"))
+    if signal_label.endswith("STDDEV") or "_stddev" in outfile:
+        click.echo(click.style("{:-^48}".format(f"Detected STDDEV map {signal_label}"),fg="yellow"))
         title["stddev"] = True
         vmin, vmax = get_ticks(m, 97.5)
         logscale = False
@@ -773,6 +775,19 @@ def get_params(m, outfile, polt, signal_label):
         scale = 1.0
     else:
         title["stddev"] = False
+
+    # If signal is an RMS map, add tag.
+    if signal_label.endswith("RMS") or "_rms" in outfile:
+        click.echo(click.style("{:-^48}".format(f"Detected RMS map {signal_label}"),fg="yellow"))
+        title["rms"] = True
+        vmin, vmax = get_ticks(m, 97.5)
+        logscale = False
+        #vmin = 0
+        ticks = [vmin, vmax]
+        cmap = "planck"
+        scale = 1.0
+    else:
+        title["rms"] = False
 
     if tag_lookup(["diff"], outfile):
         if tag_lookup(["dx12"], outfile):
