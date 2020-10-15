@@ -4,7 +4,7 @@ import numpy as np
 import sys
 import click
 from src.tools import *
-
+from src.commands_plotting import *
 
 @click.group()
 def commands_hdf():
@@ -650,6 +650,5 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
     # BP_cmb_bfLCDM_{procver}.txt
 
     if plot:
-        from src.commands_plotting import *
         os.chdir(procver)
         ctx.invoke(plotrelease, input=procver, all=True)
