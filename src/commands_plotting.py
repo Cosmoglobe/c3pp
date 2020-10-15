@@ -236,7 +236,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                     # CMB I without dip
                     ctx.invoke(plot, input=f"BP_cmb_resamp_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask,)
                 except Exception as e:
-                    click.secho(e, fg="red")
+                    print(e)
                     click.secho("Continuing...", fg=yellow)
 
             if (cmb and mask) or (cmb and defaultmask):
@@ -263,7 +263,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                     # RMS maps
                     ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3, 4, 5,], )
                 except Exception as e:
-                    click.secho(e, fg="red")
+                    print(e)
                     click.secho("Continuing...", fg=yellow)
 
             if freqmaps:
@@ -274,28 +274,18 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                 try:
                     # 030 GHz IQU
                     ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=3400,)
-                    ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[4,],  min=0.0, max=20.0)
                     ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  fwhm=60.0, range=30,)
-                    ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,],  fwhm=60.0, min=0.0, max=100,)
-                    ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[5, 6,],  fwhm=60.0,min=0.0, max=20.0)
-                    ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[7,],  fwhm=60.0,min=0.0, max=40.0)
-
+                    ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3, 4, 5],  fwhm=60.0,min=0.0, max=20.0)
                     # 044 GHz IQU
                     ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=3400,)
-                    ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[4,],  min=0.0, max=20.0)
                     ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  fwhm=60.0, range=30,)
-                    ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,],  fwhm=60.0, min=0.0, max=100,)
-                    ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[5, 6,],  fwhm=60.0,min=0.0, max=20.0)
-                    ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[7,],  fwhm=60.0, min=0.0, max=40.0)
+                    ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,4,5,],  fwhm=60.0,min=0.0, max=20.0)
                     # 070 GHz IQU
                     ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=3400,)
-                    ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[4,],  min=0.0, max=20.0)
                     ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  fwhm=60.0, range=30,)
-                    ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,],  fwhm=60.0, min=0.0, max=200,)
-                    ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[5, 6,],  fwhm=60.0,min=0.0, max=20.0)
-                    ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[7,],  fwhm=60.0,min=0.0, max=40.0)
+                    ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,4,5,],  fwhm=60.0,min=0.0, max=20.0)
                 except Exception as e:
-                    click.secho(e, fg="red")
+                    print(e)
                     click.secho("Continuing...", fg=yellow)
 
             if synch:
@@ -307,7 +297,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                     # Synch IQU
                     ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], )
                 except Exception as e:
-                    click.secho(e, fg="red")
+                    print(e)
                     click.secho("Continuing...", fg=yellow)
 
             if ff:
@@ -318,7 +308,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                     # freefree mean and rms
                     ctx.invoke(plot, input=f"BP_freefree_I_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3], )
                 except Exception as e:
-                    click.secho(e, fg="red")
+                    print(e)
                     click.secho("Continuing...", fg=yellow)
 
             if ame:
@@ -329,7 +319,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                     # ame mean and rms
                     ctx.invoke(plot, input=f"BP_ame_I_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3], )
                 except Exception as e:
-                    click.secho(e, fg="red")
+                    print(e)
                     click.secho("Continuing...", fg=yellow)
 
             if dust:
@@ -341,7 +331,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                     # dust IQU
                     ctx.invoke(plot, input=f"BP_dust_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], )
                 except Exception as e:
-                    click.secho(e, fg="red")
+                    print(e)
                     click.secho("Continuing...", fg=yellow)
 
             if diff:
@@ -366,7 +356,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                     ctx.invoke(plot, input=f"BP_070_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=10)
                     ctx.invoke(plot, input=f"BP_070_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
                 except Exception as e:
-                    click.secho(e, fg="red")
+                    print(e)
                     click.secho("Continuing...", fg=yellow)
 
             if diffcmb:
@@ -381,7 +371,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                         ctx.invoke(plot, input=input, size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask, sig=[0,],  range=10, title=method, ltitle=" ",)
                         ctx.invoke(plot, input=input, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4, title=method, ltitle=" ",)
                     except Exception as e:
-                        click.secho(e, fg="red")
+                        print(e)
                         click.secho("Continuing...", fg=yellow)
     if spec: 
         print("Plotting sky model SED spectrum")
@@ -618,12 +608,8 @@ def traceplotter(df, header, xlabel, nbins, outname, min_, priorsamp=None, scale
             position, label1, fontsize=15,
             color=color, fontweight=fontweight
         )
-        if nregs > 4:
-            r = 0.16
-        else:
-            r = 0.12
         plt.text(
-            df[xlabel][df[column].last_valid_index()]+N*r,
+            df[xlabel][df[column].last_valid_index()]+N*0.13,
             position, label2, fontsize=15,
             color=color, fontweight='normal'
         )

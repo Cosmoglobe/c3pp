@@ -314,8 +314,8 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
             format_fits(
                 chain=chain,
                 extname="FREQMAP",
-                types=["I_MEAN", "Q_MEAN", "U_MEAN", "P_MEAN", "I_RMS", "Q_RMS", "U_RMS", "P_RMS",],
-                units=["uK", "uK", "uK", "uK", "uK", "uK", "uK", "uK",],
+                types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS","I_RMS_POSTERIOR", "Q_RMS_POSTERIOR", "U_RMS_POSTERIOR",],
+                units=["uK", "uK", "uK", "uK", "uK", "uK", "uK", "uK", "uK",],
                 nside=512,
                 burnin=burnin,
                 maxchain=maxchain,
@@ -334,8 +334,8 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
             format_fits(
                 chain=chain,
                 extname="FREQMAP",
-                types=["I_MEAN", "Q_MEAN", "U_MEAN", "P_MEAN", "I_RMS", "Q_RMS", "U_RMS", "P_RMS",],
-                units=["uK", "uK", "uK", "uK", "uK", "uK", "uK", "uK",],
+                types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS","I_RMS_POSTERIOR", "Q_RMS_POSTERIOR", "U_RMS_POSTERIOR",],
+                units=["uK", "uK", "uK", "uK", "uK", "uK", "uK", "uK", "uK",],
                 nside=512,
                 burnin=burnin,
                 maxchain=maxchain,
@@ -354,8 +354,8 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
             format_fits(
                 chain=chain,
                 extname="FREQMAP",
-                types=["I_MEAN", "Q_MEAN", "U_MEAN", "P_MEAN", "I_RMS", "Q_RMS", "U_RMS", "P_RMS",],
-                units=["uK", "uK", "uK", "uK", "uK", "uK", "uK", "uK",],
+                types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS","I_RMS_POSTERIOR", "Q_RMS_POSTERIOR", "U_RMS_POSTERIOR",],
+                units=["uK", "uK", "uK", "uK", "uK", "uK", "uK", "uK", "uK",],
                 nside=1024,
                 burnin=burnin,
                 maxchain=maxchain,
@@ -373,10 +373,169 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
 
 
         except Exception as e:
-            click.secho(e,fg="red")
+            print(e)
             click.secho("Continuing...",fg="yellow")
 
     
+    """
+    FOREGROUND MAPS
+    """
+    # Full-mission CMB IQU map
+    if cmb:
+        if resamp:
+            try:
+                format_fits(
+                    chain,
+                    extname="COMP-MAP-CMB-RESAMP",
+                    types=["I_MEAN", "I_RMS",],
+                    units=["uK_cmb", "uK_cmb",],
+                    nside=1024,
+                    burnin=burnin,
+                    maxchain=maxchain,
+                    polar=True,
+                    component="CMB",
+                    fwhm=14.0,
+                    nu_ref_t="NONE",
+                    nu_ref_p="NONE",
+                    procver=procver,
+                    filename=f"BP_cmb_resamp_IQU_full_n1024_{procver}.fits",
+                    bndctr=None,
+                    restfreq=None,
+                    bndwid=None,
+                )
+            except Exception as e:
+                print(e)
+                click.secho("Continuing...",fg="yellow")
+
+        else:
+            try:
+                format_fits(
+                    chain,
+                    extname="COMP-MAP-CMB",
+                    types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS", "mask1", "mask2",],
+                    units=["uK_cmb", "uK_cmb", "uK", "uK", "NONE", "NONE",],
+                    nside=1024,
+                    burnin=burnin,
+                    maxchain=maxchain,
+                    polar=True,
+                    component="CMB",
+                    fwhm=14.0,
+                    nu_ref_t="NONE",
+                    nu_ref_p="NONE",
+                    procver=procver,
+                    filename=f"BP_cmb_IQU_full_n1024_{procver}.fits",
+                    bndctr=None,
+                    restfreq=None,
+                    bndwid=None,
+                )
+            except Exception as e:
+                print(e)
+                click.secho("Continuing...",fg="yellow")
+
+    if ff:
+        try:
+            # Full-mission free-free I map
+            format_fits(
+                chain,
+                extname="COMP-MAP-FREE-FREE",
+                types=["I_MEAN", "I_TE_MEAN", "I_RMS", "I_TE_RMS",],
+                units=["uK_RJ", "K", "uK_RJ", "K",],
+                nside=1024,
+                burnin=burnin,
+                maxchain=maxchain,
+                polar=False,
+                component="FREE-FREE",
+                fwhm=30.0,
+                nu_ref_t="40.0 GHz",
+                nu_ref_p="40.0 GHz",
+                procver=procver,
+                filename=f"BP_freefree_I_full_n1024_{procver}.fits",
+                bndctr=None,
+                restfreq=None,
+                bndwid=None,
+            )
+        except Exception as e:
+            print(e)
+            click.secho("Continuing...",fg="yellow")
+
+    if ame:
+        try:
+            # Full-mission AME I map
+            format_fits(
+                chain,
+                extname="COMP-MAP-AME",
+                types=["I_MEAN", "I_NU_P_MEAN", "I_RMS", "I_NU_P_RMS",],
+                units=["uK_RJ", "GHz", "uK_RJ", "GHz",],
+                nside=1024,
+                burnin=burnin,
+                maxchain=maxchain,
+                polar=False,
+                component="AME",
+                fwhm=30.0,
+                nu_ref_t="22.0 GHz",
+                nu_ref_p="22.0 GHz",
+                procver=procver,
+                filename=f"BP_ame_I_full_n1024_{procver}.fits",
+                bndctr=None,
+                restfreq=None,
+                bndwid=None,
+            )
+        except Exception as e:
+            print(e)
+            click.secho("Continuing...",fg="yellow")
+
+    if synch:
+        try:
+            # Full-mission synchrotron IQU map
+            format_fits(
+                chain,
+                extname="COMP-MAP-SYNCHROTRON",
+                types=["I_MEAN", "Q_MEAN", "U_MEAN", "P_MEAN", "I_BETA_MEAN", "QU_BETA_MEAN", "I_RMS", "Q_RMS", "U_RMS", "P_RMS", "I_BETA_RMS", "QU_BETA_RMS",],
+                units=["uK_RJ", "uK_RJ", "uK_RJ", "uK_RJ", "NONE", "NONE", "uK_RJ","uK_RJ","uK_RJ","uK_RJ", "NONE", "NONE",],
+                nside=1024,
+                burnin=burnin,
+                maxchain=maxchain,
+                polar=True,
+                component="SYNCHROTRON",
+                fwhm=60.0,  # 60.0,
+                nu_ref_t="30.0 GHz",
+                nu_ref_p="30.0 GHz",
+                procver=procver,
+                filename=f"BP_synch_IQU_full_n1024_{procver}.fits",
+                bndctr=None,
+                restfreq=None,
+                bndwid=None,
+            )
+        except Exception as e:
+            print(e)
+            click.secho("Continuing...",fg="yellow")
+
+    if dust:
+        try:
+            # Full-mission thermal dust IQU map
+            format_fits(
+                chain,
+                extname="COMP-MAP-DUST",
+                types=["I_MEAN", "Q_MEAN", "U_MEAN", "P_MEAN", "I_BETA_MEAN", "QU_BETA_MEAN", "I_T_MEAN", "QU_T_MEAN", "I_RMS", "Q_RMS", "U_RMS", "P_RMS", "I_BETA_RMS", "QU_BETA_RMS", "I_T_RMS", "QU_T_RMS",],
+                units=["uK_RJ", "uK_RJ", "uK_RJ", "uK_RJ", "NONE", "NONE", "K", "K", "uK_RJ","uK_RJ","uK_RJ","uK_RJ", "NONE", "NONE", "K", "K",],
+                nside=1024,
+                burnin=burnin,
+                maxchain=maxchain,
+                polar=True,
+                component="DUST",
+                fwhm=10.0,  # 60.0,
+                nu_ref_t="545 GHz",
+                nu_ref_p="353 GHz",
+                procver=procver,
+                filename=f"BP_dust_IQU_full_n1024_{procver}.fits",
+                bndctr=None,
+                restfreq=None,
+                bndwid=None,
+            )
+        except Exception as e:
+            print(e)
+            click.secho("Continuing...",fg="yellow")
+
     if diff:
         import healpy as hp
         try:
@@ -417,7 +576,7 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
                 hp.write_map(f"{procver}/BP_{freq}_diff_dx12_{procver}.fits", np.array(map_BP-map_dx12), overwrite=True, column_names=["I_DIFF", "Q_DIFF", "U_DIFF"], dtype=None)
 
         except Exception as e:
-            click.secho(e,fg="red")
+            print(e)
             click.secho("Continuing...",fg="yellow")
 
     if diffcmb:
@@ -456,167 +615,9 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
                 hp.write_map(f"{procver}/BP_cmb_diff_{method}_{procver}.fits", np.array(map_BP-map_cmblegacy), overwrite=True, column_names=["I_DIFF", "Q_DIFF", "U_DIFF"], dtype=None)
 
         except Exception as e:
-            click.secho(e,fg="red")
+            print(e)
             click.secho("Continuing...",fg="yellow")
 
-    """
-    FOREGROUND MAPS
-    """
-    # Full-mission CMB IQU map
-    if cmb:
-        if resamp:
-            try:
-                format_fits(
-                    chain,
-                    extname="COMP-MAP-CMB-RESAMP",
-                    types=["I_MEAN", "I_RMS",],
-                    units=["uK_cmb", "uK_cmb",],
-                    nside=1024,
-                    burnin=burnin,
-                    maxchain=maxchain,
-                    polar=True,
-                    component="CMB",
-                    fwhm=14.0,
-                    nu_ref_t="NONE",
-                    nu_ref_p="NONE",
-                    procver=procver,
-                    filename=f"BP_cmb_resamp_IQU_full_n1024_{procver}.fits",
-                    bndctr=None,
-                    restfreq=None,
-                    bndwid=None,
-                )
-            except Exception as e:
-                click.secho(e,fg="red")
-                click.secho("Continuing...",fg="yellow")
-
-        else:
-            try:
-                format_fits(
-                    chain,
-                    extname="COMP-MAP-CMB",
-                    types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_RMS", "Q_RMS", "U_RMS", "mask1", "mask2",],
-                    units=["uK_cmb", "uK_cmb", "uK", "uK", "NONE", "NONE",],
-                    nside=1024,
-                    burnin=burnin,
-                    maxchain=maxchain,
-                    polar=True,
-                    component="CMB",
-                    fwhm=14.0,
-                    nu_ref_t="NONE",
-                    nu_ref_p="NONE",
-                    procver=procver,
-                    filename=f"BP_cmb_IQU_full_n1024_{procver}.fits",
-                    bndctr=None,
-                    restfreq=None,
-                    bndwid=None,
-                )
-            except Exception as e:
-                click.secho(e,fg="red")
-                click.secho("Continuing...",fg="yellow")
-
-    if ff:
-        try:
-            # Full-mission free-free I map
-            format_fits(
-                chain,
-                extname="COMP-MAP-FREE-FREE",
-                types=["I_MEAN", "I_TE_MEAN", "I_RMS", "I_TE_RMS",],
-                units=["uK_RJ", "K", "uK_RJ", "K",],
-                nside=1024,
-                burnin=burnin,
-                maxchain=maxchain,
-                polar=False,
-                component="FREE-FREE",
-                fwhm=30.0,
-                nu_ref_t="40.0 GHz",
-                nu_ref_p="40.0 GHz",
-                procver=procver,
-                filename=f"BP_freefree_I_full_n1024_{procver}.fits",
-                bndctr=None,
-                restfreq=None,
-                bndwid=None,
-            )
-        except Exception as e:
-            click.secho(e,fg="red")
-            click.secho("Continuing...",fg="yellow")
-
-    if ame:
-        try:
-            # Full-mission AME I map
-            format_fits(
-                chain,
-                extname="COMP-MAP-AME",
-                types=["I_MEAN", "I_NU_P_MEAN", "I_RMS", "I_NU_P_RMS",],
-                units=["uK_RJ", "GHz", "uK_RJ", "GHz",],
-                nside=1024,
-                burnin=burnin,
-                maxchain=maxchain,
-                polar=False,
-                component="AME",
-                fwhm=30.0,
-                nu_ref_t="22.0 GHz",
-                nu_ref_p="22.0 GHz",
-                procver=procver,
-                filename=f"BP_ame_I_full_n1024_{procver}.fits",
-                bndctr=None,
-                restfreq=None,
-                bndwid=None,
-            )
-        except Exception as e:
-            click.secho(e,fg="red")
-            click.secho("Continuing...",fg="yellow")
-
-    if synch:
-        try:
-            # Full-mission synchrotron IQU map
-            format_fits(
-                chain,
-                extname="COMP-MAP-SYNCHROTRON",
-                types=["I_MEAN", "Q_MEAN", "U_MEAN", "P_MEAN", "I_BETA_MEAN", "QU_BETA_MEAN", "I_RMS", "Q_RMS", "U_RMS", "P_RMS", "I_BETA_RMS", "QU_BETA_RMS",],
-                units=["uK_RJ", "uK_RJ", "uK_RJ", "uK_RJ", "NONE", "NONE", "uK_RJ","uK_RJ","uK_RJ","uK_RJ", "NONE", "NONE",],
-                nside=1024,
-                burnin=burnin,
-                maxchain=maxchain,
-                polar=True,
-                component="SYNCHROTRON",
-                fwhm=60.0,  # 60.0,
-                nu_ref_t="30.0 GHz",
-                nu_ref_p="30.0 GHz",
-                procver=procver,
-                filename=f"BP_synch_IQU_full_n1024_{procver}.fits",
-                bndctr=None,
-                restfreq=None,
-                bndwid=None,
-            )
-        except Exception as e:
-            click.secho(e,fg="red")
-            click.secho("Continuing...",fg="yellow")
-
-    if dust:
-        try:
-            # Full-mission thermal dust IQU map
-            format_fits(
-                chain,
-                extname="COMP-MAP-DUST",
-                types=["I_MEAN", "Q_MEAN", "U_MEAN", "P_MEAN", "I_BETA_MEAN", "QU_BETA_MEAN", "I_T_MEAN", "QU_T_MEAN", "I_RMS", "Q_RMS", "U_RMS", "P_RMS", "I_BETA_RMS", "QU_BETA_RMS", "I_T_RMS", "QU_T_RMS",],
-                units=["uK_RJ", "uK_RJ", "uK_RJ", "uK_RJ", "NONE", "NONE", "K", "K", "uK_RJ","uK_RJ","uK_RJ","uK_RJ", "NONE", "NONE", "K", "K",],
-                nside=1024,
-                burnin=burnin,
-                maxchain=maxchain,
-                polar=True,
-                component="DUST",
-                fwhm=10.0,  # 60.0,
-                nu_ref_t="545 GHz",
-                nu_ref_p="353 GHz",
-                procver=procver,
-                filename=f"BP_dust_IQU_full_n1024_{procver}.fits",
-                bndctr=None,
-                restfreq=None,
-                bndwid=None,
-            )
-        except Exception as e:
-            click.secho(e,fg="red")
-            click.secho("Continuing...",fg="yellow")
 
     """ As implemented by Simone
     """

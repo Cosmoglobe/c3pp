@@ -291,11 +291,20 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             # If not defined autoset or goto planck
             cmap = cmp
 
+
         if cmap == "planck":
             from pathlib import Path
-
             cmap = Path(__file__).parent / "parchment1.dat"
             cmap = col.ListedColormap(np.loadtxt(cmap) / 255.0, "planck")
+        elif cmap.startswith("plotly"):
+            colors=['#636EFA', '#EF553B', '#00CC96', '#FFA15A', '#19D3F3', '#FF6692', '#B6E880', '#FECB52', '#FF97FF',  '#AB63FA',]
+            try:
+                numvals = int(cmap[-1])
+                cmap = col.ListedColormap(colors[:numvals], f"plotly{numvals}")
+            except:
+                cmap = col.ListedColormap(colors, "plotly")
+        elif cmap.startswith("black2"):
+            cmap = col.LinearSegmentedColormap.from_list(cmap,cmap.split("2"))
         else:
             try:
                 import cmasher
@@ -482,7 +491,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
 
 
 def get_params(m, outfile, polt, signal_label):
-    click.echo()
+    outfile = os.path.split(outfile)[-1] # Remove path 
     logscale = False
 
     # Everything listed here will be recognized

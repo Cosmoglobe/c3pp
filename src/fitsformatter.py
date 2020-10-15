@@ -153,7 +153,7 @@ def get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types,):
     if extname.endswith("FREQMAP"):
         # Mean data
         amp_mean = h5handler(input=chain, dataset=f"tod/{component}/map", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=fwhm, nside=nside, command=np.mean,)
-
+        amp_rms  = h5handler(input=chain, dataset=f"tod/{component}/rms", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=fwhm, nside=nside, command=np.mean,)
         # stddev data
         amp_stddev = h5handler(input=chain, dataset=f"tod/{component}/map", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=fwhm, nside=nside, command=np.std,)
 
@@ -164,12 +164,14 @@ def get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types,):
         dset[0] = amp_mean[0, :]
         dset[1] = amp_mean[1, :]
         dset[2] = amp_mean[2, :]
-        dset[3] = np.sqrt(amp_mean[1, :]**2 + amp_mean[2, :]**2)
+
+        dset[3] = amp_rms[0, :]
+        dset[4] = amp_rms[1, :]
+        dset[5] = amp_rms[2, :]
         
-        dset[4] = amp_stddev[0, :]
-        dset[5] = amp_stddev[1, :]
-        dset[6] = amp_stddev[2, :]
-        dset[7] = np.sqrt(amp_stddev[1, :]**2 + amp_stddev[2, :]**2)
+        dset[6] = amp_stddev[0, :]
+        dset[7] = amp_stddev[1, :]
+        dset[8] = amp_stddev[2, :]
 
     #print(f"Shape of dset {dset.shape}")
     return dset
