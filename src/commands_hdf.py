@@ -550,9 +550,9 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
             maps_BP = [f"BP_030_IQU_full_n0512_{procver}.fits", f"BP_044_IQU_full_n0512_{procver}.fits", f"BP_070_IQU_full_n1024_{procver}.fits",]
             beamscaling = [9.8961854E-01, 9.9757886E-01, 9.9113965E-01]
             for i, freq in enumerate(["030", "044", "070",]):
-                map_BP    = hp.read_map(f"{procver}/{maps_BP[i]}", field=(0,1,2), verbose=False,)
-                map_npipe = hp.read_map(f"{path_npipe}/{maps_npipe[i]}", field=(0,1,2), verbose=False,)
-                map_dx12  = hp.read_map(f"{path_dx12}/{maps_dx12[i]}", field=(0,1,2), verbose=False,)
+                map_BP    = hp.read_map(f"{procver}/{maps_BP[i]}", field=(0,1,2), verbose=False, dtype=None)
+                map_npipe = hp.read_map(f"{path_npipe}/{maps_npipe[i]}", field=(0,1,2), verbose=False, dtype=None)
+                map_dx12  = hp.read_map(f"{path_dx12}/{maps_dx12[i]}", field=(0,1,2), verbose=False, dtype=None)
                 
                 #dx12 dipole values:
                 # 3362.08 pm 0.99, 264.021 pm 0.011, 48.253 ± 0.005
@@ -603,7 +603,7 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
 
                 data = f"COM_CMB_IQU-{method}_2048_R3.00_full.fits"
                 click.echo(f"making difference map with {data}")
-                map_cmblegacy  = hp.read_map(f"{path_cmblegacy}/{data}", field=(0,1,2), verbose=False,)
+                map_cmblegacy  = hp.read_map(f"{path_cmblegacy}/{data}", field=(0,1,2), verbose=False,dtype=None)
                 map_cmblegacy = hp.smoothing(map_cmblegacy, fwhm=arcmin2rad(60.0), verbose=False)
                 map_cmblegacy = hp.ud_grade(map_cmblegacy, nside_out=1024,)
                 map_cmblegacy = map_cmblegacy*1e6
