@@ -104,14 +104,11 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
                 click.echo(click.style(f"{polt} not found",fg="red"))
                 sys.exit()
         
-        click.echo(click.style("Signal label:", fg="green") + f" {signal_label}")
         ############
         #  SMOOTH  #
         ############
         if fwhm > 0 and input.endswith(".fits"):
-            click.echo("")
             click.echo(click.style(f"Smoothing fits map to {fwhm} arcmin fwhm",fg="yellow"))
-            click.echo("")
             m = hp.smoothing(m, fwhm=arcmin2rad(fwhm), lmax=lmax,)
 
         ############
@@ -190,8 +187,9 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             mn = ticks[0]
             mx = ticks[-1]
             if not mid and len(ticks)>2:
-                mid = ticks[1:-1]
-
+                if ticks[-2]<ticks[-1]:
+                    mid = ticks[1:-1]
+                
             # Unit
             unt = _title["unit"]
         else:
@@ -370,6 +368,9 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
         # Format tick labels
         click.echo(click.style("Ticks: ", fg="green") + f"{ticklabels}")
         ticklabels = [fmt(i, 1) for i in ticklabels]
+        click.echo(click.style("Unit: ", fg="green") + f"{unit}")
+        click.echo(click.style("Title: ", fg="green") + f"{title}")
+
 
         sizes = get_sizes(size)
         for width in sizes:
@@ -713,7 +714,7 @@ def get_params(m, outfile, polt, signal_label):
         if "WMAP" in outfile:
             tit = outfile.split("_")[2]
             if "_P_" in outfile and sl != "T":
-                ticks = [-0.01, 0, 0.01]
+                ticks = [-10, 0, 10]
             
         title["comp"] = fr"{tit}"
         title["param"] = r"$r$"
@@ -767,7 +768,7 @@ def get_params(m, outfile, polt, signal_label):
 
     # If signal is an RMS map, add tag.
     if signal_label.endswith("STDDEV") or "_stddev" in outfile:
-        click.echo(click.style("{:-^48}".format(f"Detected STDDEV map {signal_label}"),fg="yellow"))
+        click.echo(click.style(f"Detected STDDEV map",fg="yellow"))
         title["stddev"] = True
         vmin, vmax = get_ticks(m, 97.5)
         logscale = False
@@ -780,7 +781,7 @@ def get_params(m, outfile, polt, signal_label):
 
     # If signal is an RMS map, add tag.
     if signal_label.endswith("RMS") or "_rms" in outfile:
-        click.echo(click.style("{:-^48}".format(f"Detected RMS map {signal_label}"),fg="yellow"))
+        click.echo(click.style(f"Detected RMS map",fg="yellow"))
         title["rms"] = True
         vmin, vmax = get_ticks(m, 97.5)
         logscale = False
@@ -808,6 +809,7 @@ def get_params(m, outfile, polt, signal_label):
         title["diff"] = False
 
     if signal_label.endswith("MEAN") or "_mean" in outfile:
+        click.echo(click.style(f"Detected MEAN map",fg="yellow"))
         title["mean"] = True 
     else:
         title["mean"] = False
