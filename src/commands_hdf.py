@@ -221,6 +221,7 @@ def alm2fits(input, dataset, nside, lmax, fwhm):
 @click.option("-diff", is_flag=True, help="Creates diff maps to dx12 and npipe")
 @click.option("-diffcmb", is_flag=True, help="Creates diff maps cmb")
 @click.option("-all", "all_", is_flag=True, help="Output all")
+@click.option("-plot", is_flag=True, help="Plot everything (invoke plotrelease)")
 @click.pass_context
 def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, synch, dust, br, diff, diffcmb, all_):
     """
@@ -648,3 +649,6 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
     # Best-fit LCDM CMB TT, TE, EE power spectrum
     # BP_cmb_bfLCDM_{procver}.txt
 
+    if plot:
+        os.chdir(procver)
+        ctx.invoke(plotrelease, input=procver, all=True)
