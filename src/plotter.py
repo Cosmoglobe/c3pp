@@ -188,7 +188,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             # Tick bug fix
             mn = ticks[0]
             mx = ticks[-1]
-            if len(ticks)>2:
+            if not mid and len(ticks)>2:
                 mid = ticks[1:-1]
 
             # Unit
@@ -337,7 +337,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
 
             # Apply mask
             hp.ma(m)
-            m.mask = np.logical_not(hp.read_map(mask, field=polt))
+            m.mask = np.logical_not(hp.read_map(mask, field=polt, verbose=False, dtype=None))
 
             # Don't know what this does, from paperplots by Zonca.
             grid_mask = m.mask[grid_pix]
@@ -378,11 +378,11 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             ##### font #####
             ################
             if width > 12.0:
-                fontsize = 8
+                fontsize = 15
             elif width == 12.0:
-                fontsize = 7
+                fontsize = 10
             else:
-                fontsize = 6
+                fontsize = 7.3
 
             fig = plt.figure(figsize=(cm2inch(width), cm2inch(height),),)
             ax = fig.add_subplot(111, projection="mollweide")
