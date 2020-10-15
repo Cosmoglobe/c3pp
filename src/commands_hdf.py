@@ -223,7 +223,7 @@ def alm2fits(input, dataset, nside, lmax, fwhm):
 @click.option("-all", "all_", is_flag=True, help="Output all")
 @click.option("-plot", is_flag=True, help="Plot everything (invoke plotrelease)")
 @click.pass_context
-def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, synch, dust, br, diff, diffcmb, all_):
+def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, synch, dust, br, diff, diffcmb, all_, plot):
     """
     Creates a release file-set on the BeyondPlanck format.
     https://gitlab.com/BeyondPlanck/repo/-/wikis/BeyondPlanck-Release-Candidate-2
@@ -650,5 +650,6 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
     # BP_cmb_bfLCDM_{procver}.txt
 
     if plot:
+        from src.commands_plotting import *
         os.chdir(procver)
         ctx.invoke(plotrelease, input=procver, all=True)
