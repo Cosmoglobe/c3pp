@@ -8,11 +8,12 @@ import numpy as np
 import healpy as hp
 import sys
 import math
+import plotly.colors as pcol
 from brokenaxes import brokenaxes
 
 import src.tools as tls
 
-def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside):
+def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="T10"):
     params = {'savefig.dpi'        : 300, # save figures to 300 dpi
               'xtick.top'          : False,
               'ytick.right'        : True, #Set to false
@@ -31,13 +32,13 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside):
               'xtick.major.width'   : 1.5,
               'xtick.minor.width'   : 1.5,
               'axes.linewidth'      : 1.5,
-              'axes.prop_cycle'     : cycler(color=['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52'])
+              'axes.prop_cycle'     : cycler(getattr(pcol.qualitative, cmap))
               #'ytick.major.size'   : 6,
               #'ytick.minor.size'   : 3,
               #'xtick.major.size'   : 6,
               #'xtick.minor.size'   : 3,
     }
-    blue, red, green, purple, orange, teal, lightred, lightgreen, pink, yellow = ("C0","C1","C2","C3","C4","C5","C6","C7","C8","C9",)
+    blue, orange, red, teal, green, yellow, purple, pink, brown, grey = ("C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9")
     black = 'k'
     if darkmode:
         rcParams['text.color']   = 'white'   # axes background color
@@ -248,7 +249,7 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside):
     databands = {"Haslam":  {"0.408\nHaslam": {"pol": False, "show": haslam, "position": [.408, ymin*yscaletextup],  "range": [.406,.410], "color": purple,}},
                  "S-PASS":  {"2.303\nS-PASS":  {"pol": True, "show": spass,  "position": [2.35, ymax2*yscaletext],  "range": [2.1,2.4], "color": green,}},
                  "C-BASS":  {"5.0\nC-BASS":   {"pol": True, "show": spass,  "position": [5., ymax2*yscaletext],    "range": [4.,6.], "color": blue,}},
-                 "CHI-PASS":{"1.394\nCHI-PASS":{"pol": False, "show": chipass,"position": [1.3945, ymin*yscaletextup],"range": [1.3945-0.064/2, 1.3945+0.064/2], "color": lightred,}},
+                 "CHI-PASS":{"1.394\nCHI-PASS":{"pol": False, "show": chipass,"position": [1.3945, ymin*yscaletextup],"range": [1.3945-0.064/2, 1.3945+0.064/2], "color": brown,}},
                  "QUIJOTE": {"11\nQUIJOTE":    {"pol": True, "show": quijote,"position": [11, ymax2*yscaletext],    "range":  [10.,12.], "color": orange,},
                              "13":             {"pol": True, "show": quijote, "position": [13, ymax2*yscaletext], "range":  [12.,14.], "color": orange,},
                              "17":             {"pol": True, "show": quijote, "position": [17, ymax2*yscaletext], "range":  [16.,18.], "color": orange,},
