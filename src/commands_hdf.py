@@ -651,4 +651,4 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
 
     if plot:
         os.chdir(procver)
-        ctx.invoke(plotrelease, input=procver, all=True)
+        ctx.invoke(plotrelease, procver=procver, all=True)
