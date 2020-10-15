@@ -103,7 +103,8 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             except:
                 click.echo(click.style(f"{polt} not found",fg="red"))
                 sys.exit()
-
+        
+        click.echo(click.style("Signal label:", fg="green") + f" {signal_label}")
         ############
         #  SMOOTH  #
         ############
@@ -366,24 +367,29 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
                     x += 2 * np.pi
                 return GeoAxes.ThetaFormatter.__call__(self, x, pos)
 
+        # Format tick labels
+        click.echo(click.style("Ticks: ", fg="green") + f"{ticklabels}")
+        ticklabels = [fmt(i, 1) for i in ticklabels]
+
         sizes = get_sizes(size)
         for width in sizes:
+            # Size of plot
             click.echo(click.style("Size: ", fg="green") + str(width))
             height = width / 2.0
-
-            # Make sure text doesnt change with colorbar
-            height *= 1.275 if colorbar else 1
+            height *= 1.275 if colorbar else 1 # Make sure text doesnt change with colorbar
 
             ################
             ##### font #####
             ################
+            fontsize = 10
+            """
             if width > 12.0:
                 fontsize = 15
             elif width == 12.0:
                 fontsize = 10
             else:
                 fontsize = 7.3
-
+            """
             fig = plt.figure(figsize=(cm2inch(width), cm2inch(height),),)
             ax = fig.add_subplot(111, projection="mollweide")
 
@@ -407,9 +413,6 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
 
                 cb = fig.colorbar(image, orientation="horizontal", shrink=0.3, pad=0.08, ticks=ticks, format=FuncFormatter(fmt),)
 
-                # Format tick labels
-                click.echo(click.style("Ticks: ", fg="green") + f"{ticklabels}")
-                ticklabels = [fmt(i, 1) for i in ticklabels]
                 cb.ax.set_xticklabels(ticklabels)
 
                 cb.ax.xaxis.set_label_text(unit)
@@ -432,12 +435,12 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             ###################
             ## RIGHT TITLE ####
             ###################
-            plt.text(6.0, 1.3, r"%s" % title, ha="center", va="center", fontsize=fontsize,)
+            plt.text(4.5, 1.1, r"%s" % title, ha="center", va="center", fontsize=fontsize,)
 
             ##################
             ## LEFT TITLE ####
             ##################
-            plt.text(-6.0, 1.3, r"%s" % ltitle, ha="center", va="center", fontsize=fontsize,)
+            plt.text(-4.5, 1.1, r"%s" % ltitle, ha="center", va="center", fontsize=fontsize,)
 
             ##############
             #### SAVE ####
@@ -450,8 +453,6 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             ##############
             ## filename ##
             ##############
-            click.echo(click.style("Signal label:", fg="green") + f" {signal_label}")
-
             outfile = outfile.replace("_IQU_", "_")
             outfile = outfile.replace("_I_", "_")
 
@@ -862,7 +863,6 @@ def fmt(x, pos):
     """
     Format color bar labels
     """
-
     if abs(x) > 1e4 or (abs(x) < 1e-2 and abs(x) > 0):
         a, b = f"{x:.2e}".split("e")
         b = int(b)

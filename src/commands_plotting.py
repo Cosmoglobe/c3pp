@@ -224,159 +224,160 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
         defaultmask = True if not mask else False
 
 
-    for size in ["m", "l", "s",]:
-        for colorbar in [True, False]:
-            if (cmbresamp and mask) or (cmbresamp and defaultmask):
-                outdir = "figs/cmb/"
-                if not os.path.exists(outdir):
-                    os.mkdir(outdir)
+    size = "mls"
+    for colorbar in [True, False]:
+        if (cmbresamp and mask) or (cmbresamp and defaultmask):
+            outdir = "figs/cmb/"
+            if not os.path.exists(outdir):
+                os.mkdir(outdir)
 
-                if defaultmask:
-                    mask = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/masks/dx12_v3_common_mask_int_005a_1024_TQU.fits"
-
-                try:
-                    # CMB I with dip
-                    ctx.invoke(plot, input=f"BP_cmb_resamp_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, range=3400)
-                    # CMB I without dip
-                    ctx.invoke(plot, input=f"BP_cmb_resamp_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask,)
-                except Exception as e:
-                    print(e)
-                    click.secho("Continuing...", fg=yellow)
-
-            if (cmb and mask) or (cmb and defaultmask):
-                outdir = "figs/cmb/"
-                if not os.path.exists(outdir):
-                    os.mkdir(outdir)
-
-                if defaultmask:
-                    mask = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/masks/dx12_v3_common_mask_int_005a_1024_TQU.fits"
-                    
-                try:
-                    # CMB I with dip
-                    ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True,  range=3400)
-                    # CMB I no dip
-                    ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask, )
-                    ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask,  fwhm=np.sqrt(60.0**2-14**2),)
-                    ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask,  fwhm=np.sqrt(420.0**2-14**2),range=150)
-
-                    # CMB QU at 14 arcmin, 1 degree and 7 degree smoothing
-                    for hehe, fwhm in enumerate([0.0, np.sqrt(60.0**2-14**2), np.sqrt(420.0**2-14**2)]):
-                        rng = 5 if hehe == 2 else None
-                        ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  fwhm=fwhm, range=rng)
-
-                    # RMS maps
-                    ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3, 4, 5,], )
-                except Exception as e:
-                    print(e)
-                    click.secho("Continuing...", fg=yellow)
-
-            if freqmaps:
-                outdir = "figs/freqmaps/"
-                if not os.path.exists(outdir):
-                    os.mkdir(outdir)
-    
-                try:
-                    # 030 GHz IQU
-                    ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=3400,)
-                    ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  fwhm=60.0, range=30,)
-                    ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3, 4, 5],  fwhm=60.0,min=0.0, max=20.0)
-                    # 044 GHz IQU
-                    ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=3400,)
-                    ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  fwhm=60.0, range=30,)
-                    ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,4,5,],  fwhm=60.0,min=0.0, max=20.0)
-                    # 070 GHz IQU
-                    ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=3400,)
-                    ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  fwhm=60.0, range=30,)
-                    ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,4,5,],  fwhm=60.0,min=0.0, max=20.0)
-                except Exception as e:
-                    print(e)
-                    click.secho("Continuing...", fg=yellow)
-
-            if synch:
-                outdir = "figs/synchrotron/"
-                if not os.path.exists(outdir):
-                    os.mkdir(outdir)
-    
-                try:
-                    # Synch IQU
-                    ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], )
-                except Exception as e:
-                    print(e)
-                    click.secho("Continuing...", fg=yellow)
-
-            if ff:
-                outdir = "figs/freefree/"
-                if not os.path.exists(outdir):
-                    os.mkdir(outdir)
-                try:
-                    # freefree mean and rms
-                    ctx.invoke(plot, input=f"BP_freefree_I_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3], )
-                except Exception as e:
-                    print(e)
-                    click.secho("Continuing...", fg=yellow)
-
-            if ame:
-                outdir = "figs/ame/"
-                if not os.path.exists(outdir):
-                    os.mkdir(outdir)
-                try:
-                    # ame mean and rms
-                    ctx.invoke(plot, input=f"BP_ame_I_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3], )
-                except Exception as e:
-                    print(e)
-                    click.secho("Continuing...", fg=yellow)
-
-            if dust:
-                outdir = "figs/dust/"
-                if not os.path.exists(outdir):
-                    os.mkdir(outdir)
-    
-                try:
-                    # dust IQU
-                    ctx.invoke(plot, input=f"BP_dust_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], )
-                except Exception as e:
-                    print(e)
-                    click.secho("Continuing...", fg=yellow)
-
-            if diff:
-                outdir = "figs/freqmap_difference/"
-                if not os.path.exists(outdir):
-                    os.mkdir(outdir)
-                    
-                try:
-                    # Plot difference to npipe and dx12
-                    ctx.invoke(plot, input=f"BP_030_diff_npipe_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=10)
-                    ctx.invoke(plot, input=f"BP_030_diff_npipe_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
-                    ctx.invoke(plot, input=f"BP_030_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=10)
-                    ctx.invoke(plot, input=f"BP_030_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
-
-                    ctx.invoke(plot, input=f"BP_044_diff_npipe_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=10)
-                    ctx.invoke(plot, input=f"BP_044_diff_npipe_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
-                    ctx.invoke(plot, input=f"BP_044_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=10)
-                    ctx.invoke(plot, input=f"BP_044_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
-                
-                    ctx.invoke(plot, input=f"BP_070_diff_npipe_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=10)
-                    ctx.invoke(plot, input=f"BP_070_diff_npipe_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
-                    ctx.invoke(plot, input=f"BP_070_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=10)
-                    ctx.invoke(plot, input=f"BP_070_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
-                except Exception as e:
-                    print(e)
-                    click.secho("Continuing...", fg=yellow)
-
-            if diffcmb:
-                outdir = "figs/cmb_difference/"
-                if not os.path.exists(outdir):
-                    os.mkdir(outdir)
-
+            if defaultmask:
                 mask = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/masks/dx12_v3_common_mask_int_005a_1024_TQU.fits"
-                for i, method in enumerate(["Commander", "SEVEM", "NILC", "SMICA",]):
-                    try:
-                        input = f"BP_cmb_diff_{method.lower()}_{procver}.fits"
-                        ctx.invoke(plot, input=input, size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask, sig=[0,],  range=10, title=method, ltitle=" ",)
-                        ctx.invoke(plot, input=input, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4, title=method, ltitle=" ",)
-                    except Exception as e:
-                        print(e)
-                        click.secho("Continuing...", fg=yellow)
+
+            try:
+                # CMB I with dip
+                ctx.invoke(plot, input=f"BP_cmb_resamp_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, range=3400)
+                # CMB I without dip
+                ctx.invoke(plot, input=f"BP_cmb_resamp_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask,)
+            except Exception as e:
+                print(e)
+                click.secho("Continuing...", fg=yellow)
+
+        if (cmb and mask) or (cmb and defaultmask):
+            outdir = "figs/cmb/"
+            if not os.path.exists(outdir):
+                os.mkdir(outdir)
+
+            if defaultmask:
+                mask = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/masks/dx12_v3_common_mask_int_005a_1024_TQU.fits"
+                
+            try:
+                # CMB I with dip
+                ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True,  range=3400)
+                # CMB I no dip
+                ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask, )
+                ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask,  fwhm=np.sqrt(60.0**2-14**2),)
+                ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask,  fwhm=np.sqrt(420.0**2-14**2),range=150)
+
+                # CMB QU at 14 arcmin, 1 degree and 7 degree smoothing
+                for hehe, fwhm in enumerate([0.0, np.sqrt(60.0**2-14**2), np.sqrt(420.0**2-14**2)]):
+                    rng = 5 if hehe == 2 else None
+                    ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  fwhm=fwhm, range=rng)
+
+                # RMS maps
+                ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3, 4, 5,], )
+            except Exception as e:
+                print(e)
+                click.secho("Continuing...", fg=yellow)
+
+        if freqmaps:
+            outdir = "figs/freqmaps/"
+            if not os.path.exists(outdir):
+                os.mkdir(outdir)
+    
+            try:
+                # 030 GHz IQU
+                ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=3400,)
+                ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  fwhm=60.0, range=30,)
+                ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3, 4, 5],  fwhm=60.0,min=0.0, max=20.0)
+                # 044 GHz IQU
+                ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=3400,)
+                ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  fwhm=60.0, range=30,)
+                ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,4,5,],  fwhm=60.0,min=0.0, max=20.0)
+                # 070 GHz IQU
+                ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=3400,)
+                ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  fwhm=60.0, range=30,)
+                ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,4,5,],  fwhm=60.0,min=0.0, max=20.0)
+            except Exception as e:
+                print(e)
+                click.secho("Continuing...", fg=yellow)
+
+        if synch:
+            outdir = "figs/synchrotron/"
+            if not os.path.exists(outdir):
+                os.mkdir(outdir)
+    
+            try:
+                # Synch IQU
+                ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], )
+            except Exception as e:
+                print(e)
+                click.secho("Continuing...", fg=yellow)
+
+        if ff:
+            outdir = "figs/freefree/"
+            if not os.path.exists(outdir):
+                os.mkdir(outdir)
+            try:
+                # freefree mean and rms
+                ctx.invoke(plot, input=f"BP_freefree_I_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3], )
+            except Exception as e:
+                print(e)
+                click.secho("Continuing...", fg=yellow)
+
+        if ame:
+            outdir = "figs/ame/"
+            if not os.path.exists(outdir):
+                os.mkdir(outdir)
+            try:
+                # ame mean and rms
+                ctx.invoke(plot, input=f"BP_ame_I_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3], )
+            except Exception as e:
+                print(e)
+                click.secho("Continuing...", fg=yellow)
+
+        if dust:
+            outdir = "figs/dust/"
+            if not os.path.exists(outdir):
+                os.mkdir(outdir)
+    
+            try:
+                # dust IQU
+                ctx.invoke(plot, input=f"BP_dust_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], )
+            except Exception as e:
+                print(e)
+                click.secho("Continuing...", fg=yellow)
+
+        if diff:
+            outdir = "figs/freqmap_difference/"
+            if not os.path.exists(outdir):
+                os.mkdir(outdir)
+                
+            try:
+                # Plot difference to npipe and dx12
+                ctx.invoke(plot, input=f"BP_030_diff_npipe_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=10)
+                ctx.invoke(plot, input=f"BP_030_diff_npipe_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
+                ctx.invoke(plot, input=f"BP_030_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=10)
+                ctx.invoke(plot, input=f"BP_030_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
+
+                ctx.invoke(plot, input=f"BP_044_diff_npipe_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=10)
+                ctx.invoke(plot, input=f"BP_044_diff_npipe_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
+                ctx.invoke(plot, input=f"BP_044_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=10)
+                ctx.invoke(plot, input=f"BP_044_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
+            
+                ctx.invoke(plot, input=f"BP_070_diff_npipe_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=10)
+                ctx.invoke(plot, input=f"BP_070_diff_npipe_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
+                ctx.invoke(plot, input=f"BP_070_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=10)
+                ctx.invoke(plot, input=f"BP_070_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
+            except Exception as e:
+                print(e)
+                click.secho("Continuing...", fg=yellow)
+
+        if diffcmb:
+            outdir = "figs/cmb_difference/"
+            if not os.path.exists(outdir):
+                os.mkdir(outdir)
+
+            mask = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/masks/dx12_v3_common_mask_int_005a_1024_TQU.fits"
+            for i, method in enumerate(["Commander", "SEVEM", "NILC", "SMICA",]):
+                try:
+                    input = f"BP_cmb_diff_{method.lower()}_{procver}.fits"
+                    ctx.invoke(plot, input=input, size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask, sig=[0,],  range=10, title=method, ltitle=" ",)
+                    ctx.invoke(plot, input=input, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4, title=method, ltitle=" ",)
+                except Exception as e:
+                    print(e)
+                    click.secho("Continuing...", fg=yellow)
+
     if spec: 
         print("Plotting sky model SED spectrum")
         print("Reading data")
