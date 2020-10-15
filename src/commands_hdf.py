@@ -259,7 +259,9 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
     import shutil
 
     if all_: # sets all other flags to true
-        copy_ = freqmaps = ame = ff = cmb = synch = dust = br = diff = diffcmb = True
+        copy_ = not copy_; freqmaps = not freqmaps; ame = not ame; ff = not ff; cmb = not cmb
+        synch = not synch; dust = not dust; br = not br; diff = not diff; diffcmb = not diffcmb
+        
 
     # Make procver directory if not exists
     click.echo("{:#^80}".format(""))

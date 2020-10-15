@@ -12,14 +12,16 @@ def commands_plotting():
 
 @commands_plotting.command()
 @click.argument("input", type=click.STRING)
-def specplot(input,):
+@click.option("-cmap", default="T10", help="set colormap from plotly qualitative colors", type=click.STRING)
+def specplot(input,cmap):
     """
     Plots the file output by the Crosspec function.
     """
     import matplotlib.pyplot as plt
-    import numpy as np
     import seaborn as sns
+    import plotly.color as pcol
     from cycler import cycler
+
     sns.set_context("notebook", font_scale=2, rc={"lines.linewidth": 2})
     sns.set_style("whitegrid")
     custom_style = {
@@ -29,7 +31,7 @@ def specplot(input,):
         'savefig.dpi':300,
         'font.size': 20, 
         'axes.linewidth': 1.5,
-        'axes.prop_cycle': cycler(color=['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52'])
+        'axes.prop_cycle': cycler(color=getattr(pcol.qualitative,cmap))
     }
     sns.set_style(custom_style)
     lmax = 200
@@ -41,11 +43,11 @@ def specplot(input,):
 	
     f, (ax1, ax2) = plt.subplots(2, 1, figsize=(12,8), gridspec_kw={'height_ratios': [3, 1]}, sharex=True)
 
-    l1 = ax1.loglog(ell, ee, linewidth=2, label="EE", color='#636EFA')
-    l2 = ax1.loglog(ell, bb, linewidth=2, label="BB", color= '#EF553B')
+    l1 = ax1.loglog(ell, ee, linewidth=2, label="EE", color='C0')
+    l2 = ax1.loglog(ell, bb, linewidth=2, label="BB", color='C1')
     ax1.set_ylabel(r"$D_l$ [$\mu K^2$]",)
 
-    l3 = ax2.semilogx(ell, bb/ee, linewidth=2, label="BB/EE", color='#00CC96')
+    l3 = ax2.semilogx(ell, bb/ee, linewidth=2, label="BB/EE", color='C2')
     ax2.set_ylabel(r"BB/EE",)
     ax2.set_xlabel(r'Multipole moment, $l$',)
     #plt.semilogx(ell, eb, label="EB")
@@ -86,7 +88,7 @@ def specplot(input,):
 @click.option("-white_background", is_flag=True, help="Sets the background to be white. (Transparent by default [recommended])",)
 @click.option("-darkmode", is_flag=True, help='Plots all outlines in white for dark bakgrounds ("dark" in filename)',)
 @click.option("-png", is_flag=True, help="Saves output as .png ().pdf by default)",)
-@click.option("-cmap", default=None, help="Choose different color map (string), such as Jet or planck",)
+@click.option("-cmap", default=None, help="Chose colormap (ex. sunburst, planck, etc). Available are matplotlib and cmasher. Also qualitative plotly [ex. q-T10-4 (q for qualitative 4 for max color)]",)
 @click.option("-title", default=None, type=click.STRING, help="Set title (Upper right), has LaTeX functionality. Ex. $A_{s}$.",)
 @click.option("-ltitle", default=None, type=click.STRING, help="Set title (Upper left), has LaTeX functionality. Ex. $A_{s}$.",)
 @click.option("-unit", default=None, type=click.STRING, help="Set unit (Under color bar), has LaTeX functionality. Ex. $\mu$",)
@@ -216,7 +218,9 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
         os.mkdir("figs")
 
     if all_:
-        freqmaps = cmb = synch = ame = ff = dust = diff = diffcmb = spec = True
+        freqmaps = not freqmaps; cmb = not cmb; synch = not synch; ame = not ame;
+        ff = not ff; dust = not dust; diff = not diff; diffcmb = not diffcmb; spec = not spec
+
         defaultmask = True if not mask else False
 
 
@@ -431,7 +435,8 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
 @click.option('-min', default=0, help='Min sample of dataset (burnin)')
 @click.option('-max', default=1000, help='Max sample to inclue')
 @click.option('-nbins', default=1, help='Bins')
-def traceplot(filename, max, min, nbins):
+@click.option("-cmap", default="T10", help='Sets colorcycler using plotly', type=click.STRING)
+def traceplot(filename, max, min, nbins, cmap):
     """
     Traceplot of samples from .dat. 
     Accepts min to max with optional bins.
@@ -446,7 +451,7 @@ def traceplot(filename, max, min, nbins):
     df.columns = header
     x = 'MCMC Sample'
     
-    traceplotter(df, header, x, nbins, outname=filename.replace(".dat","_traceplot.pdf"), min_=min)
+    traceplotter(df, header, x, nbins, outname=filename.replace(".dat","_traceplot.pdf"), min_=min, cmap=cmap)
 
 @commands_plotting.command()
 @click.argument("chainfile", type=click.STRING)
@@ -458,7 +463,8 @@ def traceplot(filename, max, min, nbins):
 @click.option('-nbins', default=1, help='Bins for plotting')
 @click.option("-f", "priorsamp",  multiple=True, help="These are sampled around prior and will be marked",)
 @click.option('-scale', default=0.023, help='scale factor for labels')
-def pixreg2trace(chainfile, dataset, burnin, maxchain, plot, freeze, nbins, priorsamp, scale):
+@click.option("-cmap", default="T10", help='sets colorcycler using Plotly', type=click.STRING)
+def pixreg2trace(chainfile, dataset, burnin, maxchain, plot, freeze, nbins, priorsamp, scale,cmap):
     """
     Outputs the values of the pixel regions for each sample to a dat file.
     ex. c3pp pixreg2trace chain_c0001.h5 synch/beta_pixreg_val -burnin 30 -maxchain 4 
@@ -530,11 +536,12 @@ def pixreg2trace(chainfile, dataset, burnin, maxchain, plot, freeze, nbins, prio
             else:
                 header_ = header.copy()
 
-            traceplotter(df2, header_, xlabel, nbins, f"{outname}.pdf", min_=burnin, priorsamp=priorsamp, scale=scale)
+            traceplotter(df2, header_, xlabel, nbins, f"{outname}.pdf", min_=burnin, priorsamp=priorsamp, scale=scale, cmap=cmap)
 
-def traceplotter(df, header, xlabel, nbins, outname, min_, priorsamp=None, scale=0.023):
+def traceplotter(df, header, xlabel, nbins, outname, min_, cmap="T10", priorsamp=None, scale=0.023):
     import seaborn as sns
     import matplotlib.pyplot as plt
+    import plotly.colors as pcol
     sns.set_context("notebook", font_scale=1.5, rc={"lines.linewidth": 1.2})
     sns.set_style("whitegrid")
     custom_style = {
@@ -559,7 +566,7 @@ def traceplotter(df, header, xlabel, nbins, outname, min_, priorsamp=None, scale
     
     #cmap = plt.cm.get_cmap('tab20')# len(y))
     import matplotlib as mpl
-    cmap = mpl.colors.ListedColormap(['#636EFA', '#EF553B', '#00CC96', '#FFA15A', '#19D3F3', '#FF6692', '#B6E880', '#FECB52', '#FF97FF',  '#AB63FA',])
+    cmap = mpl.colors.ListedColormap(getattr(pcol.qualitative,cmap))
     #cmap = plt.cm.get_cmap('tab10')# len(y))
 
     means = df[min_:].mean()

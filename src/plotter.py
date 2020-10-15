@@ -292,19 +292,20 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
         if cmap == None:
             # If not defined autoset or goto planck
             cmap = cmp
-
-
         if cmap == "planck":
             from pathlib import Path
             cmap = Path(__file__).parent / "parchment1.dat"
             cmap = col.ListedColormap(np.loadtxt(cmap) / 255.0, "planck")
-        elif cmap.startswith("plotly"):
-            colors=['#636EFA', '#EF553B', '#00CC96', '#FFA15A', '#19D3F3', '#FF6692', '#B6E880', '#FECB52', '#FF97FF',  '#AB63FA',]
+        elif cmap.startswith("q-"):
+            import plotly.colors as pcol
+            _, clab, *numvals = cmap.split("-")
+            colors = getattr(pcol.qualitative, clab)
             try:
-                numvals = int(cmap[-1])
-                cmap = col.ListedColormap(colors[:numvals], f"plotly{numvals}")
+                cmap = col.ListedColormap(colors[:int(numvals[0])], f'{clab}-{numvals[0]}')
+                click.echo(click.style("Using qualitative colormap:", fg="yellow") + f" {clab} up to {numvals[0]}")
             except:
-                cmap = col.ListedColormap(colors, "plotly")
+                cmap = col.ListedColormap(colors,clab)
+                click.echo(click.style("Using qualitative colormap:", fg="yellow") + f" {clab}")
         elif cmap.startswith("black2"):
             cmap = col.LinearSegmentedColormap.from_list(cmap,cmap.split("2"))
         else:
