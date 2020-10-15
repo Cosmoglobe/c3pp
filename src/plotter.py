@@ -411,7 +411,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
                 # colorbar
                 from matplotlib.ticker import FuncFormatter
 
-                cb = fig.colorbar(image, orientation="horizontal", shrink=0.3, pad=0.08, ticks=ticks, format=FuncFormatter(fmt),)
+                cb = fig.colorbar(image, orientation="horizontal", shrink=0.4, pad=0.08, ticks=ticks, format=FuncFormatter(fmt),)
 
                 cb.ax.set_xticklabels(ticklabels)
 
