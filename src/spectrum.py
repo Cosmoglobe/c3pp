@@ -13,7 +13,7 @@ from brokenaxes import brokenaxes
 
 import src.tools as tls
 
-def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="T10"):
+def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly"):
     params = {'savefig.dpi'        : 300, # save figures to 300 dpi
               'xtick.top'          : False,
               'ytick.right'        : True, #Set to false
@@ -32,13 +32,13 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="T10"):
               'xtick.major.width'   : 1.5,
               'xtick.minor.width'   : 1.5,
               'axes.linewidth'      : 1.5,
-              'axes.prop_cycle'     : cycler(getattr(pcol.qualitative, cmap))
+              'axes.prop_cycle'     : cycler(color=getattr(pcol.qualitative, cmap))
               #'ytick.major.size'   : 6,
               #'ytick.minor.size'   : 3,
               #'xtick.major.size'   : 6,
               #'xtick.minor.size'   : 3,
     }
-    blue, orange, red, teal, green, yellow, purple, pink, brown, grey = ("C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9")
+    blue, red, green, purple, orange, teal, lightred, lightgreen, pink, yellow = ("C0","C1","C2","C3","C4","C5","C6","C7","C8","C9",)
     black = 'k'
     if darkmode:
         rcParams['text.color']   = 'white'   # axes background color

@@ -12,7 +12,7 @@ def commands_plotting():
 
 @commands_plotting.command()
 @click.argument("input", type=click.STRING)
-@click.option("-cmap", default="T10", help="set colormap from plotly qualitative colors", type=click.STRING)
+@click.option("-cmap", default="Plotly", help="set colormap from plotly qualitative colors", type=click.STRING)
 def specplot(input,cmap):
     """
     Plots the file output by the Crosspec function.
@@ -88,7 +88,7 @@ def specplot(input,cmap):
 @click.option("-white_background", is_flag=True, help="Sets the background to be white. (Transparent by default [recommended])",)
 @click.option("-darkmode", is_flag=True, help='Plots all outlines in white for dark bakgrounds ("dark" in filename)',)
 @click.option("-png", is_flag=True, help="Saves output as .png ().pdf by default)",)
-@click.option("-cmap", default=None, help="Chose colormap (ex. sunburst, planck, etc). Available are matplotlib and cmasher. Also qualitative plotly [ex. q-T10-4 (q for qualitative 4 for max color)]",)
+@click.option("-cmap", default=None, help="Chose colormap (ex. sunburst, planck, etc). Available are matplotlib and cmasher. Also qualitative plotly [ex. q-Plotly-4 (q for qualitative 4 for max color)]",)
 @click.option("-title", default=None, type=click.STRING, help="Set title (Upper right), has LaTeX functionality. Ex. $A_{s}$.",)
 @click.option("-ltitle", default=None, type=click.STRING, help="Set title (Upper left), has LaTeX functionality. Ex. $A_{s}$.",)
 @click.option("-unit", default=None, type=click.STRING, help="Set unit (Under color bar), has LaTeX functionality. Ex. $\mu$",)
@@ -436,7 +436,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
 @click.option('-min', default=0, help='Min sample of dataset (burnin)')
 @click.option('-max', default=1000, help='Max sample to inclue')
 @click.option('-nbins', default=1, help='Bins')
-@click.option("-cmap", default="T10", help='Sets colorcycler using plotly', type=click.STRING)
+@click.option("-cmap", default="Plotly", help='Sets colorcycler using plotly', type=click.STRING)
 def traceplot(filename, max, min, nbins, cmap):
     """
     Traceplot of samples from .dat. 
@@ -464,7 +464,7 @@ def traceplot(filename, max, min, nbins, cmap):
 @click.option('-nbins', default=1, help='Bins for plotting')
 @click.option("-f", "priorsamp",  multiple=True, help="These are sampled around prior and will be marked",)
 @click.option('-scale', default=0.023, help='scale factor for labels')
-@click.option("-cmap", default="T10", help='sets colorcycler using Plotly', type=click.STRING)
+@click.option("-cmap", default="Plotly", help='sets colorcycler using Plotly', type=click.STRING)
 def pixreg2trace(chainfile, dataset, burnin, maxchain, plot, freeze, nbins, priorsamp, scale,cmap):
     """
     Outputs the values of the pixel regions for each sample to a dat file.
@@ -539,7 +539,7 @@ def pixreg2trace(chainfile, dataset, burnin, maxchain, plot, freeze, nbins, prio
 
             traceplotter(df2, header_, xlabel, nbins, f"{outname}.pdf", min_=burnin, priorsamp=priorsamp, scale=scale, cmap=cmap)
 
-def traceplotter(df, header, xlabel, nbins, outname, min_, cmap="T10", priorsamp=None, scale=0.023):
+def traceplotter(df, header, xlabel, nbins, outname, min_, cmap="Plotly", priorsamp=None, scale=0.023):
     import seaborn as sns
     import matplotlib.pyplot as plt
     import plotly.colors as pcol
@@ -724,36 +724,6 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
     c3pp output-sky-model -a_s synch_c0001_k000100.fits -b_s synch_beta_c0001_k000100.fits -a_d dust_init_kja_n1024.fits -b_d dust_beta_init_kja_n1024.fits -t_d dust_T_init_kja_n1024.fits -a_ame1 ame_c0001_k000100.fits -nup ame_nu_p_c0001_k000100.fits -a_ff ff_c0001_k000100.fits -t_e ff_Te_c0001_k000100.fits -mask1 mask_70GHz_t70.fits -mask2 mask_70GHz_t7.fits -nside 16
     """
     from src.spectrum import Spectrum
-    """
-    if not a_cmb:
-        a_cmb = 0.67 if pol else 45
-    if not a_s:
-        a_s = 12 if pol else 76
-    if not b_s:
-        b_s = -3.1
-    if not a_ff:
-        a_ff = 30.
-    if not t_e:
-        t_e = 7000.
-    if not a_ame1:
-        a_ame1 = 5 if pol else 50
-    if not a_ame2:
-        a_ame2 = 50.
-    if not nup:
-        nup = 24
-    if not a_d:
-        a_d = 8 if pol else 163
-    if not b_d:
-        b_d = 1.6
-    if not t_d:
-        t_d = 18.5
-    if not a_co10:
-        a_co10=50
-    if not a_co21:
-        a_co21=25
-    if not a_co32:
-        a_co32=10
-    """
 
     if pol:
         p = 1.5 if long else 12
@@ -761,7 +731,7 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
             "CMB EE":       {"function": "rspectrum", 
                              "params"  : [1, "EE"],
                              "position": p,
-                             "color"   : "C3",
+                             "color"   : "C5",
                              "sum"     : False,
                              "linestyle": "solid",
                              "gradient": False,
@@ -769,7 +739,7 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
             "Synchrotron" : {"function": "lf", 
                              "params"  : [a_s, b_s,],
                              "position": 15,
-                             "color"   : "C4",
+                             "color"   : "C2",
                              "sum"     : True,
                              "linestyle": "solid",
                              "gradient": False,
@@ -777,7 +747,7 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
             "Thermal Dust": {"function": "tdust", 
                              "params": [a_d, b_d, t_d, 353],
                              "position": 150,
-                             "color":    "C2",
+                             "color":    "C1",
                              "sum"     : True,
                              "linestyle": "solid",
                              "gradient": False,
@@ -814,7 +784,7 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
             "CMB":          {"function": "rspectrum", 
                              "params"  : [1., "TT"],
                              "position": 70,
-                             "color"   : "C3",
+                             "color"   : "C5",
                              "sum"     : False,
                              "linestyle": "solid",
                              "gradient": False,
@@ -822,7 +792,7 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
             "Synchrotron" : {"function": "lf", 
                              "params"  : [a_s, b_s,],
                              "position": 120,
-                             "color"   : "C4",
+                             "color"   : "C2",
                              "sum"     : True,
                              "linestyle": "solid",
                              "gradient": False,
@@ -830,7 +800,7 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
             "Thermal Dust": {"function": "tdust", 
                              "params": [a_d, b_d, t_d, 545],
                              "position": 12,
-                             "color":    "C2",
+                             "color":    "C1",
                              "sum"     : True,
                              "linestyle": "solid",
                              "gradient": False,
@@ -846,7 +816,7 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
             "Spinning dust" : {"function": "sdust", 
                              "params"  : [a_ame1, nup,],
                              "position": p,
-                             "color"   : "C1",
+                             "color"   : "C4",
                              "sum"     : True,
                              "linestyle": "solid",
                              "gradient": False,
@@ -854,7 +824,7 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
             r"CO$_{1\rightarrow 0}$": {"function": "line", 
                                        "params"  : [a_co10, 115, 11.06],
                                        "position": p,
-                                       "color"   : "C5",
+                                       "color"   : "C9",
                                        "sum"     : True,
                                        "linestyle": "solid",
                                        "gradient": False,
@@ -862,7 +832,7 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
             r"CO$_{2\rightarrow 1}$": {"function": "line", 
                                        "params"  : [a_co21, 230., 14.01],
                                        "position": p,
-                                       "color"   : "C5",
+                                       "color"   : "C9",
                                        "sum"     : True,
                                        "linestyle": "solid",
                                        "gradient": False,
@@ -870,7 +840,7 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
             r"CO$_{3\rightarrow 2}$":      {"function": "line", 
                                             "params"  : [a_co32, 345., 12.24],
                                             "position": p,
-                                            "color"   : "C5",
+                                            "color"   : "C9",
                                             "sum"     : True,
                                             "linestyle": "solid",
                                             "gradient": False,
@@ -884,7 +854,6 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
                              "gradient": False,
                           },
             }
-
 
     Spectrum(pol, long, darkmode, png, foregrounds, [mask1,mask2], nside)
 
