@@ -188,7 +188,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             mx = ticks[-1]
             if not mid and len(ticks)>2:
                 if ticks[-2]<ticks[-1]:
-                    mid = ticks[1:-1]
+                    md = ticks[1:-1]
                 
             # Unit
             unt = _title["unit"]
@@ -234,6 +234,8 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
         ticks[-1] = max
         if mid:
             ticks = [min, *mid, max] 
+        elif md:
+            ticks = [min, *md, max] 
             
 
         ##########################
