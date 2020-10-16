@@ -528,6 +528,8 @@ def pixreg2trace(chainfile, dataset, burnin, maxchain, plot, freeze, nbins, prio
     
 
     for sig in sigs:
+        if sig =="T":
+            continue
         df2 = pd.DataFrame(df[sig].to_list(), columns=header)
         label = dataset.replace("/","-")
         outname = f"sampletrace_{sig}_{label}"
@@ -594,6 +596,7 @@ def traceplotter(df, header, xlabel, nbins, outname, min_, cmap="Plotly", priors
         linestyle = ':' if str(i) in priorsamp else '-'
         linewidth = 2
         fontweight = 'normal'
+        """
         if column == "Mean":
             color="#a6a6a6" #"grey"
             linewidth = 4
@@ -601,25 +604,14 @@ def traceplotter(df, header, xlabel, nbins, outname, min_, cmap="Plotly", priors
         else:
             color = cmap(c)#float(i-1)/len(positions))
             c += 1
+        """
+        color = cmap(i)
+    
         # Plot each line separatly so we can be explicit about color
-        ax = df.plot(x=xlabel, y=column, legend=False, ax=ax, color=color, linestyle=linestyle, linewidth=linewidth,)
-        """
-        label = rf'{column} {means[i]:.2f}$\pm${stds[i]:.2f}'
-        #if len(label) > 1: #24:
-        #    label = f'{column} \n' + fr'{means[i]:.2f}$\pm${stds[i]:.2f}'
+        ax = df.plot(x=xlabel, y=column, legend=False, ax=ax, color=cmap(i), linestyle=linestyle, linewidth=linewidth,)
 
-        # Add the text to the right
-        plt.text(
-            df[xlabel][df[column].last_valid_index()]+N*0.01,
-            position, label, fontsize=15,
-            color=color, fontweight=fontweight
-        )
-        """
         label1 = rf'{column}'
         label2 = rf'{means[i]:.2f}$\pm${stds[i]:.2f}'
-        #if len(label) > 1: #24:
-        #    label = f'{column} \n' + fr'{means[i]:.2f}$\pm${stds[i]:.2f}'
-
         # Add the text to the right
         plt.text(
             df[xlabel][df[column].last_valid_index()]+N*0.01,
