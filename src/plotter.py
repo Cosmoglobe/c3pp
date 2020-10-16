@@ -299,7 +299,6 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             import plotly.colors as pcol
             _, clab, *numvals = cmap.split("-")
             colors = getattr(pcol.qualitative, clab)
-            colors=getattr(pcol.qualitative,cmap)    
             if cmap=="Plotly":
                 colors.insert(3,colors.pop(-1))
             try:
