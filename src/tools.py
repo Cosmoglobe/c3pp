@@ -112,7 +112,7 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command, 
         with h5py.File(filename, "r") as f:
             if maxnone:
                 # If no max is specified, chose last sample
-                max = len(f.keys()) - 1
+                max = len(f.keys()) - 2
 
             print("{:-^48}".format(f" Samples {min} to {max} in {filename}"))
 
