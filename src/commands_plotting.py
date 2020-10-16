@@ -247,7 +247,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                 ctx.invoke(plot, input=f"BP_cmb_resamp_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask,)
             except Exception as e:
                 print(e)
-                click.secho("Continuing...", fg=yellow)
+                click.secho("Continuing...", fg="yellow")
 
         if (cmb and mask) or (cmb and defaultmask):
             outdir = "figs/cmb/"
@@ -274,7 +274,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                 ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3, 4, 5,], )
             except Exception as e:
                 print(e)
-                click.secho("Continuing...", fg=yellow)
+                click.secho("Continuing...", fg="yellow")
 
         if freqmaps:
             outdir = "figs/freqmaps/"
@@ -296,7 +296,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                 ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,4,5,],  fwhm=60.0,min=0.0, max=20.0)
             except Exception as e:
                 print(e)
-                click.secho("Continuing...", fg=yellow)
+                click.secho("Continuing...", fg="yellow")
 
         if synch:
             outdir = "figs/synchrotron/"
@@ -308,7 +308,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                 ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], )
             except Exception as e:
                 print(e)
-                click.secho("Continuing...", fg=yellow)
+                click.secho("Continuing...", fg="yellow")
 
         if ff:
             outdir = "figs/freefree/"
@@ -319,7 +319,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                 ctx.invoke(plot, input=f"BP_freefree_I_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3], )
             except Exception as e:
                 print(e)
-                click.secho("Continuing...", fg=yellow)
+                click.secho("Continuing...", fg="yellow")
 
         if ame:
             outdir = "figs/ame/"
@@ -330,7 +330,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                 ctx.invoke(plot, input=f"BP_ame_I_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3], )
             except Exception as e:
                 print(e)
-                click.secho("Continuing...", fg=yellow)
+                click.secho("Continuing...", fg="yellow")
 
         if dust:
             outdir = "figs/dust/"
@@ -342,7 +342,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                 ctx.invoke(plot, input=f"BP_dust_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], )
             except Exception as e:
                 print(e)
-                click.secho("Continuing...", fg=yellow)
+                click.secho("Continuing...", fg="yellow")
 
         if diff:
             outdir = "figs/freqmap_difference/"
@@ -367,7 +367,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                 ctx.invoke(plot, input=f"BP_070_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
             except Exception as e:
                 print(e)
-                click.secho("Continuing...", fg=yellow)
+                click.secho("Continuing...", fg="yellow")
 
         if diffcmb:
             outdir = "figs/cmb_difference/"
@@ -382,7 +382,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                     ctx.invoke(plot, input=input, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4, title=method, ltitle=" ",)
                 except Exception as e:
                     print(e)
-                    click.secho("Continuing...", fg=yellow)
+                    click.secho("Continuing...", fg="yellow")
 
     if spec: 
         print("Plotting sky model SED spectrum")
