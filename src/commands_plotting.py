@@ -24,6 +24,12 @@ def specplot(input,cmap):
 
     sns.set_context("notebook", font_scale=2, rc={"lines.linewidth": 2})
     sns.set_style("whitegrid")
+
+    # Swap colors around
+    colors=getattr(pcol.qualitative,cmap)    
+    if cmap=="Plotly":
+        colors.insert(3,colors.pop(-1))
+
     custom_style = {
         'grid.color': '0.8',
         'grid.linestyle': '--',
@@ -31,7 +37,7 @@ def specplot(input,cmap):
         'savefig.dpi':300,
         'font.size': 20, 
         'axes.linewidth': 1.5,
-        'axes.prop_cycle': cycler(color=getattr(pcol.qualitative,cmap))
+        'axes.prop_cycle': cycler(color=colors)
     }
     sns.set_style(custom_style)
     lmax = 200
@@ -567,7 +573,11 @@ def traceplotter(df, header, xlabel, nbins, outname, min_, cmap="Plotly", priors
     
     #cmap = plt.cm.get_cmap('tab20')# len(y))
     import matplotlib as mpl
-    cmap = mpl.colors.ListedColormap(getattr(pcol.qualitative,cmap))
+    # Swap colors around
+    colors=getattr(pcol.qualitative,cmap)    
+    if cmap=="Plotly":
+        colors.insert(3,colors.pop(-1))
+    cmap = mpl.colors.ListedColormap(colors)
     #cmap = plt.cm.get_cmap('tab10')# len(y))
 
     means = df[min_:].mean()

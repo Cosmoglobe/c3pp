@@ -299,6 +299,9 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             import plotly.colors as pcol
             _, clab, *numvals = cmap.split("-")
             colors = getattr(pcol.qualitative, clab)
+            colors=getattr(pcol.qualitative,cmap)    
+            if cmap=="Plotly":
+                colors.insert(3,colors.pop(-1))
             try:
                 cmap = col.ListedColormap(colors[:int(numvals[0])], f'{clab}-{numvals[0]}')
                 click.echo(click.style("Using qualitative colormap:", fg="yellow") + f" {clab} up to {numvals[0]}")
