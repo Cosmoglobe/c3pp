@@ -220,7 +220,7 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command, 
 
     # Outputs fits map if output name is .fits
     if output.endswith(".fits"):
-        hp.write_map(output, outdata, overwrite=True)
+        hp.write_map(output, outdata, overwrite=True, dtype=None)
     elif output.endswith(".dat"):
         np.savetxt(output, outdata)
     return outdata
@@ -404,7 +404,7 @@ def rspectrum(nu, r, sig, scaling=1.0):
 
 
 
-def fits_handler(input, min, max, minchain, maxchain, chdir, output, fwhm, nside, zerospin, drop_missing, pixweight, return_mean, command, lowmem=True):
+def fits_handler(input, min, max, minchain, maxchain, chdir, output, fwhm, nside, zerospin, drop_missing, pixweight, command, lowmem=False, fields=None, write=False):
     """
     Function for handling fits files.
     """
@@ -418,7 +418,7 @@ def fits_handler(input, min, max, minchain, maxchain, chdir, output, fwhm, nside
         exit()
 
     if (lowmem and command == np.std): #need to compute mean first
-        mean_data = fits_handler(input, min, max, minchain, maxchain, chdir, output, fwhm, nside, zerospin, drop_missing, pixweight, True, np.mean)
+        mean_data = fits_handler(input, min, max, minchain, maxchain, chdir, output, fwhm, nside, zerospin, drop_missing, pixweight, lowmem, np.mean, fields, write=False)
 
     if (minchain > maxchain):
         print('Minimum chain number larger that maximum chain number. Exiting')
@@ -496,24 +496,24 @@ def fits_handler(input, min, max, minchain, maxchain, chdir, output, fwhm, nside
                             exit()
                         else:
                             continue
-
-                    data, header = hp.fitsfunc.read_map(filename,verbose=False,h=True,dtype=np.float64)
-                    nfields = 0
-                    for par in header:
-                        if (par[0] == 'TFIELDS'):
-                            nfields = par[1]
-                            break
-                    if (nfields == 0):
-                        print('No fields/maps in input file')
-                        exit()
-                    elif (nfields == 1):
-                        fields=(0)
-                    elif (nfields == 2):
-                        fields=(0,1)
-                    elif (nfields == 3):
-                        fields=(0,1,2)
-
-                    print('   Reading fields ',fields)
+                    
+                    _, header = hp.fitsfunc.read_map(filename, verbose=False, h=True, dtype=None)
+                    if fields!=None:
+                        nfields = 0
+                        for par in header:
+                            if (par[0] == 'TFIELDS'):
+                                nfields = par[1]
+                                break
+                        if (nfields == 0):
+                            print('No fields/maps in input file')
+                            exit()
+                        elif (nfields == 1):
+                            fields=(0)
+                        elif (nfields == 2):
+                            fields=(0,1)
+                        elif (nfields == 3):
+                            fields=(0,1,2)
+                    #print('   Reading fields ',fields)
 
                     nest = False
                     for par in header:
@@ -541,8 +541,7 @@ def fits_handler(input, min, max, minchain, maxchain, chdir, output, fwhm, nside
                     else:
                         continue
 
-                data = hp.fitsfunc.read_map(filename,field=fields,verbose=False,h=False, nest=nest, dtype=np.float64)
-                
+                data = hp.fitsfunc.read_map(filename,field=fields,verbose=False,h=False, nest=nest, dtype=None)
                 if (nest): #need to reorder to ring-ordering
                     data = hp.pixelfunc.reorder(data,n2r=True)
 
@@ -604,12 +603,11 @@ def fits_handler(input, min, max, minchain, maxchain, chdir, output, fwhm, nside
             outdata = hp.sphtfunc.smoothing(outdata, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol,use_weights=True)
 
     # Outputs fits map if output name is .fits
-    if (return_mean and command == np.mean):
-        return outdata
-    elif output.endswith(".fits"):
-        hp.write_map(output, outdata, overwrite=True)
-    elif output.endswith(".dat"):
-        np.savetxt(output, outdata)
+    if write:
+        if output.endswith(".fits"):
+            hp.write_map(output, outdata, overwrite=True, dtype=None)
+        elif output.endswith(".dat"):
+            np.savetxt(output, outdata)
     else:
         return outdata
 

@@ -6,20 +6,20 @@ import healpy as hp
 from src.tools import *
 
 
-def format_fits(chain, extname, types, units, nside, burnin, maxchain, polar, component, fwhm, nu_ref_t, nu_ref_p, procver, filename, bndctr, restfreq, bndwid,):
+def format_fits(chain, extname, types, units, nside, burnin, maxchain, polar, component, fwhm, nu_ref_t, nu_ref_p, procver, filename, bndctr, restfreq, bndwid, cmin=1, cmax=None, chdir=None, fields=None, scale=1.):
     print()
     print("{:#^80}".format(""))
     print("{:#^80}".format(f" Formatting and outputting {filename} "))
     print("{:#^80}".format(""))
 
     header = get_header(extname, types, units, nside, polar, component, fwhm, nu_ref_t, nu_ref_p, procver, filename, bndctr, restfreq, bndwid,)
-    dset = get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types,)
+    dset = get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types, cmin, cmax, chdir, fields, scale)
 
     print(f"{procver}/{filename}", dset.shape)
     hp.write_map(f"{procver}/{filename}", dset, column_names=types, column_units=units, coord="G", overwrite=True, extra_header=header, dtype=None)
 
 
-def get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types,):
+def get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types, cmin, cmax, chdir, fields=None, scale=1.0):
     if extname.endswith("CMB"):
         # Mean data
         amp_mean = h5handler(input=chain, dataset="cmb/amp_alm", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=fwhm, nside=nside, command=np.mean,)
@@ -173,9 +173,31 @@ def get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types,):
         dset[7] = amp_stddev[1, :]
         dset[8] = amp_stddev[2, :]
 
+    if extname.endswith("RES"):
+        N = len(types)
+        amp_mean = fits_handler(input=f"res_{component}_c0001_k000001.fits", min=burnin, max=None, minchain=cmin, maxchain=cmax, chdir=chdir, output="map", fwhm=fwhm, nside=nside, zerospin=False, drop_missing=True, pixweight=False, command=np.mean, lowmem=False, fields=fields, write=False)
+        amp_stddev = fits_handler(input=f"res_{component}_c0001_k000001.fits", min=burnin, max=None, minchain=cmin, maxchain=cmax, chdir=chdir, output="map", fwhm=fwhm, nside=nside, zerospin=False, drop_missing=True, pixweight=False, command=np.std, lowmem=False, fields=fields, write=False)
+        dset = np.zeros((N, hp.nside2npix(nside)))
+        dset[:N//2] = amp_mean[fields]*scale
+        dset[N//2:] = amp_stddev[fields]@*scale
+
+    if extname.endswith("CHISQ"):
+        
+        amp_mean = fits_handler(input="chisq_c0001_k000001.fits", min=burnin, max=None, minchain=cmin, maxchain=cmax, chdir=chdir, output="map", fwhm=fwhm, nside=nside, zerospin=False, drop_missing=True, pixweight=False, command=np.mean, lowmem=False, write=False)
+        amp_stddev = fits_handler(input="chisq_c0001_k000001.fits", min=burnin, max=None, minchain=cmin, maxchain=cmax, chdir=chdir, output="map", fwhm=fwhm, nside=nside, zerospin=False, drop_missing=True, pixweight=False, command=np.std, lowmem=False, write=False)
+
+        dset = np.zeros((len(types), hp.nside2npix(nside)))
+
+        dset[0] = amp_mean[0, :]
+        dset[1] = amp_mean[1, :]
+        dset[2] = amp_mean[2, :]
+
+        dset[3] = amp_stddev[0, :]
+        dset[4] = amp_stddev[1, :]
+        dset[5] = amp_stddev[2, :]
+
     #print(f"Shape of dset {dset.shape}")
     return dset
-
 
 def get_header(extname, types, units, nside, polar, component, fwhm, nu_ref_t, nu_ref_p, procver, filename, bndctr, restfreq, bndwid,):
     stamp = f'Written {time.strftime("%c")}'

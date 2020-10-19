@@ -142,7 +142,7 @@ def fits_mean(
     Note: the input file name must have the 'c0001' chain identifier and the 'k000001' sample identifier. The -min/-max and -chainmin/-chainmax options set the actual samples/chains to be used in the calculation 
     """
 
-    fits_handler(input, min, max, minchain, maxchain, chaindir, output, fwhm, nside, zerospin, missing, pixweight, False, np.mean)
+    fits_handler(input, min, max, minchain, maxchain, chaindir, output, fwhm, nside, zerospin, missing, pixweight, np.mean, write=True)
 
 @commands_fits.command()
 @click.argument("input", type=click.STRING)
@@ -167,4 +167,4 @@ def fits_stddev(
     Note: the input file name must have the 'c0001' chain identifier and the 'k000001' sample identifier. The -min/-max and -chainmin/-chainmax options set the actual samples/chains to be used in the calculation 
     """
 
-    fits_handler(input, min, max, minchain, maxchain, chaindir, output, fwhm, nside, zerospin, missing, pixweight, False, np.std)
+    fits_handler(input, min, max, minchain, maxchain, chaindir, output, fwhm, nside, zerospin, missing, pixweight, np.std, write=True)

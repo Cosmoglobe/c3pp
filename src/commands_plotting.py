@@ -98,7 +98,7 @@ def specplot(input,cmap):
 @click.option("-title", default=None, type=click.STRING, help="Set title (Upper right), has LaTeX functionality. Ex. $A_{s}$.",)
 @click.option("-ltitle", default=None, type=click.STRING, help="Set title (Upper left), has LaTeX functionality. Ex. $A_{s}$.",)
 @click.option("-unit", default=None, type=click.STRING, help="Set unit (Under color bar), has LaTeX functionality. Ex. $\mu$",)
-@click.option("-scale", default=1.0, type=click.FLOAT, help="Scale input map [ex. 1e-6 for muK to K]",)
+@click.option("-scale", default=None, type=click.FLOAT, help="Scale input map [ex. 1e-6 for muK to K]",)
 @click.option("-outdir", type=click.Path(exists=True), help="Output directory for plot",)
 @click.option("-verbose", is_flag=True, help="Verbose mode")
 def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, verbose,):
@@ -203,19 +203,20 @@ def gnomplot(filename, lon, lat, sig, size, min_, max_, rng, unit, cmap, graticu
 @click.argument("procver", type=click.STRING)
 @click.option("-mask", type=click.Path(exists=True), help="Mask for calculating cmb",)
 @click.option("-defaultmask", is_flag=True, help="Use default dx12 mask",)
-@click.option("-freqmaps", is_flag=True, help=" output freqmaps",)
-@click.option("-cmb", is_flag=True, help=" output cmb",)
-@click.option("-cmbresamp", is_flag=True, help=" output cmbresamp",)
-@click.option("-synch", is_flag=True, help=" output synch",)
-@click.option("-ame", is_flag=True, help=" output ame",)
-@click.option("-ff", is_flag=True, help=" output ff",)
-@click.option("-dust", is_flag=True, help=" output dust",)
+@click.option("-freqmaps", is_flag=True, help=" Plot freqmaps",)
+@click.option("-cmb", is_flag=True, help=" Plot cmb",)
+@click.option("-cmbresamp", is_flag=True, help=" Plot cmbresamp",)
+@click.option("-synch", is_flag=True, help=" Plot synch",)
+@click.option("-ame", is_flag=True, help="Plot ame",)
+@click.option("-ff", is_flag=True, help="Plot ff",)
+@click.option("-dust", is_flag=True, help=" Plot dust",)
 @click.option("-diff", is_flag=True, help="Creates diff maps to dx12 and npipe")
 @click.option("-diffcmb", is_flag=True, help="Creates diff maps with cmb maps")
+@click.option("-goodness", is_flag=True, help="Plots chisq and residuals")
 @click.option("-spec", is_flag=True, help="Creates emission plot")
-@click.option("-all", "all_", is_flag=True, help="Output all")
+@click.option("-all", "all_", is_flag=True, help="Plot all")
 @click.pass_context
-def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch, ame, ff, dust, diff, diffcmb, spec, all_):
+def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch, ame, ff, dust, diff, diffcmb, goodness, spec, all_):
     """
     Plots all release files.
     """
@@ -226,6 +227,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
     if all_:
         freqmaps = not freqmaps; cmb = not cmb; synch = not synch; ame = not ame;
         ff = not ff; dust = not dust; diff = not diff; diffcmb = not diffcmb; spec = not spec
+        goodness = not goodness
 
         defaultmask = True if not mask else False
 
@@ -383,7 +385,44 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                 except Exception as e:
                     print(e)
                     click.secho("Continuing...", fg="yellow")
+        
+        if goodness:
+            import glob
+            outdir = "figs/goodness/"
+            if not os.path.exists(outdir):
+                os.mkdir(outdir)
+                           
 
+            tbands = ["030", "044", "070", "030-WMAP_Ka", "040-WMAP_Q1","040-WMAP_Q2","060-WMAP_V1","060-WMAP_V1", "0.4-Haslam", "857",]
+            nsides = [512, 512, 1024, 512, 512, 512, 512, 512, 512, 512, 1024]
+            for band in tbands:
+                try:
+                    sig = [0,1] if not band in ["030","044","070"] else [0,3]
+                    b = glob.glob(f'goodness/BP_res_{band}*fits')[0]
+                    ctx.invoke(plot, input=b, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=sig,)
+                except Exception as e:
+                    print(e)
+                    click.secho("Continuing...", fg="yellow")
+
+            scale = 1/np.sum([(x/16)**2 for x in nsides])
+            ctx.invoke(plot, input=f"goodness/BP_chisq_n16_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,], min=0.9, max=1.1, scale=scale)
+                
+            pbands = ["030", "044", "070",  "033-WMAP_Ka_P", "041-WMAP_Q_P", "060-WMAP_V_P", "353"]
+            nsides = [512, 512, 1024, 512, 16, 16, 16, 1024]
+            for band in tbands:
+                try:
+                    sig = [0,1,2,3] if not band in ["030","044","070"] else [1,2,4,5]
+                    b = glob.glob(f'goodness/BP_res_{band}*fits')[0]
+                    ctx.invoke(plot, input=b, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=sig,)                
+                except Exception as e:
+                    print(e)
+                    click.secho("Continuing...", fg="yellow")
+
+            scale = 1/np.sum([(x/16)**2 for x in nsides])
+            ctx.invoke(plot, input=f"goodness/BP_chisq_n16_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1,2], min=0.9, max=1.1, scale=scale)
+
+            
+     
     if spec: 
         print("Plotting sky model SED spectrum")
         print("Reading data")
@@ -696,7 +735,7 @@ def make_diff_plots(ctx, dir1, dir2, type1, type2):
         Plotter(input=comp + '_diff' + '.fits', dataset='', nside=None, auto=True, min=None, max=None, mid=0.0,
                 rng='auto', colorbar=True, lmax=None, fwhm=0.0, mask=None, mfill=None, sig=[0,], remove_dipole=None,
                 logscale=None, size='m', white_background=True, darkmode=False, png=False, cmap=None, title=None,
-                ltitle=None, unit=None, scale=1.0, outdir='.', verbose=False, data=diff_map)
+                ltitle=None, unit=None, scale=None, outdir='.', verbose=False, data=diff_map)
 
 @commands_plotting.command()
 @click.option("-pol", is_flag=True, help="",)
