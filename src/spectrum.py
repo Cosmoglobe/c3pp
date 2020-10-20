@@ -197,11 +197,11 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
                 else:
                     #gradient_fill(nu, fg["spectrum"][0], fill_color=fg["color"], ax=ax, alpha=0.5, linewidth=0.0,)
                     
-                    ax.loglog(nu,np.mean(fg["spectrum"],axis=0), linestyle=fg["linestyle"], linewidth=4, color=fg["color"])
+                    ax.loglog(nu,np.median(fg["spectrum"],axis=0), linestyle=fg["linestyle"], linewidth=4, color=fg["color"])
                     ax.fill_between(nu,fg["spectrum"][0],fg["spectrum"][1], color=fg["color"],alpha=0.5)
 
                     if long:
-                        ax2.loglog(nu,np.mean(fg["spectrum"],axis=0), linestyle=fg["linestyle"], linewidth=4, color=fg["color"])
+                        ax2.loglog(nu,np.median(fg["spectrum"],axis=0), linestyle=fg["linestyle"], linewidth=4, color=fg["color"])
                         ax2.fill_between(nu,fg["spectrum"][0],fg["spectrum"][1], color=fg["color"], alpha=0.5)
                     k = 1
 

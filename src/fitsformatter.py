@@ -179,8 +179,12 @@ def get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types, cm
         amp_stddev = fits_handler(input=f"res_{component}_c0001_k000001.fits", min=burnin, max=None, minchain=cmin, maxchain=cmax, chdir=chdir, output="map", fwhm=fwhm, nside=nside, zerospin=False, drop_missing=True, pixweight=False, command=np.std, lowmem=False, fields=fields, write=False)
         dset = np.zeros((N, hp.nside2npix(nside)))
         print(amp_mean.shape, amp_stddev.shape)
-        dset[:N//2] = amp_mean[fields, :]*scale
-        dset[N//2:] = amp_stddev[fields, :]*scale
+        if len(fields)>1:
+            dset[:N//2] = amp_mean[fields, :]*scale
+            dset[N//2:] = amp_stddev[fields, :]*scale
+        else:
+            dset[0] = amp_mean*scale
+            dset[1] = amp_stddev*scale
 
     if extname.endswith("CHISQ"):
         

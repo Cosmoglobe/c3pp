@@ -159,18 +159,25 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
         templogscale = logscale
         tempcmap = cmap
 
-        # ttl, unt and cmb are temporary variables for title, unit and colormap
+        # Scale map
+        if scale:
+            click.echo(click.style(f"Scaling data by {scale}",fg="yellow"))
+            m *= scale
+
         if auto:
-            (_title, ticks, cmp, lgscale, scl,) = get_params(m, outfile, polt, signal_label,)
-            if not scale:
-                scale = scl
+            (_title, ticks, cmp, lgscale,) = get_params(m, outfile, polt, signal_label,)
             # Title
             if _title["stddev"]:
-                ttl =  _title["param"] + r"$_{\mathrm{" + _title["comp"] + "}}^{\sigma}$" 
+                if _title["special"]:
+                    ttl =   r"$\sigma_{\mathrm{" + _title["param"] + "}}$"
+                else:
+                    #_title["param"] + r"$_{\mathrm{" + _title["comp"] + "}}^{\sigma}$" 
+                    ttl =   r"$\sigma_{\mathrm{" + _title["comp"] + "}}$"
             elif _title["rms"]:
                 ttl =  _title["param"] + r"$_{\mathrm{" + _title["comp"] + "}}^{\mathrm{RMS}}$" 
             elif _title["mean"]:
-                ttl = r"$\langle$" + _title["param"] + r"$\rangle$" + r"$_{\mathrm{" + _title["comp"] + "}}^{ }$" 
+                #r"$\langle$" + _title["param"] + r"$\rangle$" + r"$_{\mathrm{" + _title["comp"] + "}}^{ }$" 
+                ttl = r"$\langle$" + _title["param"] + r"$_{\mathrm{" + _title["comp"] + "}}^{ }$" + r"$\rangle$"  
             elif _title["diff"]:
                 ttl = r"$\Delta$ " + _title["param"] + r"$_{\mathrm{" + _title["comp"] + "}}^{" + _title["diff_label"] + "}$" 
             else:
@@ -188,9 +195,10 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             mn = ticks[0]
             mx = ticks[-1]
             if not mid and len(ticks)>2:
-                if ticks[-2]<ticks[-1]:
+                if ticks[0]<ticks[1]  and ticks[1]<ticks[-1]:
                     md = ticks[1:-1]
-                
+                else:
+                    ticks.pop(-1)
             # Unit
             unt = _title["unit"]
         else:
@@ -201,10 +209,6 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             cmp = "planck"
             lgscale = False
 
-        # Scale map
-        if scale:
-            click.echo(click.style(f"Scaling data by {scale}",fg="yellow"))
-            m *= scale
 
         # If min and max have been specified, set.
         if rng == "auto" and not auto:
@@ -536,7 +540,7 @@ def get_params(m, outfile, polt, signal_label):
     sl = signal_label.split("_")[0]
     title["sig"] = sl
     title["unit"] = ""
-    scale = None  # Scale map? Default no
+    title["special"] = False
     startcolor = "black"
     endcolor = "white"
     cmap = "planck"  # Default cmap
@@ -558,6 +562,7 @@ def get_params(m, outfile, polt, signal_label):
     # ------ Chisq ------
     elif tag_lookup(chisq_tags, outfile):
         click.echo(click.style("{:-^48}".format(f"Detected chisq {sl}"),fg="yellow"))
+        title["special"] = True
         title["unit"]  = ""
         title["comp"]  = ""
         title["param"] = r"$\chi^2$"
@@ -771,7 +776,7 @@ def get_params(m, outfile, polt, signal_label):
         sys.exit()
     else:
         # Run map autoset
-        title, ticks, cmap, logscale, scale = not_identified(m, signal_label, logscale, title)
+        title, ticks, cmap, logscale, = not_identified(m, signal_label, logscale, title)
 
     # If signal is an RMS map, add tag.
     if signal_label.endswith("STDDEV") or "_stddev" in outfile:
@@ -821,7 +826,7 @@ def get_params(m, outfile, polt, signal_label):
 
     title["comp"] = title["comp"].lstrip('0')    
 
-    return (title, ticks, cmap, logscale, scale,)
+    return (title, ticks, cmap, logscale,)
 
 
 def not_identified(m, signal_label, logscale, title):
@@ -832,8 +837,7 @@ def not_identified(m, signal_label, logscale, title):
     vmin, vmax = get_ticks(m, 97.5)
     ticks = [vmin, vmax]
     cmap = "planck"
-    scale=None
-    return (title, ticks, cmap, logscale, scale,)
+    return (title, ticks, cmap, logscale,)
 
 
 def get_signallabel(x):
@@ -870,14 +874,15 @@ def fmt(x, pos):
     """
     Format color bar labels
     """
-    if abs(x) > 1e4 or (abs(x) < 1e-2 and abs(x) > 0):
+    if abs(x) > 1e4 or (abs(x) < 1e-3 and abs(x) > 0):
         a, b = f"{x:.2e}".split("e")
         b = int(b)
-        return fr"${a} \cdot 10^{{{b}}}$"
-    elif abs(x) > 1e2 or (float(abs(x))).is_integer():
+        if float(a) == 1.00:
+            return fr"$10^{{b}}$"
+        else:
+            return fr"${a} \cdot 10^{{b}}$"
+    elif abs(x) > 1e1 or (float(abs(x))).is_integer():
         return fr"${int(x):d}$"
-    elif abs(x) > 1e1:
-        return fr"${x:.1f}$"
     elif abs(x) == 0.0:
         return fr"${x:.1f}$"
     else:

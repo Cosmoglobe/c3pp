@@ -393,7 +393,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                 os.mkdir(outdir)
                            
 
-            tbands = ["030", "044", "070", "030-WMAP_Ka", "040-WMAP_Q1","040-WMAP_Q2","060-WMAP_V1","060-WMAP_V1", "0.4-Haslam", "857",]
+            tbands = ["030_IQU", "044_IQU", "070_IQU", "030-WMAP_Ka", "040-WMAP_Q1","040-WMAP_Q2","060-WMAP_V1","060-WMAP_V1", "0.4-Haslam", "857",]
             nsides = [512, 512, 1024, 512, 512, 512, 512, 512, 512, 512, 1024]
             for band in tbands:
                 try:
@@ -406,20 +406,29 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
 
             scale = 1/np.sum([(x/16)**2 for x in nsides])
             ctx.invoke(plot, input=f"goodness/BP_chisq_n16_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,], min=0.9, max=1.1, scale=scale)
+            ctx.invoke(plot, input=f"goodness/BP_chisq_n16_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,], min=0.001, max=0.01, scale=scale)
                 
-            pbands = ["030", "044", "070",  "033-WMAP_Ka_P", "041-WMAP_Q_P", "060-WMAP_V_P", "353"]
+            pbands = ["030_IQU", "044_IQU", "070_IQU",  "033-WMAP_Ka_P", "041-WMAP_Q_P", "060-WMAP_V_P", "353"]
             nsides = [512, 512, 1024, 512, 16, 16, 16, 1024]
-            for band in tbands:
+            mask_path='/mn/stornext/u3/trygvels/compsep/cdata/like/paper_workdir/BP_synch/wmap_masks/'
+            masks = ['wmap_processing_mask_Ka_r4_9yr_v5_TQU_chisq50.fits',  'wmap_processing_mask_Q_r4_9yr_v5_TQU_chisq50.fits', 'wmap_processing_mask_V_r4_9yr_v5_TQU_chisq50.fits',]
+            m = 0
+            for band in pbands:
                 try:
-                    sig = [0,1,2,3] if not band in ["030","044","070"] else [1,2,4,5]
+                    sig = [0,1,2,3] if not band in ["030_IQU","044_IQU","070_IQU"] else [1,2,4,5]
                     b = glob.glob(f'goodness/BP_res_{band}*fits')[0]
-                    ctx.invoke(plot, input=b, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=sig,)                
+                    if band in ["033-WMAP_Ka_P", "041-WMAP_Q_P", "060-WMAP_V_P",]:
+                        ctx.invoke(plot, input=b, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=sig, mask=mask_path+masks[m])                
+                        m+=1
+                    else:
+                        ctx.invoke(plot, input=b, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=sig,)                
                 except Exception as e:
                     print(e)
                     click.secho("Continuing...", fg="yellow")
 
             scale = 1/np.sum([(x/16)**2 for x in nsides])
             ctx.invoke(plot, input=f"goodness/BP_chisq_n16_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1,2], min=0.9, max=1.1, scale=scale)
+            ctx.invoke(plot, input=f"goodness/BP_chisq_n16_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[4,5], min=0.001, max=0.01, scale=scale)
 
             
      
