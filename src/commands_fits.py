@@ -52,6 +52,43 @@ def rmcolumn(input, output, columns):
             hdu.data.del_col(columns)        
         hdulist.writeto(output, overwrite=True)
         
+@commands_fits.command()
+@click.argument("input", type=click.STRING)
+@click.argument("mask", type=click.STRING)
+@click.option("-sig", type=click.INT, multiple=True, help="fields to calculate")
+def rmmd(input, mask, sig):
+    """
+    removes the dipole and mask of input file
+    """
+    import healpy as hp
+    try:
+        m = hp.read_map(input, field=(0,1,2), verbose=False, dtype=None,)
+    except:
+        m = hp.read_map(input, field=(0,), verbose=False, dtype=None,)
+    nside = hp.get_nside(m)
+    npix = hp.nside2npix(nside)
+    print(f"Nside: {nside}, npix: {npix}")
+    # Mask map for dipole estimation
+    
+    m_masked = hp.ma(m)
+    m_masked.mask = np.logical_not(hp.read_map(mask,verbose=False,dtype=None,))
+    
+    # Fit dipole to masked map
+    for i in sig:
+        mono, dip = hp.fit_dipole(m_masked[i])
+    
+        # Subtract dipole map from data
+        click.echo(click.style("Removing dipole:", fg="yellow"))
+        click.echo(click.style("Dipole vector:",fg="green") + f" {dip}")
+        click.echo(click.style("Dipole amplitude:",fg="green") + f" {np.sqrt(np.sum(dip ** 2))}")
+        click.echo(click.style("Monopole:",fg="green") + f" {mono}")
+        # Create dipole template
+        ray = range(npix)
+        vecs = hp.pix2vec(nside, ray)
+        dipole = np.dot(dip, vecs)
+        m[i] = m[i] - dipole - mono
+    hp.write_map(input.replace(".fits", "_no-md.fits"), m, dtype=None, overwrite=True)
+
 
 @commands_fits.command()
 @click.argument("input", type=click.STRING)

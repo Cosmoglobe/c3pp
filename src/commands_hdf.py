@@ -221,10 +221,12 @@ def alm2fits(input, dataset, nside, lmax, fwhm):
 @click.option("-diff", is_flag=True, help="Creates diff maps to dx12 and npipe")
 @click.option("-diffcmb", is_flag=True, help="Creates diff maps cmb")
 @click.option("-goodness", is_flag=True, help="Output chisq and residual maps in separate dir")
+@click.option("-chisq", is_flag=True, help="Output chisq ")
+@click.option("-res", is_flag=True, help="Output residuals")
 @click.option("-all", "all_", is_flag=True, help="Output all")
 @click.option("-plot", is_flag=True, help="Plot everything (invoke plotrelease)")
 @click.pass_context
-def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, synch, dust, br, diff, diffcmb, goodness, all_, plot):
+def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, synch, dust, br, diff, diffcmb, goodness, chisq, res, all_, plot):
     """
     Creates a release file-set on the BeyondPlanck format.
     https://gitlab.com/BeyondPlanck/repo/-/wikis/BeyondPlanck-Release-Candidate-2
@@ -263,7 +265,12 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
     if all_: # sets all other flags to true
         copy_ = not copy_; freqmaps = not freqmaps; ame = not ame; ff = not ff; cmb = not cmb
         synch = not synch; dust = not dust; br = not br; diff = not diff; diffcmb = not diffcmb
-        goodness = not goodness;
+        goodness = not goodness; res = not res; chisq = not chisq
+
+    if goodness:
+        chisq = res = True
+    elif chisq or res:
+        goodness = True
 
     # Make procver directory if not exists
     click.echo("{:#^80}".format(""))
@@ -632,189 +639,190 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
         cmax = int(os.path.split(chains[-1])[0].rsplit("_c")[-1])
         chdir = os.path.split(chains[0])[0].rsplit("_", 1)[0]
  
-        try:
-            format_fits(
-                chains,
-                extname="CHISQ",
-                types=["I_MEAN", "Q_MEAN", "U_MEAN", "I_STDDEV", "Q_STDDEV", "U_STDDEV",],
-                units=["NONE", "NONE", "NONE", "NONE", "NONE", "NONE",],
-                nside=16,
-                burnin=burnin,
-                maxchain=maxchain,
-                polar=True,
-                component="CHISQ",
-                fwhm=0.0,
-                nu_ref_t="NONE",
-                nu_ref_p="NONE",
-                procver=procver,
-                filename=f'goodness/BP_chisq_n16_{procver}.fits',
-                bndctr=None,
-                restfreq=None,
-                bndwid=None,
-                cmin=cmin,
-                cmax=cmax,
-                chdir=chdir,
-            )
-        except Exception as e:
-            print(e)
-            click.secho("Continuing...",fg="yellow")
-        
-
-        click.echo("Save and format chisq map and residual maps")        
-        bands = {        
-                 "030": {
-                        "nside": 512,
-                        "fwhm": 120,
-                        "sig": "IQU",
-                        "fields": (0,1,2),
-                        "unit": "uK",
-                        "scale": 1.,
-                        },
-                 "044": {
-                         "nside": 512,
-                         "fwhm": 120,
-                         "sig": "IQU",
-                         "fields": (0,1,2),
-                         "unit": "uK",
-                         "scale": 1.,
-                 },
-                 "070": {
-                     "nside": 1024,
-                     "fwhm": 120,
-                     "sig": "IQU",
-                     "fields": (0,1,2),
-                     "unit": "uK",
-                     "scale": 1.,
-                 },
-                 "030-WMAP_Ka": {
-                     "nside": 512,
-                     "fwhm": 120,
-                     "sig": "I",
-                     "fields": (0,),
-                     "unit": "uK",
-                     "scale": 1e3,
-                 },
-                 "040-WMAP_Q1": {
-                     "nside": 512,
-                     "fwhm": 120,
-                     "sig": "I",
-                     "fields": (0,),
-                     "unit": "uK",
-                     "scale": 1.,
-                 },
-                 "040-WMAP_Q2": {
-                     "nside": 512,
-                     "fwhm": 120,
-                     "sig": "I",
-                     "fields": (0,),
-                     "unit": "uK",
-                     "scale": 1.,
-                 },
-                 "060-WMAP_V1": {
-                     "nside": 512,
-                     "fwhm": 120,
-                     "sig": "I",
-                     "fields": (0,),
-                     "unit": "uK",
-                     "scale": 1.,
-                 },
-                 "060-WMAP_V2": {
-                     "nside": 512,
-                     "fwhm": 120,
-                     "sig": "I",
-                     "fields": (0,),
-                     "unit": "uK",
-                     "scale": 1.,
-                 },
-                 "0.4-Haslam": {
-                     "nside": 512,
-                     "fwhm": 120,
-                     "sig": "I",
-                     "fields": (0,),
-                     "unit": "uK",
-                     "scale": 1.,
-                 },
-                 "857": {
-                     "nside": 1024,
-                     "fwhm": 120,
-                     "sig": "I",
-                     "fields": (0,),
-                     "unit": "uK",
-                     "scale": 1.,
-                 },
-                "033-WMAP_Ka_P": {
-                     "nside": 16,
-                     "fwhm": 0,
-                     "sig": "QU",
-                     "fields": (1,2),
-                     "unit": "uK",
-                     "scale": 1e3,
-                 },
-                 "041-WMAP_Q_P": {
-                     "nside": 16,
-                     "fwhm": 0,
-                     "sig": "QU",
-                     "fields": (1,2),
-                     "unit": "uK",
-                     "scale": 1e3,
-                 },
-                 "061-WMAP_V_P": {
-                     "nside": 16,
-                     "fwhm": 0,
-                     "sig": "QU",
-                     "fields": (1,2),
-                     "unit": "uK",
-                     "scale": 1e3,
-                 },
-                 "353": {
-                     "nside": 1024,
-                     "fwhm": 120,
-                     "sig": "QU",
-                     "fields": (1,2),
-                     "unit": "uK",
-                     "scale": 1.,
-                 },
-             }
-
-
-        for label, b in bands.items():
-            
-            types=[]
-            units=[]
-            for l in b["sig"]:
-                types.append(f'{l}_MEAN')
-                units.append(b["unit"])
-            for l in b["sig"]:
-                types.append(f'{l}_STDDEV')
-                units.append(b["unit"])
+        if chisq:
             try:
                 format_fits(
                     chains,
-                    extname="FREQBAND_RES",
-                    types=types,
-                    units=units, 
-                    nside=b["nside"],
+                    extname="CHISQ",
+                    types=["I_MEAN", "P_MEAN",],
+                    units=["NONE", "NONE",],
+                    nside=16,
                     burnin=burnin,
                     maxchain=maxchain,
                     polar=True,
-                    component=label,
-                    fwhm=b["fwhm"],
+                    component="CHISQ",
+                    fwhm=0.0,
                     nu_ref_t="NONE",
                     nu_ref_p="NONE",
                     procver=procver,
-                    filename=f'goodness/BP_res_{label}_{b["sig"]}_full_n{b["nside"]}_{b["fwhm"]}arcmin_{b["unit"]}_{procver}.fits',
+                    filename=f'goodness/BP_chisq_n16_{procver}.fits',
                     bndctr=None,
                     restfreq=None,
                     bndwid=None,
                     cmin=cmin,
                     cmax=cmax,
                     chdir=chdir,
-                    fields=b["fields"],
-                    scale=b["scale"],
                 )
             except Exception as e:
                 print(e)
                 click.secho("Continuing...",fg="yellow")
+                
+        if res:
+            click.echo("Save and format chisq map and residual maps")        
+            bands = {        
+                     "030": {
+                            "nside": 512,
+                            "fwhm": 120,
+                            "sig": "IQU",
+                            "fields": (0,1,2),
+                            "unit": "uK",
+                            "scale": 1.,
+                            },
+                     "044": {
+                             "nside": 512,
+                             "fwhm": 120,
+                             "sig": "IQU",
+                             "fields": (0,1,2),
+                             "unit": "uK",
+                             "scale": 1.,
+                     },
+                     "070": {
+                         "nside": 1024,
+                         "fwhm": 120,
+                         "sig": "IQU",
+                         "fields": (0,1,2),
+                         "unit": "uK",
+                         "scale": 1.,
+                     },
+                     "030-WMAP_Ka": {
+                         "nside": 512,
+                         "fwhm": 120,
+                         "sig": "I",
+                         "fields": (0,),
+                         "unit": "uK",
+                         "scale": 1e3,
+                     },
+                     "040-WMAP_Q1": {
+                         "nside": 512,
+                         "fwhm": 120,
+                         "sig": "I",
+                         "fields": (0,),
+                         "unit": "uK",
+                         "scale": 1.,
+                     },
+                     "040-WMAP_Q2": {
+                         "nside": 512,
+                         "fwhm": 120,
+                         "sig": "I",
+                         "fields": (0,),
+                         "unit": "uK",
+                         "scale": 1.,
+                     },
+                     "060-WMAP_V1": {
+                         "nside": 512,
+                         "fwhm": 120,
+                         "sig": "I",
+                         "fields": (0,),
+                         "unit": "uK",
+                         "scale": 1.,
+                     },
+                     "060-WMAP_V2": {
+                         "nside": 512,
+                         "fwhm": 120,
+                         "sig": "I",
+                         "fields": (0,),
+                         "unit": "uK",
+                         "scale": 1.,
+                     },
+                     "0.4-Haslam": {
+                         "nside": 512,
+                         "fwhm": 120,
+                         "sig": "I",
+                         "fields": (0,),
+                         "unit": "uK",
+                         "scale": 1.,
+                     },
+                     "857": {
+                         "nside": 1024,
+                         "fwhm": 120,
+                         "sig": "I",
+                         "fields": (0,),
+                         "unit": "uK",
+                         "scale": 1.,
+                     },
+                    "033-WMAP_Ka_P": {
+                         "nside": 16,
+                         "fwhm": 0,
+                         "sig": "QU",
+                         "fields": (1,2),
+                         "unit": "uK",
+                         "scale": 1e3,
+                     },
+                     "041-WMAP_Q_P": {
+                         "nside": 16,
+                         "fwhm": 0,
+                         "sig": "QU",
+                         "fields": (1,2),
+                         "unit": "uK",
+                         "scale": 1e3,
+                     },
+                     "061-WMAP_V_P": {
+                         "nside": 16,
+                         "fwhm": 0,
+                         "sig": "QU",
+                         "fields": (1,2),
+                         "unit": "uK",
+                         "scale": 1e3,
+                     },
+                     "353": {
+                         "nside": 1024,
+                         "fwhm": 120,
+                         "sig": "QU",
+                         "fields": (1,2),
+                         "unit": "uK",
+                         "scale": 1.,
+                     },
+                 }
+            
+            
+            for label, b in bands.items():
+                
+                types=[]
+                units=[]
+                for l in b["sig"]:
+                    types.append(f'{l}_MEAN')
+                    units.append(b["unit"])
+                for l in b["sig"]:
+                    types.append(f'{l}_STDDEV')
+                    units.append(b["unit"])
+                try:
+                    format_fits(
+                        chains,
+                        extname="FREQBAND_RES",
+                        types=types,
+                        units=units, 
+                        nside=b["nside"],
+                        burnin=burnin,
+                        maxchain=maxchain,
+                        polar=True,
+                        component=label,
+                        fwhm=b["fwhm"],
+                        nu_ref_t="NONE",
+                        nu_ref_p="NONE",
+                        procver=procver,
+                        filename=f'goodness/BP_res_{label}_{b["sig"]}_full_n{b["nside"]}_{b["fwhm"]}arcmin_{b["unit"]}_{procver}.fits',
+                        bndctr=None,
+                        restfreq=None,
+                        bndwid=None,
+                        cmin=cmin,
+                        cmax=cmax,
+                        chdir=chdir,
+                        fields=b["fields"],
+                        scale=b["scale"],
+                    )
+                except Exception as e:
+                    print(e)
+                    click.secho("Continuing...",fg="yellow")
 
             
     """ As implemented by Simone

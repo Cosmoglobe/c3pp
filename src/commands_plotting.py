@@ -13,13 +13,14 @@ def commands_plotting():
 @commands_plotting.command()
 @click.argument("input", type=click.STRING)
 @click.option("-cmap", default="Plotly", help="set colormap from plotly qualitative colors", type=click.STRING)
-def specplot(input,cmap):
+@click.option("-long", is_flag=True, help="Full page version")
+def specplot(input,cmap,long):
     """
     Plots the file output by the Crosspec function.
     """
     import matplotlib.pyplot as plt
     import seaborn as sns
-    import plotly.color as pcol
+    import plotly.colors as pcol
     from cycler import cycler
 
     sns.set_context("notebook", font_scale=2, rc={"lines.linewidth": 2})
@@ -46,8 +47,11 @@ def specplot(input,cmap):
     ee = ee*(ell*(ell+1)/(2*np.pi))
     bb = bb*(ell*(ell+1)/(2*np.pi))
     eb = eb*(ell*(ell+1)/(2*np.pi))
-	
-    f, (ax1, ax2) = plt.subplots(2, 1, figsize=(12,8), gridspec_kw={'height_ratios': [3, 1]}, sharex=True)
+    
+    if long:
+        f, (ax1, ax2) = plt.subplots(2, 1, figsize=(24,6), gridspec_kw={'height_ratios': [3, 1]}, sharex=True)
+    else:
+        f, (ax1, ax2) = plt.subplots(2, 1, figsize=(12,8), gridspec_kw={'height_ratios': [3, 1]}, sharex=True)
 
     l1 = ax1.loglog(ell, ee, linewidth=2, label="EE", color='C0')
     l2 = ax1.loglog(ell, bb, linewidth=2, label="BB", color='C1')
@@ -68,9 +72,14 @@ def specplot(input,cmap):
     labs = [l.get_label() for l in ls]
     ax1.legend(ls, labs, frameon=False,)
     #ax1.legend(frameon=False)
+    if long:
+        outname = input.replace(".dat","_long.pdf")
+    else:
+        outname = input.replace(".dat",".pdf")
+
     plt.tight_layout(h_pad=0.3)
     plt.subplots_adjust(wspace=0, hspace=0.01)
-    plt.savefig(input.replace(".dat",".pdf"), dpi=300)
+    plt.savefig(outname, dpi=300, bbox_inches="tight", pad_inches=0.02,)
     plt.show()
 
 @commands_plotting.command()
@@ -80,7 +89,7 @@ def specplot(input,cmap):
 @click.option("-auto", is_flag=True, help="Automatically sets all plotting parameters.",)
 @click.option("-min", default=False, help="Min value of colorbar, overrides autodetector.",)
 @click.option("-max", default=False, help="Max value of colorbar, overrides autodetector.",)
-@click.option("-mid", default=0.0, type=click.FLOAT, multiple=True, help='Adds tick values "-mid 2 -mid 4"',)
+@click.option("-mid", multiple=True, help='Adds tick values "-mid 2 -mid 4"',)
 @click.option("-range", default="auto", type=click.STRING, help='Color range. "-range auto" sets to 97.5 percentile of data., or "minmax" which sets to data min and max values.',)  # str until changed to float
 @click.option("-colorbar", "-bar", is_flag=True, help='Adds colorbar ("cb" in filename)',)
 @click.option("-lmax", default=None, type=click.FLOAT, help="This is automatically set from the h5 file. Only available for alm inputs.",)
@@ -89,6 +98,7 @@ def specplot(input,cmap):
 @click.option("-mfill", default=None, type=click.STRING, help='Color to fill masked area. for example "gray". Transparent by default.',)
 @click.option("-sig", default=[0,], type=click.INT, multiple=True, help="Signal to be plotted 0 by default (0, 1, 2 is interprated as IQU)",)
 @click.option("-remove_dipole", default=None, type=click.STRING, help="Fits a dipole to the map and removes it.",)
+@click.option("-remove_monopole", default=None, type=click.STRING, help="Fits a monopole to the map and removes it.",)
 @click.option("-log/-no-log", "logscale", default=None, help="Plots using planck semi-logscale. (Autodetector sometimes uses this.)",)
 @click.option("-size", default="m", type=click.STRING, help="Size: 1/3, 1/2 and full page width (8.8/12/18cm) [ex. s, m or l, or ex. slm for all], m by default",)
 @click.option("-white_background", is_flag=True, help="Sets the background to be white. (Transparent by default [recommended])",)
@@ -100,8 +110,9 @@ def specplot(input,cmap):
 @click.option("-unit", default=None, type=click.STRING, help="Set unit (Under color bar), has LaTeX functionality. Ex. $\mu$",)
 @click.option("-scale", default=None, type=click.FLOAT, help="Scale input map [ex. 1e-6 for muK to K]",)
 @click.option("-outdir", type=click.Path(exists=True), help="Output directory for plot",)
+@click.option("-labelsize", default=10, type=click.INT, help="Title size.",)
 @click.option("-verbose", is_flag=True, help="Verbose mode")
-def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, verbose,):
+def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, labelsize, verbose,):
     """
     Plots map from .fits or h5 file.
     ex. c3pp plot coolmap.fits -bar -auto -lmax 60 -darkmode -pdf -title $\beta_s$
@@ -117,7 +128,7 @@ def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, lmax, fwhm
         
     data = None # Only used if calling plotter directly for plotting data array
     from src.plotter import Plotter
-    Plotter(input, dataset, nside, auto, min, max, mid, range, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, verbose,data)
+    Plotter(input, dataset, nside, auto, min, max, mid, range, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, verbose, data, labelsize)
 
 
 @commands_plotting.command()
@@ -213,10 +224,13 @@ def gnomplot(filename, lon, lat, sig, size, min_, max_, rng, unit, cmap, graticu
 @click.option("-diff", is_flag=True, help="Creates diff maps to dx12 and npipe")
 @click.option("-diffcmb", is_flag=True, help="Creates diff maps with cmb maps")
 @click.option("-goodness", is_flag=True, help="Plots chisq and residuals")
+@click.option("-goodness_temp", is_flag=True, help="Plots chisq and residuals")
+@click.option("-goodness_pol", is_flag=True, help="Plots chisq and residuals")
+@click.option("-chisq", is_flag=True, help="Plots chisq and residuals")
 @click.option("-spec", is_flag=True, help="Creates emission plot")
 @click.option("-all", "all_", is_flag=True, help="Plot all")
 @click.pass_context
-def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch, ame, ff, dust, diff, diffcmb, goodness, spec, all_):
+def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch, ame, ff, dust, diff, diffcmb, goodness, goodness_temp, goodness_pol, chisq, spec, all_):
     """
     Plots all release files.
     """
@@ -227,10 +241,15 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
     if all_:
         freqmaps = not freqmaps; cmb = not cmb; synch = not synch; ame = not ame;
         ff = not ff; dust = not dust; diff = not diff; diffcmb = not diffcmb; spec = not spec
-        goodness = not goodness
+        goodness = not goodness; goodness_temp = not goodness_temp; goodness_pol = not goodness_pol
+        chisq = not chisq
 
         defaultmask = True if not mask else False
 
+    if goodness_temp or goodness_pol or chisq:
+        goodness = True
+    elif goodness:
+        goodness_temp = goodness_pol = chisq = True
 
     size = "mls"
     for colorbar in [True, False]:
@@ -287,15 +306,18 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                 # 030 GHz IQU
                 ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=3400,)
                 ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  fwhm=60.0, range=30,)
-                ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3, 4, 5],  fwhm=60.0,min=0.0, max=20.0)
+                ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3, 4, 5],)
+                ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[6, 7, 8],)
                 # 044 GHz IQU
                 ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=3400,)
                 ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  fwhm=60.0, range=30,)
-                ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,4,5,],  fwhm=60.0,min=0.0, max=20.0)
+                ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,4,5,],)
+                ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[6,7,8],)
                 # 070 GHz IQU
                 ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=3400,)
                 ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  fwhm=60.0, range=30,)
-                ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,4,5,],  fwhm=60.0,min=0.0, max=20.0)
+                ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,4,5,],)
+                ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[6,7,8,],)
             except Exception as e:
                 print(e)
                 click.secho("Continuing...", fg="yellow")
@@ -377,11 +399,15 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                 os.mkdir(outdir)
 
             mask = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/masks/dx12_v3_common_mask_int_005a_1024_TQU.fits"
+            mask2 = "/mn/stornext/u3/trygvels/compsep/cdata/like/paper_workdir/cmbdiffs/mask_dx12_and_BPproc.fits"
             for i, method in enumerate(["Commander", "SEVEM", "NILC", "SMICA",]):
                 try:
                     input = f"BP_cmb_diff_{method.lower()}_{procver}.fits"
-                    ctx.invoke(plot, input=input, size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask, sig=[0,],  range=10, title=method, ltitle=" ",)
-                    ctx.invoke(plot, input=input, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4, title=method, ltitle=" ",)
+                    ctx.invoke(plot, input=input, size="s", outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask2, remove_monopole=mask2, sig=[0,],  range=10, title=method, ltitle=" ", mask=mask2, mfill="gray", labelsize=6)
+                    ctx.invoke(plot, input=input, size="s", outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], remove_monopole=mask2, range=4, title=method, ltitle=" ", mask=mask2, mfill="gray", labelsize=6)
+
+                    ctx.invoke(plot, input=input, size="ml", outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask2, remove_monopole=mask2, sig=[0,],  range=10, title=method, ltitle=" ", mask=mask2, mfill="gray",)
+                    ctx.invoke(plot, input=input, size="ml", outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], remove_monopole=mask2, range=4, title=method, ltitle=" ", mask=mask2, mfill="gray",)
                 except Exception as e:
                     print(e)
                     click.secho("Continuing...", fg="yellow")
@@ -392,43 +418,46 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
             if not os.path.exists(outdir):
                 os.mkdir(outdir)
                            
-
-            tbands = ["030_IQU", "044_IQU", "070_IQU", "030-WMAP_Ka", "040-WMAP_Q1","040-WMAP_Q2","060-WMAP_V1","060-WMAP_V1", "0.4-Haslam", "857",]
-            nsides = [512, 512, 1024, 512, 512, 512, 512, 512, 512, 512, 1024]
-            for band in tbands:
-                try:
-                    sig = [0,1] if not band in ["030","044","070"] else [0,3]
-                    b = glob.glob(f'goodness/BP_res_{band}*fits')[0]
-                    ctx.invoke(plot, input=b, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=sig,)
-                except Exception as e:
-                    print(e)
-                    click.secho("Continuing...", fg="yellow")
-
-            scale = 1/np.sum([(x/16)**2 for x in nsides])
-            ctx.invoke(plot, input=f"goodness/BP_chisq_n16_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,], min=0.9, max=1.1, scale=scale)
-            ctx.invoke(plot, input=f"goodness/BP_chisq_n16_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,], min=0.001, max=0.01, scale=scale)
+            if goodness_temp:
+                tbands = ["030_IQU", "044_IQU", "070_IQU", "030-WMAP_Ka", "040-WMAP_Q1","040-WMAP_Q2","060-WMAP_V1","060-WMAP_V1", "0.4-Haslam", "857",]
                 
-            pbands = ["030_IQU", "044_IQU", "070_IQU",  "033-WMAP_Ka_P", "041-WMAP_Q_P", "060-WMAP_V_P", "353"]
-            nsides = [512, 512, 1024, 512, 16, 16, 16, 1024]
-            mask_path='/mn/stornext/u3/trygvels/compsep/cdata/like/paper_workdir/BP_synch/wmap_masks/'
-            masks = ['wmap_processing_mask_Ka_r4_9yr_v5_TQU_chisq50.fits',  'wmap_processing_mask_Q_r4_9yr_v5_TQU_chisq50.fits', 'wmap_processing_mask_V_r4_9yr_v5_TQU_chisq50.fits',]
-            m = 0
-            for band in pbands:
-                try:
-                    sig = [0,1,2,3] if not band in ["030_IQU","044_IQU","070_IQU"] else [1,2,4,5]
-                    b = glob.glob(f'goodness/BP_res_{band}*fits')[0]
-                    if band in ["033-WMAP_Ka_P", "041-WMAP_Q_P", "060-WMAP_V_P",]:
-                        ctx.invoke(plot, input=b, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=sig, mask=mask_path+masks[m])                
-                        m+=1
-                    else:
-                        ctx.invoke(plot, input=b, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=sig,)                
-                except Exception as e:
-                    print(e)
-                    click.secho("Continuing...", fg="yellow")
+                for band in tbands:
+                    try:
+                        sig = [0,1] if not band in ["030","044","070"] else [0,3]
+                        b = glob.glob(f'goodness/BP_res_{band}*fits')[0]
+                        ctx.invoke(plot, input=b, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=sig,)
+                    except Exception as e:
+                        print(e)
+                        click.secho("Continuing...", fg="yellow")
 
-            scale = 1/np.sum([(x/16)**2 for x in nsides])
-            ctx.invoke(plot, input=f"goodness/BP_chisq_n16_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1,2], min=0.9, max=1.1, scale=scale)
-            ctx.invoke(plot, input=f"goodness/BP_chisq_n16_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[4,5], min=0.001, max=0.01, scale=scale)
+            if goodness_pol:
+                pbands = [ "033-WMAP_Ka_P", "041-WMAP_Q_P", "061-WMAP_V_P", "030_IQU", "044_IQU", "070_IQU", "353"]
+                mask_path='/mn/stornext/u3/trygvels/compsep/cdata/like/paper_workdir/BP_synch/wmap_masks/'
+                masks = ['wmap_processing_mask_Ka_r4_9yr_v5_TQU_chisq50.fits',  'wmap_processing_mask_Q_r4_9yr_v5_TQU_chisq50.fits', 'wmap_processing_mask_V_r4_9yr_v5_TQU_chisq50.fits',]
+                m = 0
+                for band in pbands:
+                    try:
+                        sig = [0,1,2,3] if not band in ["030_IQU","044_IQU","070_IQU"] else [1,2,4,5]
+                        b = glob.glob(f'goodness/BP_res_{band}*fits')[0]
+                        if band in ["033-WMAP_Ka_P", "041-WMAP_Q_P", "061-WMAP_V_P",]:
+                            ctx.invoke(plot, input=b, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=sig, mask=mask_path+masks[m], mfill="gray")                
+                            m+=1
+                        else:
+                            ctx.invoke(plot, input=b, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=sig,)                
+                    except Exception as e:
+                        print(e)
+                        click.secho("Continuing...", fg="yellow")
+
+            if chisq:
+                nsides = [16, 16, 16, 512, 512, 1024, 1024]
+                scale = 1/np.sum([(x/16)**2 for x in nsides])
+                ctx.invoke(plot, input=f"goodness/BP_chisq_n16_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1,], min=2., max=2.2, scale=scale)
+                #ctx.invoke(plot, input=f"goodness/BP_chisq_n16_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[4,5], min=0.001, max=0.01, scale=scale)
+
+                nsides = [512, 512, 1024, 512, 512, 512, 512, 512, 512, 1024]
+                scale = 1/np.sum([(x/16)**2 for x in nsides])
+                ctx.invoke(plot, input=f"goodness/BP_chisq_n16_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,], min=1., max=1.0, scale=scale)
+                #ctx.invoke(plot, input=f"goodness/BP_chisq_n16_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,], min=0.001, max=0.01, scale=scale)
 
             
      
@@ -570,6 +599,8 @@ def pixreg2trace(chainfile, dataset, burnin, maxchain, plot, freeze, nbins, prio
     elif nregs == 4:
         header = ['High lat.', 'Spur',
                   'Gal. center', 'Gal. plane']
+    elif nregs == 1:
+        header = ['Fullsky',]
     else:
         print("Number of columns not supported", nregs)
         sys.exit()

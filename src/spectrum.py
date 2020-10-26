@@ -54,17 +54,19 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
     rcParams.update(params)
     
     # ---- Figure parameters ----
+    if long:
+        xmin, xmax = (0.3, 4000)
     if pol:
         ymin, ymax = (1e-3, 2e2)
         if long:
-            xmin, xmax = (1, 3000)
+            #xmin, xmax = (1, 3000)
             ymax15, ymax2 = (ymax+100, 1e7)
         else:
             xmin, xmax = (10, 1000)
     else:
         ymin, ymax = (0.05, 7e2)
         if long:
-            xmin, xmax = (0.3, 4000)
+            #xmin, xmax = (0.3, 4000)
             ymax15, ymax2 = (ymax+500, 1e7)
         else:
             xmin, xmax = (10, 1000)
@@ -144,6 +146,7 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
                 foregrounds[fg]["spectrum"
             ] = foregrounds[fg]["spectrum"]*75
             """
+            foregrounds[fg]["spectrum_mean"]= np.mean(foregrounds[fg]["spectrum"],axis=0)
             if add_error and foregrounds[fg]["spectrum"].shape[0]>1 and not fg.startswith("CO"):
                 thresh=0.1                    
                 alpha=0.5
@@ -197,11 +200,11 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
                 else:
                     #gradient_fill(nu, fg["spectrum"][0], fill_color=fg["color"], ax=ax, alpha=0.5, linewidth=0.0,)
                     
-                    ax.loglog(nu,np.median(fg["spectrum"],axis=0), linestyle=fg["linestyle"], linewidth=4, color=fg["color"])
+                    ax.loglog(nu,fg["spectrum_mean"], linestyle=fg["linestyle"], linewidth=4, color=fg["color"])
                     ax.fill_between(nu,fg["spectrum"][0],fg["spectrum"][1], color=fg["color"],alpha=0.5)
 
                     if long:
-                        ax2.loglog(nu,np.median(fg["spectrum"],axis=0), linestyle=fg["linestyle"], linewidth=4, color=fg["color"])
+                        ax2.loglog(nu,fg["spectrum_mean"], linestyle=fg["linestyle"], linewidth=4, color=fg["color"])
                         ax2.fill_between(nu,fg["spectrum"][0],fg["spectrum"][1], color=fg["color"], alpha=0.5)
                     k = 1
 

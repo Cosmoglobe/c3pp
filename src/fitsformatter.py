@@ -155,7 +155,7 @@ def get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types, cm
         amp_mean = h5handler(input=chain, dataset=f"tod/{component}/map", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=fwhm, nside=nside, command=np.mean,)
         amp_rms  = h5handler(input=chain, dataset=f"tod/{component}/rms", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=fwhm, nside=nside, command=np.mean,)
         # stddev data
-        amp_stddev = h5handler(input=chain, dataset=f"tod/{component}/map", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=fwhm, nside=nside, command=np.std,)
+        amp_stddev = h5handler(input=chain, dataset=f"tod/{component}/map", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=120., nside=nside, command=np.std,)
 
         # Masks
 
@@ -189,17 +189,12 @@ def get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types, cm
     if extname.endswith("CHISQ"):
         
         amp_mean = fits_handler(input="chisq_c0001_k000001.fits", min=burnin, max=None, minchain=cmin, maxchain=cmax, chdir=chdir, output="map", fwhm=fwhm, nside=nside, zerospin=False, drop_missing=True, pixweight=False, command=np.mean, lowmem=False, write=False)
-        amp_stddev = fits_handler(input="chisq_c0001_k000001.fits", min=burnin, max=None, minchain=cmin, maxchain=cmax, chdir=chdir, output="map", fwhm=fwhm, nside=nside, zerospin=False, drop_missing=True, pixweight=False, command=np.std, lowmem=False, write=False)
+        #amp_stddev = fits_handler(input="chisq_c0001_k000001.fits", min=burnin, max=None, minchain=cmin, maxchain=cmax, chdir=chdir, output="map", fwhm=fwhm, nside=nside, zerospin=False, drop_missing=True, pixweight=False, command=np.std, lowmem=False, write=False)
 
         dset = np.zeros((len(types), hp.nside2npix(nside)))
 
         dset[0] = amp_mean[0, :]
-        dset[1] = amp_mean[1, :]
-        dset[2] = amp_mean[2, :]
-
-        dset[3] = amp_stddev[0, :]
-        dset[4] = amp_stddev[1, :]
-        dset[5] = amp_stddev[2, :]
+        dset[1] = amp_mean[1, :]+amp_mean[2, :]
 
     #print(f"Shape of dset {dset.shape}")
     return dset

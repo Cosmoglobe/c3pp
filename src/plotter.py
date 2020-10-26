@@ -15,7 +15,7 @@ from astropy.io import fits
 print("Importtime:", (time.time() - totaltime))
 
 
-def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, verbose, data, ):
+def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, verbose, data, labelsize):
     rcParams["backend"] = "agg" if png else "pdf"
     rcParams["legend.fancybox"] = True
     rcParams["lines.linewidth"] = 2
@@ -107,7 +107,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
         ############
         #  SMOOTH  #
         ############
-        if fwhm > 0 and input.endswith(".fits"):
+        if float(fwhm) > 0 and input.endswith(".fits"):
             click.echo(click.style(f"Smoothing fits map to {fwhm} arcmin fwhm",fg="yellow"))
             m = hp.smoothing(m, fwhm=arcmin2rad(fwhm), lmax=lmax,)
 
@@ -124,27 +124,38 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
         ########################
         #### remove dipole #####
         ########################
-        if remove_dipole:
+        if remove_dipole or remove_monopole:
             starttime = time.time()
-            click.echo(click.style("Removing dipole:", fg="yellow"))
-            dip_mask_name = remove_dipole
+
+            if remove_monopole:
+                dip_mask_name = remove_monopole
+            if remove_dipole:
+                dip_mask_name = remove_dipole
             # Mask map for dipole estimation
             m_masked = hp.ma(m)
             m_masked.mask = np.logical_not(hp.read_map(dip_mask_name,verbose=False,dtype=None,))
 
             # Fit dipole to masked map
             mono, dip = hp.fit_dipole(m_masked)
-            click.echo(click.style("Dipole vector:",fg="green") + f" {dip}")
-            click.echo(click.style("Dipole amplitude:",fg="green") + f" {np.sqrt(np.sum(dip ** 2))}")
-
-            # Create dipole template
-            nside = int(nside)
-            ray = range(hp.nside2npix(nside))
-            vecs = hp.pix2vec(nside, ray)
-            dipole = np.dot(dip, vecs)
 
             # Subtract dipole map from data
-            m = m - dipole
+            if remove_dipole:
+                click.echo(click.style("Removing dipole:", fg="yellow"))
+                click.echo(click.style("Dipole vector:",fg="green") + f" {dip}")
+                click.echo(click.style("Dipole amplitude:",fg="green") + f" {np.sqrt(np.sum(dip ** 2))}")
+
+                # Create dipole template
+                nside = int(nside)
+                ray = range(hp.nside2npix(nside))
+                vecs = hp.pix2vec(nside, ray)
+                dipole = np.dot(dip, vecs)
+                
+                m = m - dipole
+            if remove_monopole:
+                click.echo(click.style("Removing monopole:", fg="yellow"))
+                click.echo(click.style("Mono:",fg="green") + f" {mono}")
+                m = m - mono
+            
             click.echo(f"Dipole removal : {(time.time() - starttime)}") if verbose else None
 
         #######################
@@ -153,6 +164,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
         # Reset these every signal
         tempmin = min
         tempmax = max
+        tempmid = mid
         temptitle = title
         templtitle = ltitle
         tempunit = unit
@@ -169,7 +181,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             # Title
             if _title["stddev"]:
                 if _title["special"]:
-                    ttl =   r"$\sigma_{\mathrm{" + _title["param"] + "}}$"
+                    ttl =   r"$\sigma_{\mathrm{" + _title["param"].replace("$","") + "}}$"
                 else:
                     #_title["param"] + r"$_{\mathrm{" + _title["comp"] + "}}^{\sigma}$" 
                     ttl =   r"$\sigma_{\mathrm{" + _title["comp"] + "}}$"
@@ -188,23 +200,25 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
                 lttl = "$T$"
             elif lttl == "$QU$":
                 lttl= "$P$"
-            #elif lttl == "$P$":
-            #    ticks *= 2
 
             # Tick bug fix
             mn = ticks[0]
             mx = ticks[-1]
+            md = None
             if not mid and len(ticks)>2:
-                if ticks[0]<ticks[1]  and ticks[1]<ticks[-1]:
+                if ticks[0]<ticks[1]  and ticks[-2]<ticks[-1]:
                     md = ticks[1:-1]
                 else:
-                    ticks.pop(-1)
+                    ticks.pop(1)
+
+
             # Unit
             unt = _title["unit"]
         else:
             ttl = ""
             lttl = ""
             unt = ""
+            md = None
             ticks = [False, False]
             cmp = "planck"
             lgscale = False
@@ -240,13 +254,10 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
         ticks[0] = min
         ticks[-1] = max
         if mid:
-            ticks = [min, *mid, max] 
-        else:
-            try:
-                ticks = [min, *md, max] 
-            except:
-                ticks = ticks 
-
+            ticks = [min, *mid, max]
+        elif md:
+            ticks = [min, *md, max] 
+        ticks = [float(i) for i in ticks]
         ##########################
         #### Plotting Params #####
         ##########################
@@ -349,7 +360,8 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
 
             # Apply mask
             hp.ma(m)
-            m.mask = np.logical_not(hp.read_map(mask, field=polt, verbose=False, dtype=None))
+            mask_field = polt-3 if polt>2 else polt
+            m.mask = np.logical_not(hp.read_map(mask, field=mask_field, verbose=False, dtype=None))
 
             # Don't know what this does, from paperplots by Zonca.
             grid_mask = m.mask[grid_pix]
@@ -449,12 +461,12 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             ###################
             ## RIGHT TITLE ####
             ###################
-            plt.text(4.5, 1.1, r"%s" % title, ha="center", va="center", fontsize=fontsize,)
+            plt.text(4.5, 1.1, r"%s" % title, ha="center", va="center", fontsize=labelsize,)
 
             ##################
             ## LEFT TITLE ####
             ##################
-            plt.text(-4.5, 1.1, r"%s" % ltitle, ha="center", va="center", fontsize=fontsize,)
+            plt.text(-4.5, 1.1, r"%s" % ltitle, ha="center", va="center", fontsize=labelsize,)
 
             ##############
             #### SAVE ####
@@ -471,7 +483,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             outfile = outfile.replace("_I_", "_")
 
             filename = []
-            filename.append(f"{str(int(fwhm))}arcmin") if fwhm > 0 else None
+            filename.append(f"{str(int(fwhm))}arcmin") if float(fwhm) > 0 else None
             filename.append("cb") if colorbar else None
             filename.append("masked") if masked else None
             filename.append("nodip") if remove_dipole else None
@@ -501,6 +513,8 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
 
         min = tempmin
         max = tempmax
+        mid = tempmid
+        mn = mx = md = None
         title = temptitle
         ltitle = temptitle
         unit = tempunit
@@ -588,10 +602,10 @@ def get_params(m, outfile, polt, signal_label):
                 # BP uses 30 GHz ref freq for pol
                 title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
                 cmap = "wildfire"
-                ticks = [-50, 0, 50]
+                ticks = [-100, 0, 100]
             elif title["sig"] == "P": 
                 title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
-                ticks = [10, 30, 100]
+                ticks = [5, 10, 25, 50]
             else:
                 # scale = 1e-6
                 ticks = [50, 100, 200, 400]
@@ -659,7 +673,7 @@ def get_params(m, outfile, polt, signal_label):
                 cmap = "iceburn"
             elif sl=="P":
                 cmap = "sunburst"
-                ticks = [10, 100, 1000]
+                ticks = [5, 10, 25, 50] #10, 100, 1000]
             else:
                 cmap = "sunburst"
                 ticks = [30, 300, 3000]
@@ -717,14 +731,16 @@ def get_params(m, outfile, polt, signal_label):
         click.echo(click.style("{:-^48}".format(f"Detected residual map {sl}"),fg="yellow"))
 
         if "res_" in outfile:
-            tit = str(findall(r"res_(.*?)_", outfile)[0])
+            if "WMAP" in outfile:
+                tit = str(findall(r"WMAP_(.*?)_", outfile)[0])
+            else:
+                tit = str(findall(r"res_(.*?)_", outfile)[0])
         else:
             tit = str(findall(r"residual_(.*?)_", outfile)[0])
         
         ticks = [-3, 0, 3]
         
         if "WMAP" in outfile:
-            tit = outfile.split("_")[2]
             if "_P_" in outfile and sl != "T":
                 ticks = [-10, 0, 10]
             
@@ -874,19 +890,18 @@ def fmt(x, pos):
     """
     Format color bar labels
     """
-    if abs(x) > 1e4 or (abs(x) < 1e-3 and abs(x) > 0):
+    if abs(x) > 1e4 or (abs(x) <= 1e-3 and abs(x) > 0):
         a, b = f"{x:.2e}".split("e")
         b = int(b)
         if float(a) == 1.00:
-            return fr"$10^{{b}}$"
+            return fr"$10^{b}$"
         else:
-            return fr"${a} \cdot 10^{{b}}$"
+            return fr"${a} \cdot 10^{b}$"
     elif abs(x) > 1e1 or (float(abs(x))).is_integer():
         return fr"${int(x):d}$"
-    elif abs(x) == 0.0:
-        return fr"${x:.1f}$"
     else:
-        return fr"${x:.2f}$"
+        x = round(x, 2)
+        return fr"${x}$"
 
 
 def cm2inch(cm):
