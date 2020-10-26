@@ -132,8 +132,12 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             if remove_dipole:
                 dip_mask_name = remove_dipole
             # Mask map for dipole estimation
-            m_masked = hp.ma(m)
-            m_masked.mask = np.logical_not(hp.read_map(dip_mask_name,verbose=False,dtype=None,))
+            if dip_mask_name == 'auto':
+                mono, dip = hp.fit_dipole(m, gal_cut=30)
+            else:
+                m_masked = hp.ma(m)
+                m_masked.mask = np.logical_not(hp.read_map(dip_mask_name,verbose=False,dtype=None,))
+
 
             # Fit dipole to masked map
             mono, dip = hp.fit_dipole(m_masked)
