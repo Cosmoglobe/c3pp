@@ -899,6 +899,8 @@ def fmt(x, pos):
         b = int(b)
         if float(a) == 1.00:
             return fr"$10^{b}$"
+        elif float(a) == -1.00:
+            return fr"$-10^{b}$"
         else:
             return fr"${a} \cdot 10^{b}$"
     elif abs(x) > 1e1 or (float(abs(x))).is_integer():
