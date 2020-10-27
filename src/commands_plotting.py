@@ -99,7 +99,7 @@ def specplot(input,cmap,long):
 @click.option("-sig", default=[0,], type=click.INT, multiple=True, help="Signal to be plotted 0 by default (0, 1, 2 is interprated as IQU)",)
 @click.option("-remove_dipole", default=None, type=click.STRING, help="Fits a dipole to the map and removes it.",)
 @click.option("-remove_monopole", default=None, type=click.STRING, help="Fits a monopole to the map and removes it.",)
-@click.option("-log/-no-log", "logscale", default=None, help="Plots using planck semi-logscale. (Autodetector sometimes uses this.)",)
+@click.option("-log/-no-log", "logscale", default=None, help="Plots using planck semi-logscale (Linear between -1,1). Autodetector sometimes uses this.",)
 @click.option("-size", default="m", type=click.STRING, help="Size: 1/3, 1/2 and full page width (8.8/12/18cm) [ex. s, m or l, or ex. slm for all], m by default",)
 @click.option("-white_background", is_flag=True, help="Sets the background to be white. (Transparent by default [recommended])",)
 @click.option("-darkmode", is_flag=True, help='Plots all outlines in white for dark bakgrounds ("dark" in filename)',)

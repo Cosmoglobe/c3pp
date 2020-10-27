@@ -457,7 +457,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
                     #if f == 0:
                     #    linticks = np.array([])
                     #else:
-                    linticks = np.linspace(-1, 1, 5)*linthresh
+                    linticks = np.linspace(-1, 1, 3)*linthresh
                     logmin = np.round(ticks[0])
                     logmax = np.round(ticks[-1])
 
@@ -471,7 +471,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
                     cb.set_ticks(np.concatenate((ticks,logticks ))) # Set major ticks
                     cb.ax.set_xticklabels(ticklabels + ['']*len(logticks))
 
-                    minorticks = [] #np.linspace(-linthresh, linthresh, 11)
+                    minorticks = np.linspace(-linthresh, linthresh, 5)
                     minorticks2 = np.arange(2,10)*linthresh
 
                     for i in range(len(logticks_min)):
