@@ -294,7 +294,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
         if logscale:
             click.echo(click.style("Applying logscale", fg="yellow", blink=True, bold=True))
             starttime = time.time()
-
+            linthresh=1
             m = np.log10(0.5 * (m + np.sqrt(4.0 + m * m)))
 
             ticks = []
@@ -319,7 +319,10 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             cmap = cmp
         if cmap == "planck":
             from pathlib import Path
-            cmap = Path(__file__).parent / "parchment1.dat"
+            if False:#logscale:
+                cmap = Path(__file__).parent / "planck_cmap_logscale.dat"
+            else:
+                cmap = Path(__file__).parent / "planck_cmap.dat"
             cmap = col.ListedColormap(np.loadtxt(cmap) / 255.0, "planck")
         elif cmap.startswith("q-"):
             import plotly.colors as pcol
@@ -439,15 +442,48 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             ################
             if colorbar:
                 # colorbar
-                from matplotlib.ticker import FuncFormatter
-
-                cb = fig.colorbar(image, orientation="horizontal", shrink=0.4, pad=0.08, ticks=ticks, format=FuncFormatter(fmt),)
+                from matplotlib.ticker import FuncFormatter, LogLocator
+                if cmap == "planck_logscale":
+                    #colorbar_boundaries = np.concatenate([-1 * np.logspace(0, 3, 80)[::-1], np.linspace(-1, 1, 10), np.logspace(0, 7, 150)]) # If using planck thing
+                    #cb = fig.colorbar(image, orientation='horizontal', shrink=0.4, pad=0.08, ticks=ticks, format=FuncFormatter(fmt), boundaries = colorbar_boundaries,)
+                    pass
+                else:
+                    cb = fig.colorbar(image, orientation="horizontal", shrink=0.4, pad=0.08, ticks=ticks, format=FuncFormatter(fmt),)
 
                 cb.ax.set_xticklabels(ticklabels)
-
                 cb.ax.xaxis.set_label_text(unit)
                 cb.ax.xaxis.label.set_size(fontsize)
-                # cb.ax.minorticks_on()
+                if logscale:
+                    #if f == 0:
+                    #    linticks = np.array([])
+                    #else:
+                    linticks = np.linspace(-1, 1, 5)*linthresh
+                    logmin = np.round(ticks[0])
+                    logmax = np.round(ticks[-1])
+
+                    logticks_min = -10**np.arange(0, abs(logmin)+1)
+                    logticks_max = 10**np.arange(0, logmax+1)
+                    ticks_ = np.unique(np.concatenate((logticks_min, linticks, logticks_max)))
+                    #cb.set_ticks(np.concatenate((ticks,symlog(ticks_))), []) # Set major ticks
+
+                    logticks = symlog(ticks_)
+                    logticks = [x for x in logticks if x not in ticks]
+                    cb.set_ticks(np.concatenate((ticks,logticks ))) # Set major ticks
+                    cb.ax.set_xticklabels(ticklabels + ['']*len(logticks))
+
+                    minorticks = np.linspace(-linthresh, linthresh, 11)
+                    minorticks2 = np.arange(2,10)*linthresh
+
+                    for i in range(len(logticks_min)):
+                        minorticks = np.concatenate((-10**i*minorticks2,minorticks))
+                    for i in range(len(logticks_max)):
+                        minorticks = np.concatenate((minorticks, 10**i*minorticks2))
+
+                    minorticks = symlog(minorticks)
+                    minorticks = minorticks[ (minorticks >= ticks[0]) & ( minorticks<= ticks[-1]) ] 
+                    cb.ax.xaxis.set_ticks(minorticks, minor=True)
+
+                
 
                 cb.ax.tick_params(which="both", axis="x", direction="in", labelsize=fontsize,)
                 cb.ax.xaxis.labelpad = 4  # -11
@@ -782,7 +818,7 @@ def get_params(m, outfile, polt, signal_label):
         
         vmin, vmax = get_ticks(m, 97.5)
         ticks = [vmin, vmax]
-
+        
         title["unit"] = r"$\mu\mathrm{K}$"
         tit = str(findall(r"BP_(.*?)_", outfile)[0])
         title["comp"] = fr"{tit}"
@@ -916,3 +952,5 @@ def cm2inch(cm):
 def tag_lookup(tags, outfile):
     return any(e in outfile for e in tags)
 
+def symlog(m):
+    return np.log10(0.5 * (m + np.sqrt(4.0 + m * m)))

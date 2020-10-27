@@ -166,7 +166,10 @@ def gnomplot(filename, lon, lat, sig, size, min_, max_, rng, unit, cmap, graticu
     if cmap == "planck":
         import matplotlib.colors as col
         from pathlib import Path
-        cmap = Path(__file__).parent / "parchment1.dat"
+        if log:
+            cmap = Path(__file__).parent / "planck_cmap_logscale.dat"
+        else:
+            cmap = Path(__file__).parent / "planck_cmap.dat"
         cmap = col.ListedColormap(np.loadtxt(cmap) / 255.0, "planck")
     else:
         try:
