@@ -138,9 +138,8 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
                 m_masked = hp.ma(m)
                 m_masked.mask = np.logical_not(hp.read_map(dip_mask_name,verbose=False,dtype=None,))
 
-
-            # Fit dipole to masked map
-            mono, dip = hp.fit_dipole(m_masked)
+                # Fit dipole to masked map
+                mono, dip = hp.fit_dipole(m_masked)
 
             # Subtract dipole map from data
             if remove_dipole:
@@ -292,10 +291,10 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             logscale = lgscale
 
         if logscale:
-            click.echo(click.style("Applying logscale", fg="yellow", blink=True, bold=True))
+            click.echo(click.style("Applying semi-logscale", fg="yellow", blink=True, bold=True))
             starttime = time.time()
             linthresh=1
-            m = np.log10(0.5 * (m + np.sqrt(4.0 + m * m)))
+            m = symlog(m,linthresh)
 
             ticks = []
             for i in ticklabels:
@@ -319,7 +318,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             cmap = cmp
         if cmap == "planck":
             from pathlib import Path
-            if False:#logscale:
+            if False: #logscale:
                 cmap = Path(__file__).parent / "planck_cmap_logscale.dat"
             else:
                 cmap = Path(__file__).parent / "planck_cmap.dat"
@@ -415,14 +414,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             ##### font #####
             ################
             fontsize = 10
-            """
-            if width > 12.0:
-                fontsize = 15
-            elif width == 12.0:
-                fontsize = 10
-            else:
-                fontsize = 7.3
-            """
+
             fig = plt.figure(figsize=(cm2inch(width), cm2inch(height),),)
             ax = fig.add_subplot(111, projection="mollweide")
 
@@ -443,12 +435,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             if colorbar:
                 # colorbar
                 from matplotlib.ticker import FuncFormatter, LogLocator
-                if cmap == "planck_logscale":
-                    #colorbar_boundaries = np.concatenate([-1 * np.logspace(0, 3, 80)[::-1], np.linspace(-1, 1, 10), np.logspace(0, 7, 150)]) # If using planck thing
-                    #cb = fig.colorbar(image, orientation='horizontal', shrink=0.4, pad=0.08, ticks=ticks, format=FuncFormatter(fmt), boundaries = colorbar_boundaries,)
-                    pass
-                else:
-                    cb = fig.colorbar(image, orientation="horizontal", shrink=0.4, pad=0.08, ticks=ticks, format=FuncFormatter(fmt),)
+                cb = fig.colorbar(image, orientation="horizontal", shrink=0.4, pad=0.08, ticks=ticks, format=FuncFormatter(fmt),)
 
                 cb.ax.set_xticklabels(ticklabels)
                 cb.ax.xaxis.set_label_text(unit)
@@ -466,7 +453,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
                     ticks_ = np.unique(np.concatenate((logticks_min, linticks, logticks_max)))
                     #cb.set_ticks(np.concatenate((ticks,symlog(ticks_))), []) # Set major ticks
 
-                    logticks = symlog(ticks_)
+                    logticks = symlog(ticks_, linthresh)
                     logticks = [x for x in logticks if x not in ticks]
                     cb.set_ticks(np.concatenate((ticks,logticks ))) # Set major ticks
                     cb.ax.set_xticklabels(ticklabels + ['']*len(logticks))
@@ -479,7 +466,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
                     for i in range(len(logticks_max)):
                         minorticks = np.concatenate((minorticks, 10**i*minorticks2))
 
-                    minorticks = symlog(minorticks)
+                    minorticks = symlog(minorticks, linthresh)
                     minorticks = minorticks[ (minorticks >= ticks[0]) & ( minorticks<= ticks[-1]) ] 
                     cb.ax.xaxis.set_ticks(minorticks, minor=True)
 
@@ -818,7 +805,9 @@ def get_params(m, outfile, polt, signal_label):
         
         vmin, vmax = get_ticks(m, 97.5)
         ticks = [vmin, vmax]
-        
+        #logscale=True
+        #if logscale:
+        #    ticks = [-1e3, 0, 1e3, 1e7]
         title["unit"] = r"$\mu\mathrm{K}$"
         tit = str(findall(r"BP_(.*?)_", outfile)[0])
         title["comp"] = fr"{tit}"
@@ -952,5 +941,6 @@ def cm2inch(cm):
 def tag_lookup(tags, outfile):
     return any(e in outfile for e in tags)
 
-def symlog(m):
+def symlog(m, linthresh=1.0):
+    m = m/linthresh
     return np.log10(0.5 * (m + np.sqrt(4.0 + m * m)))
