@@ -947,12 +947,9 @@ def fmt(x, pos):
     if abs(x) > 1e4 or (abs(x) <= 1e-3 and abs(x) > 0):
         a, b = f"{x:.2e}".split("e")
         b = int(b)
-        print("b", b)
         if float(a) == 1.00:
-            print("1",r"$10^{"+str(b)+"}$")
             return r"$10^{"+str(b)+"}$"
         elif float(a) == -1.00:
-            print("2",r"$-10^{"+str(b)+"}$")
             return r"$-10^{"+str(b)+"}$"
         else:
             return fr"${a} \cdot 10^{b}$"
