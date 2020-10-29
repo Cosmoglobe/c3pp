@@ -133,9 +133,9 @@ def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, lmax, fwhm
 
 @commands_plotting.command()
 @click.argument("filename", type=click.STRING)
-@click.argument("lon", type=click.INT)
-@click.argument("lat", type=click.INT)
-@click.argument("size", type=click.INT)
+@click.option("-lon", default=0,type=click.INT)
+@click.option("-lat", default=0,type=click.INT)
+@click.option("-size", default=20, type=click.INT)
 @click.option("-sig", default=0, help="Which sky signal to plot",)
 @click.option("-min", "min_", type=click.FLOAT, help="Min value of colorbar, overrides autodetector.",)
 @click.option("-max", "max_", type=click.FLOAT, help="Max value of colorbar, overrides autodetector.",)
@@ -185,7 +185,7 @@ def gnomplot(filename, lon, lat, sig, size, min_, max_, rng, unit, cmap, graticu
     nside=hp.get_nside(x)
 
     half = size/2
-    proj = hp.projector.CartesianProj(lonra=[lon-half,lon+half], latra=[lat-half, lat+half], coord='G', xsize=xsize, ysize=xsize)
+    proj = hp.projector.GnomonicProj(rot=[lon,lat,0.0], coord='G', xsize=xsize, ysize=xsize,reso=reso)
     reproj_im = proj.projmap(x, vec2pix_func=partial(hp.vec2pix, nside))
 
     if rng:
@@ -435,7 +435,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
 
             if goodness_pol:
                 pbands = [ "033-WMAP_Ka_P", "041-WMAP_Q_P", "061-WMAP_V_P", "030_IQU", "044_IQU", "070_IQU", "353"]
-                mask_path='/mn/stornext/u3/trygvels/compsep/cdata/like/paper_workdir/BP_synch/wmap_masks/'
+                mask_path='/mn/stornext/u3/trygvels/compsep/cdata/like/paper_workdir/synch/wmap_masks/'
                 masks = ['wmap_processing_mask_Ka_r4_9yr_v5_TQU_chisq50.fits',  'wmap_processing_mask_Q_r4_9yr_v5_TQU_chisq50.fits', 'wmap_processing_mask_V_r4_9yr_v5_TQU_chisq50.fits',]
                 m = 0
                 for band in pbands:
@@ -660,7 +660,8 @@ def traceplotter(df, header, xlabel, nbins, outname, min_, cmap="Plotly", priors
     # Swap colors around
     colors=getattr(pcol.qualitative,cmap)    
     if cmap=="Plotly":
-        colors.insert(3,colors.pop(-1))
+        colors.insert(0,colors.pop(-1))
+        colors.insert(3,colors.pop(2))
     cmap = mpl.colors.ListedColormap(colors)
     #cmap = plt.cm.get_cmap('tab10')# len(y))
 

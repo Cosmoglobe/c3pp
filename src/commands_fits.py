@@ -54,11 +54,12 @@ def rmcolumn(input, output, columns):
         
 @commands_fits.command()
 @click.argument("input", type=click.STRING)
-@click.argument("mask", type=click.STRING)
-@click.option("-sig", type=click.INT, multiple=True, help="fields to calculate")
+@click.option("-mask", type=click.STRING, help="Mask for dipole removal, 30deg sky cut by default")
+@click.option("-sig", type=click.INT, multiple=True, help="fields to calculate, [0,1,2 by default]")
 def rmmd(input, mask, sig):
     """
     removes the dipole and mask of input file
+    if mask = "auto" uses 30 deg sky cut
     """
     import healpy as hp
     try:
@@ -70,12 +71,17 @@ def rmmd(input, mask, sig):
     print(f"Nside: {nside}, npix: {npix}")
     # Mask map for dipole estimation
     
+    
     m_masked = hp.ma(m)
-    m_masked.mask = np.logical_not(hp.read_map(mask,verbose=False,dtype=None,))
+    if mask:
+        m_masked.mask = np.logical_not(hp.read_map(mask,verbose=False,dtype=None,))
     
     # Fit dipole to masked map
     for i in sig:
-        mono, dip = hp.fit_dipole(m_masked[i])
+        if not mask:
+            mono, dip = hp.fit_dipole(m_masked[i], gal_cut=30)            
+        else:
+            mono, dip = hp.fit_dipole(m_masked[i])
     
         # Subtract dipole map from data
         click.echo(click.style("Removing dipole:", fg="yellow"))

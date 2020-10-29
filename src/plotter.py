@@ -197,6 +197,11 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
                 ttl = r"$\Delta$ " + _title["param"] + r"$_{\mathrm{" + _title["comp"] + "}}^{" + _title["diff_label"] + "}$" 
             else:
                 ttl =  _title["param"] + r"$_{\mathrm{" + _title["comp"] + "}}^{ }$" 
+            try:
+                ttl = _title["custom"]
+            except:
+                pass
+
             # Left signal label
             lttl = r"$" + _title["sig"] +"$"
             if lttl == "$I$":
@@ -328,7 +333,9 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
             _, clab, *numvals = cmap.split("-")
             colors = getattr(pcol.qualitative, clab)
             if clab=="Plotly":
-                colors.insert(3,colors.pop(-1))
+                #colors.insert(3,colors.pop(-1))
+                colors.insert(0,colors.pop(-1))
+                colors.insert(3,colors.pop(2))
             try:
                 cmap = col.ListedColormap(colors[:int(numvals[0])], f'{clab}-{numvals[0]}')
                 click.echo(click.style("Using qualitative colormap:", fg="yellow") + f" {clab} up to {numvals[0]}")
@@ -574,6 +581,7 @@ def get_params(m, outfile, polt, signal_label):
     res_tags = ["residual_", "res_"]
     tod_tags = ["Smap"]
     freqmap_tags = ["BP_030", "BP_044", "BP_070"]
+    bpcorr_tags = ["_bpcorr_"]
     ignore_tags = ["radio_"]
 
     # Simple signal label from pol index
@@ -813,6 +821,23 @@ def get_params(m, outfile, polt, signal_label):
         title["comp"] = fr"{tit}"
         title["param"] = r"$A$"
 
+    ############
+    #  BPcorr  #
+    ############
+
+    elif tag_lookup(bpcorr_tags, outfile):
+        from re import findall
+        click.echo(click.style("{:-^48}".format(f"Detected BPcorr map {sl}"),fg="yellow"))
+        
+        ticks = [-30,0,30]
+        title["unit"] = r"$\mu\mathrm{K}$"
+        tit = str(findall(r"tod_(.*?)_bpcorr", outfile)[0])
+
+        title["comp"] = fr"{tit}"
+        title["param"] = r"$s$"
+        title["custom"] = title["param"] + r"$_{\mathrm{leak}}^{" + title["comp"].lstrip('0') + "}}$"
+ 
+
     ############################
     # Not idenified or ignored #
     ############################
@@ -922,10 +947,13 @@ def fmt(x, pos):
     if abs(x) > 1e4 or (abs(x) <= 1e-3 and abs(x) > 0):
         a, b = f"{x:.2e}".split("e")
         b = int(b)
+        print("b", b)
         if float(a) == 1.00:
-            return fr"$10^{b}$"
+            print("1",r"$10^{"+str(b)+"}$")
+            return r"$10^{"+str(b)+"}$"
         elif float(a) == -1.00:
-            return fr"$-10^{b}$"
+            print("2",r"$-10^{"+str(b)+"}$")
+            return r"$-10^{"+str(b)+"}$"
         else:
             return fr"${a} \cdot 10^{b}$"
     elif abs(x) > 1e1 or (float(abs(x))).is_integer():
