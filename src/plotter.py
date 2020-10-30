@@ -967,5 +967,6 @@ def tag_lookup(tags, outfile):
     return any(e in outfile for e in tags)
 
 def symlog(m, linthresh=1.0):
-    m = m/linthresh
+    # Extra fact of 2 ln 10 makes symlog(m) = m in linear regime
+    m = m/linthresh/(2*np.log(10))
     return np.log10(0.5 * (m + np.sqrt(4.0 + m * m)))
