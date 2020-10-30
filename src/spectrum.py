@@ -303,7 +303,7 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
 
     # Dumb tick fix
     ticks = []
-    ticks_ = [1,3,10,30,100,300,1000,3000]
+    ticks_ = [0.3,1,3,10,30,100,300,1000,3000]
     for i, tick in enumerate(ticks_):
         if tick>=xmin and tick<=xmax:
             ticks.append(tick)
@@ -318,7 +318,10 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
         ax2.tick_params(which="both",direction="in")
 
     # Axis labels
-    plt.ylabel(r"RMS brightness temperature [$\mu$K]",fontsize=lsize)
+    if pol:
+        plt.ylabel(r"Polarization amplitude RMS [$\mu\mathrm{K}_{\mathrm{RJ}}$]",fontsize=lsize)
+    else:
+        plt.ylabel(r"RMS brightness temperature [$\mu\mathrm{K}_{\mathrm{RJ}}$]",fontsize=lsize)
     plt.xlabel(r"Frequency [GHz]",fontsize=lsize)
 
     #ax.legend(loc=6,prop={'size': 20}, frameon=False)

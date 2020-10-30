@@ -811,7 +811,7 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
     from src.spectrum import Spectrum
 
     if pol:
-        p = 1.5 if long else 12
+        p = 0.4 if long else 12
         foregrounds = {
             "CMB EE":       {"function": "rspectrum", 
                              "params"  : [1, "EE"],
