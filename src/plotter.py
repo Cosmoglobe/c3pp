@@ -303,12 +303,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
 
             ticks = []
             for i in ticklabels:
-                if i > 0:
-                    ticks.append(np.log10(i))
-                elif i < 0:
-                    ticks.append(-np.log10(abs(i)))
-                else:
-                    ticks.append(i)
+                ticks.append(symlog(i,linthresh))
 
             m = np.maximum(np.minimum(m, ticks[-1]), ticks[0])
 
