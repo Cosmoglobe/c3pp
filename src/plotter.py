@@ -935,8 +935,14 @@ def get_ticks(m, percentile):
     vmin = np.percentile(m, 100.0 - percentile)
     vmax = np.percentile(m, percentile)
 
+    mag = max(abs(vmin), abs(vmax))
+    vmin = np.sign(vmin)*mag
+    vmax = np.sign(vmax)*mag
+
     vmin = 0.0 if abs(vmin) < 1e-5 else vmin
     vmax = 0.0 if abs(vmax) < 1e-5 else vmax
+
+
     return vmin, vmax
 
 
