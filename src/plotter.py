@@ -837,7 +837,7 @@ def get_params(m, outfile, polt, signal_label):
     #  Mask     #
     #############
 
-    elif tag_lookup(mask_tags, outfile)
+    elif tag_lookup(mask_tags, outfile):
         from re import findall
         click.echo(click.style("{:-^48}".format(f"Detected mask file {sl}"),fg="yellow"))
         
