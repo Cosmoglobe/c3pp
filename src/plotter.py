@@ -846,7 +846,7 @@ def get_params(m, outfile, polt, signal_label):
 
         title["comp"] = r"Mask"
         title["param"] = r""
-        title["custom"] = title["Comp"]
+        title["custom"] = title["comp"]
 
         cmap = "bone"
  
