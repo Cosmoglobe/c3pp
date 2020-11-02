@@ -578,6 +578,7 @@ def get_params(m, outfile, polt, signal_label):
     freqmap_tags = ["BP_030", "BP_044", "BP_070"]
     bpcorr_tags = ["_bpcorr_"]
     ignore_tags = ["radio_"]
+    mask_tags = ["mask"]
 
     # Simple signal label from pol index
     title = {}
@@ -831,6 +832,24 @@ def get_params(m, outfile, polt, signal_label):
         title["comp"] = fr"{tit}"
         title["param"] = r"$s$"
         title["custom"] = title["param"] + r"$_{\mathrm{leak}}^{" + title["comp"].lstrip('0') + "}}$"
+
+    #############
+    #  Mask     #
+    #############
+
+    elif tag_lookup(mask_tags, outfile)
+        from re import findall
+        click.echo(click.style("{:-^48}".format(f"Detected mask file {sl}"),fg="yellow"))
+        
+        ticks = [0, 1]
+        title["unit"] = r""
+        tit = str(findall(r"tod_(.*?)_bpcorr", outfile)[0])
+
+        title["comp"] = r"Mask"
+        title["param"] = r""
+        title["custom"] = title["Comp"]
+
+        cmap = "bone"
  
 
     ############################
