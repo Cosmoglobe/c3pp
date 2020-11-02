@@ -843,7 +843,6 @@ def get_params(m, outfile, polt, signal_label):
         
         ticks = [0, 1]
         title["unit"] = r""
-        tit = str(findall(r"tod_(.*?)_bpcorr", outfile)[0])
 
         title["comp"] = r"Mask"
         title["param"] = r""
