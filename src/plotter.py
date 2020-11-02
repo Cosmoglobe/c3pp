@@ -303,12 +303,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
 
             ticks = []
             for i in ticklabels:
-                if i > 0:
-                    ticks.append(np.log10(i))
-                elif i < 0:
-                    ticks.append(-np.log10(abs(i)))
-                else:
-                    ticks.append(i)
+                ticks.append(symlog(i,linthresh))
 
             m = np.maximum(np.minimum(m, ticks[-1]), ticks[0])
 
@@ -935,8 +930,14 @@ def get_ticks(m, percentile):
     vmin = np.percentile(m, 100.0 - percentile)
     vmax = np.percentile(m, percentile)
 
+    mag = max(abs(vmin), abs(vmax))
+    vmin = np.sign(vmin)*mag
+    vmax = np.sign(vmax)*mag
+
     vmin = 0.0 if abs(vmin) < 1e-5 else vmin
     vmax = 0.0 if abs(vmax) < 1e-5 else vmax
+
+
     return vmin, vmax
 
 
@@ -967,5 +968,6 @@ def tag_lookup(tags, outfile):
     return any(e in outfile for e in tags)
 
 def symlog(m, linthresh=1.0):
-    m = m/linthresh
+    # Extra fact of 2 ln 10 makes symlog(m) = m in linear regime
+    m = m/linthresh/(2*np.log(10))
     return np.log10(0.5 * (m + np.sqrt(4.0 + m * m)))
