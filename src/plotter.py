@@ -19,7 +19,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
     rcParams["backend"] = "agg" if png else "pdf"
     rcParams["legend.fancybox"] = True
     rcParams["lines.linewidth"] = 2
-    rcParams["savefig.dpi"] = 300
+    rcParams["savefig.dpi"] = 150 #300
     rcParams["axes.linewidth"] = 1
 
     masked = False
@@ -176,8 +176,12 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
 
         # Scale map
         if scale:
-            click.echo(click.style(f"Scaling data by {scale}",fg="yellow"))
-            m *= scale
+            if "chisq" in outfile:
+                click.echo(click.style(f"Scaling chisq data with dof={scale}",fg="yellow"))
+                m = (m-scale)/np.sqrt(2*scale)
+            else:
+                click.echo(click.style(f"Scaling data by {scale}",fg="yellow"))
+                m *= scale
 
         if auto:
             (_title, ticks, cmp, lgscale,) = get_params(m, outfile, polt, signal_label,)
@@ -615,8 +619,7 @@ def get_params(m, outfile, polt, signal_label):
         title["unit"]  = ""
         title["comp"]  = ""
         title["param"] = r"$\chi^2$"
-        vmin, vmax = get_ticks(m, 97.5)
-        ticks = [vmin, vmax]
+        ticks = [-3,0.,3]
         cmap = "binary"
 
     # ------ SYNCH ------

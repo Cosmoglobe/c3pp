@@ -236,7 +236,7 @@ def legend_positions(df, y, scaling):
     for column in y:
         positions[column] = df[column].values[-1] - 0.005
 
-    def push():
+    def push(dpush):
         """
         ...by puting them to the last y value and
         pushing until no overlap
@@ -249,16 +249,23 @@ def legend_positions(df, y, scaling):
                     if dist < scaling:# 0.075: #0.075: #0.023:
                         collisions += 1
                         if value1 < value2:
-                            positions[column1] -= .001
-                            positions[column2] += .001
+                            positions[column1] -= dpush
+                            positions[column2] += dpush
                         else:
-                            positions[column1] += .001
-                            positions[column2] -= .001
+                            positions[column1] += dpush
+                            positions[column2] -= dpush
                             return True
+    dpush = .001
+    pushings = 0
     while True:
-        pushed = push()
+        if pushings == 1000:
+            dpush*=10
+            pushings = 0
+        pushed = push(dpush)
         if not pushed:
             break
+
+        pushings+=1
 
     return positions
 

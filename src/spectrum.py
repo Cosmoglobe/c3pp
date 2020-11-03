@@ -12,7 +12,10 @@ import plotly.colors as pcol
 from brokenaxes import brokenaxes
 
 import src.tools as tls
-
+"""
+1) Litt storre avstand mellom x-aksen og x-ticklabels
+6) Rotér y-ticklabels, så de er parallelle med y-aksen 
+"""
 def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly"):
     params = {'savefig.dpi'        : 300, # save figures to 300 dpi
               'xtick.top'          : False,
@@ -27,6 +30,7 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
               'ytick.minor.size'   : 5,
               'xtick.major.size'   : 10,
               'xtick.minor.size'   : 5,
+              'xtick.major.pad'    : 8, 
               'ytick.major.width'   : 1.5,
               'ytick.minor.width'   : 1.5,
               'xtick.major.width'   : 1.5,
@@ -55,21 +59,21 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
     
     # ---- Figure parameters ----
     if long:
-        xmin, xmax = (0.3, 4000)
+        xmin, xmax = (0.25, 4000)
     if pol:
-        ymin, ymax = (1e-3, 2e2)
+        ymin, ymax = (1.001e-3, 2e2)
         if long:
             #xmin, xmax = (1, 3000)
             ymax15, ymax2 = (ymax+100, 1e7)
         else:
-            xmin, xmax = (10, 1000)
+            xmin, xmax = (9, 1500)
     else:
         ymin, ymax = (0.05, 7e2)
         if long:
             #xmin, xmax = (0.3, 4000)
             ymax15, ymax2 = (ymax+500, 1e7)
         else:
-            xmin, xmax = (10, 1000)
+            xmin, xmax = (9, 1500)
 
     if long:    
 
@@ -209,10 +213,7 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
                     k = 1
 
         if label == "Thermal Dust" and fg["spectrum"].shape[0]>1:
-            if long:
-                _, fsky_idx = find_nearest(nu, 900)
-            else:
-                _, fsky_idx = find_nearest(nu, 700)
+            _, fsky_idx = find_nearest(nu, 900)
             ax.annotate(r"$f_{sky}=$"+"{:d}%".format(int(skyfracs[1])), xy=(nu[fsky_idx], fg["spectrum"][1][fsky_idx]), ha="center", va="bottom", fontsize=fgtext, color="grey", xytext=(0,5), textcoords="offset pixels",)
             ax.annotate(r"$f_{sky}=$"+"{:d}%".format(int(skyfracs[0])), xy=(nu[fsky_idx], fg["spectrum"][0][fsky_idx]), ha="center", va="top", fontsize=fgtext, color="grey", xytext=(0,-15), textcoords="offset pixels",)
        
@@ -233,7 +234,7 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
     
     # ---- Data band ranges ----
     if long:
-        yscaletext = 0.75
+        yscaletext = 0.70
         yscaletextup = 1.2
     else:
         yscaletextup = 1.03
@@ -278,7 +279,7 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
                              "W":       {"pol": True, "show": wmap, "position": [90.,  ymin*yscaletextup], "range": [84,106], "color": teal,}}, 
     }
     
-    # Set databands from dictonary
+   # Set databands from dictonary
     for experiment, bands in databands.items():
         for label, band in bands.items():
             if band["show"]:
@@ -300,26 +301,42 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
 
     # ---- Axis stuff ----
     lsize=20
+    """
+    majorticks = minorticks = []
+    majorticks_ = [1,10,100,1000]
+    minorticks_ = [0.3,3,30,300,3000]
+    for i, tick in enumerate(minorticks_):
+        if tick>=xmin and tick<=xmax:
+            minorticks.append(tick)
+    for i, tick in enumerate(majorticks_):
+        if tick>=xmin and tick<=xmax:
+            majorticks.append(tick)
+                        
 
-    # Dumb tick fix
+    """
+
     ticks = []
     ticks_ = [0.3,1,3,10,30,100,300,1000,3000]
+
     for i, tick in enumerate(ticks_):
         if tick>=xmin and tick<=xmax:
             ticks.append(tick)
-            
     ax.set(xscale='log', yscale='log', ylim=(ymin, ymax), xlim=(xmin,xmax),xticks=ticks, xticklabels=ticks)
     ax.xaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
     ax.tick_params(axis='both', which='major', labelsize=lsize, direction='in')
     ax.tick_params(which="both",direction="in")
+    ax.tick_params(axis='y', labelrotation=90) 
+    ax.set_yticklabels([fmt(x,1) for x in ax.get_yticks()], va="center")
     if long:
         ax2.set(xscale='log', yscale='log', ylim=(ymax15, ymax2), xlim=(xmin,xmax), yticks=[1e4,1e6,], xticks=ticks, xticklabels=ticks)
         ax2.tick_params(axis='both', which='major', labelsize=lsize, direction='in')
         ax2.tick_params(which="both",direction="in")
+        ax2.tick_params(axis='y', labelrotation=90,) 
+        ax2.set_yticklabels([fmt(x,1) for x in ax2.get_yticks()], va="center")
 
     # Axis labels
     if pol:
-        plt.ylabel(r"Polarization amplitude RMS [$\mu\mathrm{K}_{\mathrm{RJ}}$]",fontsize=lsize)
+        plt.ylabel(r"RMS polarization amplitude [$\mu\mathrm{K}_{\mathrm{RJ}}$]",fontsize=lsize)
     else:
         plt.ylabel(r"RMS brightness temperature [$\mu\mathrm{K}_{\mathrm{RJ}}$]",fontsize=lsize)
     plt.xlabel(r"Frequency [GHz]",fontsize=lsize)
@@ -336,6 +353,18 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
     print("Plotting {}".format(filename))
     plt.savefig(filename, bbox_inches='tight',  pad_inches=0.02, transparent=True)
 
+def fmt(x, pos):
+    """
+    Format color bar labels
+    """
+    a, b = f"{x:.2e}".split("e")
+    b = int(b)
+    if float(a) == 1.00:
+        return r"$10^{"+str(b)+"}$"
+    elif float(a) == -1.00:
+        return r"$-10^{"+str(b)+"}$"
+    else:
+        return fr"${a} \cdot 10^{b}$"
 
 	
 def gradient_fill(x, y, fill_color=None, ax=None,invert=False, **kwargs):

@@ -402,14 +402,15 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                 os.mkdir(outdir)
 
             mask = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/masks/dx12_v3_common_mask_int_005a_1024_TQU.fits"
-            mask2 = "/mn/stornext/u3/trygvels/compsep/cdata/like/paper_workdir/cmbdiffs/mask_dx12_and_BPproc.fits"
+            mask2 =  "/mn/stornext/u3/hke/xsan/commander3/v2/chains_BP8_pol_resamp/mask_BP8_north_n8_v2.fits" #"/mn/stornext/u3/trygvels/compsep/cdata/like/paper_workdir/cmbdiffs/mask_dx12_and_BPproc.fits"
+            mask3 = "/mn/stornext/u3/trygvels/compsep/cdata/like/paper_workdir/cmbdiffs/mask_bp8_full_IQU_n1024_v6.0_LFIPntSrc.fits"
             for i, method in enumerate(["Commander", "SEVEM", "NILC", "SMICA",]):
                 try:
                     input = f"BP_cmb_diff_{method.lower()}_{procver}.fits"
-                    ctx.invoke(plot, input=input, size="s", outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask2, remove_monopole=mask2, sig=[0,],  range=10, title=method, ltitle=" ", mask=mask2, mfill="gray", labelsize=6)
+                    ctx.invoke(plot, input=input, size="s", outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask3, remove_monopole=mask3, sig=[0,],  range=10, title=method, ltitle=" ", mask=mask3, mfill="gray", labelsize=6)
                     ctx.invoke(plot, input=input, size="s", outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], remove_monopole=mask2, range=4, title=method, ltitle=" ", mask=mask2, mfill="gray", labelsize=6)
 
-                    ctx.invoke(plot, input=input, size="ml", outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask2, remove_monopole=mask2, sig=[0,],  range=10, title=method, ltitle=" ", mask=mask2, mfill="gray",)
+                    ctx.invoke(plot, input=input, size="ml", outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask3, remove_monopole=mask3, sig=[0,],  range=10, title=method, ltitle=" ", mask=mask3, mfill="gray",)
                     ctx.invoke(plot, input=input, size="ml", outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], remove_monopole=mask2, range=4, title=method, ltitle=" ", mask=mask2, mfill="gray",)
                 except Exception as e:
                     print(e)
@@ -453,13 +454,13 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
 
             if chisq:
                 nsides = [16, 16, 16, 512, 512, 1024, 1024]
-                scale = 1/np.sum([(x/16)**2 for x in nsides])
-                ctx.invoke(plot, input=f"goodness/BP_chisq_n16_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1,], min=2., max=2.2, scale=scale)
+                scale = 2*(np.sum([(x/16)**2 for x in nsides])-3*(64/16)**2)
+                ctx.invoke(plot, input=f"goodness/BP_chisq_n16_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1,], scale=scale)
                 #ctx.invoke(plot, input=f"goodness/BP_chisq_n16_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[4,5], min=0.001, max=0.01, scale=scale)
 
                 nsides = [512, 512, 1024, 512, 512, 512, 512, 512, 512, 1024]
-                scale = 1/np.sum([(x/16)**2 for x in nsides])
-                ctx.invoke(plot, input=f"goodness/BP_chisq_n16_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,], min=1., max=1.0, scale=scale)
+                scale = (np.sum([(x/16)**2 for x in nsides])-3*(128/16)**2)
+                ctx.invoke(plot, input=f"goodness/BP_chisq_n16_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,], scale=scale)
                 #ctx.invoke(plot, input=f"goodness/BP_chisq_n16_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,], min=0.001, max=0.01, scale=scale)
 
             
@@ -587,49 +588,73 @@ def pixreg2trace(chainfile, dataset, burnin, maxchain, plot, freeze, nbins, prio
                     print(f"Found no dataset called {dataset}")
                     # Append sample to list
              
-
-    sigs = ["T","P"]
-    df = pd.DataFrame.from_records(dats, columns=sigs)
-    nregs = len(df["P"][0])
-    if nregs == 9:
-        header = ['Top left', 'Top right', 'Bot. left', 'Bot. right', 'Spur',
-                  'Center', 'Fan region', 'Anti-center',
-                  'Gum nebula']
-    elif nregs == 6:
-        header = ['High lat.', 'Spur',
-                  'Center', 'Fan', 'Anti-center',
-                  'Gum nebula']
-    elif nregs == 4:
-        header = ['High lat.', 'Spur',
-                  'Gal. center', 'Gal. plane']
-    elif nregs == 1:
-        header = ['Fullsky',]
-    else:
-        print("Number of columns not supported", nregs)
-        sys.exit()
     
-
-    for sig in sigs:
-        if sig =="T":
-            continue
-        df2 = pd.DataFrame(df[sig].to_list(), columns=header)
+ 
+    if "bp_delta" in dataset:
         label = dataset.replace("/","-")
-        outname = f"sampletrace_{sig}_{label}"
-        df2.to_csv(f'{outname}.csv')
-    
-        if plot:
-            xlabel = 'Gibbs Sample'
-            if freeze:
-                combined_hilat = 'High lat.'
-                df2 = df2.drop(columns=['Top left', 'Top right', 'Bot. left',])
-                df2 = df2.rename(columns={'Bot. right':combined_hilat})
-                header_ = [combined_hilat] + header[4:]
-            else:
-                header_ = header.copy()
+        outname = f"sampletrace_{label}"
 
-            traceplotter(df2, header_, xlabel, nbins, f"{outname}.pdf", min_=burnin, priorsamp=priorsamp, scale=scale, cmap=cmap)
+        df = pd.DataFrame.from_records(dats,)
+        nregs = len(df[0][0])
+        if "30" in dataset:
+            header = ["0","27M", "27S", "28M", "28S"]
+        elif "44" in dataset:
+            header = ["0","24M","24S","25M","25S","26M","26S"]
+        elif "70" in dataset:
+            header = ["0","18M","18S","19M","19S","20M","20S","21M","21S","22M","22S","23M","23S"]
+        else:
+            header = [str(i) for i in range(nregs)]
 
-def traceplotter(df, header, xlabel, nbins, outname, min_, cmap="Plotly", priorsamp=None, scale=0.023):
+        df2 = pd.DataFrame(df[0].to_list(), columns=header)
+        df2 = df2.drop(columns=["0",])
+        df2 = df2*1e3 # Scale to MHz
+        header = header[1:]
+        traceplotter(df2, header, "Gibbs Sample", nbins, f"{outname}.pdf", min_=burnin,ylabel=r"$\delta$ bandpass [MHz]", priorsamp=priorsamp, scale=scale, cmap=cmap, figsize=(12,4), labscale=0.9)
+    else:
+        sigs = ["T","P"]
+        df = pd.DataFrame.from_records(dats, columns=sigs)
+        nregs = len(df["P"][0])
+        
+        if nregs == 9:
+            header = ['Top left', 'Top right', 'Bot. left', 'Bot. right', 'Spur',
+                      'Center', 'Fan region', 'Anti-center',
+                      'Gum nebula']
+        elif nregs == 6:
+            header = ['High lat.', 'Spur',
+                      'Center', 'Fan', 'Anti-center',
+                      'Gum nebula']
+        elif nregs == 4:
+            header = ['High lat.', 'Spur',
+                      'Gal. center', 'Gal. plane']
+        elif nregs == 1:
+            header = ['Fullsky',]
+        else:
+            header = [str(i) for i in range(nregs)]
+        
+        
+        for sig in sigs:
+            if sig =="T":
+                continue
+            label = dataset.replace("/","-")
+            outname = f"sampletrace_{sig}_{label}"
+
+            df2 = pd.DataFrame(df[sig].to_list(), columns=header)
+            df2.to_csv(f'{outname}.csv')
+            print(df2.shape)
+        
+            if plot:
+                xlabel = 'Gibbs Sample'
+                if freeze:
+                    combined_hilat = 'High lat.'
+                    df2 = df2.drop(columns=['Top left', 'Top right', 'Bot. left',])
+                    df2 = df2.rename(columns={'Bot. right':combined_hilat})
+                    header_ = [combined_hilat] + header[4:]
+                else:
+                    header_ = header.copy()
+        
+                traceplotter(df2, header_, xlabel, nbins, f"{outname}.pdf", min_=burnin, ylabel='Region spectral index', priorsamp=priorsamp, scale=scale, cmap=cmap)
+
+def traceplotter(df, header, xlabel, nbins, outname, min_,ylabel, cmap="Plotly", priorsamp=None, scale=0.023, figsize=(16,8), labscale=1):
     import seaborn as sns
     import matplotlib.pyplot as plt
     import plotly.colors as pcol
@@ -653,7 +678,7 @@ def traceplotter(df, header, xlabel, nbins, outname, min_, cmap="Plotly", priors
     header.append('Mean')
     """
     df[xlabel] = range(N)
-    f, ax = plt.subplots(figsize=(16,8))
+    f, ax = plt.subplots(figsize=figsize)
     
     #cmap = plt.cm.get_cmap('tab20')# len(y))
     import matplotlib as mpl
@@ -662,6 +687,8 @@ def traceplotter(df, header, xlabel, nbins, outname, min_, cmap="Plotly", priors
     if cmap=="Plotly":
         colors.insert(0,colors.pop(-1))
         colors.insert(3,colors.pop(2))
+        colors = colors + colors
+
     cmap = mpl.colors.ListedColormap(colors)
     #cmap = plt.cm.get_cmap('tab10')# len(y))
 
@@ -702,7 +729,7 @@ def traceplotter(df, header, xlabel, nbins, outname, min_, cmap="Plotly", priors
             color=color, fontweight=fontweight
         )
         plt.text(
-            df[xlabel][df[column].last_valid_index()]+N*0.13,
+            df[xlabel][df[column].last_valid_index()]+N*0.13*labscale,
             position, label2, fontsize=15,
             color=color, fontweight='normal'
         )
@@ -710,7 +737,7 @@ def traceplotter(df, header, xlabel, nbins, outname, min_, cmap="Plotly", priors
     #if min_:
     #    plt.xticks(list(plt.xticks()[0]) + [min_])
 
-    ax.set_ylabel('Region spectral index')
+    ax.set_ylabel(ylabel)
     #plt.yticks(rotation=90)
     plt.gca().set_xlim(right=N)
     #ax.axes.xaxis.grid()
@@ -810,17 +837,40 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
     """
     from src.spectrum import Spectrum
 
+    """
+    if not a_cmb:
+        a_cmb = 0.67 if pol else 45
+    if not a_s:
+        a_s = 12 if pol else 76
+    if not b_s:
+        b_s = -3.1
+    if not a_ff:
+        a_ff = 30.
+    if not t_e:
+        t_e = 7000.
+    if not a_ame1:
+        a_ame1 = 5 if pol else 50
+    if not a_ame2:
+        a_ame2 = 50.
+    if not nup:
+        nup = 24
+    if not a_d:
+        a_d = 8 if pol else 163
+    if not b_d:
+        b_d = 1.6
+    if not t_d:
+        t_d = 18.5
+    if not a_co10:
+        a_co10=50
+    if not a_co21:
+        a_co21=25
+    if not a_co32:
+        a_co32=10
+
+    """
     if pol:
         p = 0.4 if long else 12
         foregrounds = {
-            "CMB EE":       {"function": "rspectrum", 
-                             "params"  : [1, "EE"],
-                             "position": p,
-                             "color"   : "C5",
-                             "sum"     : False,
-                             "linestyle": "solid",
-                             "gradient": False,
-                         },
             "Synchrotron" : {"function": "lf", 
                              "params"  : [a_s, b_s,],
                              "position": 15,
@@ -839,13 +889,13 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
                          }, 
             "Sum fg."      : {"function": "sum", 
                              "params"  : [],
-                             "position": 45,
+                             "position": 40,
                              "color"   : "grey",
                              "sum"     : False,
                              "linestyle": "--",
                              "gradient": False,
                           },
-            r"BB $r=0.01$"   :  {"function": "rspectrum", 
+            r"BB $r=10^{-2}$"   :  {"function": "rspectrum", 
                              "params"  : [0.01, "BB",],
                              "position": p,
                              "color"   : "grey",
@@ -853,7 +903,7 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
                              "linestyle": "dotted",
                              "gradient": True,
                          },
-            r"BB $r=0.0001$"   :  {"function": "rspectrum", 
+            r"BB $r=10^{-4}$"   :  {"function": "rspectrum", 
                              "params"  : [1e-4, "BB",],
                              "position": p,
                              "color"   : "grey",
@@ -861,19 +911,19 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
                              "linestyle": "dotted",
                              "gradient": True,
                          },
-
-            }
-    else:
-        p = 3 if long else 57
-        foregrounds = {
-            "CMB":          {"function": "rspectrum", 
-                             "params"  : [1., "TT"],
-                             "position": 70,
+            "CMB EE":       {"function": "rspectrum", 
+                             "params"  : [1, "EE"],
+                             "position": p,
                              "color"   : "C5",
                              "sum"     : False,
                              "linestyle": "solid",
                              "gradient": False,
                          },
+
+            }
+    else:
+        p = 2 if long else 57
+        foregrounds = {
             "Synchrotron" : {"function": "lf", 
                              "params"  : [a_s, b_s,],
                              "position": 120,
@@ -938,6 +988,15 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
                              "linestyle": "--",
                              "gradient": False,
                           },
+            "CMB":          {"function": "rspectrum", 
+                             "params"  : [1., "TT"],
+                             "position": 70,
+                             "color"   : "C5",
+                             "sum"     : False,
+                             "linestyle": "solid",
+                             "gradient": False,
+                         },
+
             }
 
     Spectrum(pol, long, darkmode, png, foregrounds, [mask1,mask2], nside)
