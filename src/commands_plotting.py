@@ -518,6 +518,79 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
             if f.startswith("spectrum"):
                 os.rename(f, f"{outdir}{f}")
 
+
+@commands_plotting.command()
+@click.argument("chainfile", type=click.STRING)
+@click.argument("dataset", type=click.STRING)
+@click.option('-burnin', default=0, help='Min sample of dataset (burnin)')
+@click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]",)
+@click.option('-nbins', default=1, help='Bins for plotting')
+@click.option('-sig', default="P", help='T or P')
+def hist(chainfile, dataset, burnin, maxchain, nbins,sig):
+    """
+    Make histogram
+    """
+    
+    # Check if you want to output a map
+    import h5py
+    import healpy as hp
+    import pandas as pd
+    from tqdm import tqdm
+    dats = []
+    for c in range(1, maxchain + 1):
+        chainfile_ = chainfile.replace("c0001", "c" + str(c).zfill(4))
+        min_=burnin if c>1 else 0
+        with h5py.File(chainfile_, "r") as f:
+            max_ = len(f.keys()) - 1
+            print("{:-^48}".format(f" Samples {min_} to {max_} in {chainfile_} "))
+            for sample in tqdm(range(min_, max_ + 1), ncols=80):
+                # Identify dataset
+                # HDF dataset path formatting
+                s = str(sample).zfill(6)
+                # Sets tag with type
+                tag = f"{s}/{dataset}"
+                #print(f"Reading c{str(c).zfill(4)} {tag}")
+                # Check if map is available, if not, use alms.
+                # If alms is already chosen, no problem
+                try:
+                    data = f[tag][()]
+                    if len(data[0]) == 0:
+                        print(f"WARNING! {tag} empty")
+                    dats.append(data)
+                except:
+                    print(f"Found no dataset called {dataset}")
+                    # Append sample to list
+             
+
+    df = pd.DataFrame.from_records(dats,columns=["T","P"])
+    df2 = pd.DataFrame(df[sig].to_list())
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    import plotly.colors as pcol
+    from cycler import cycler
+    colors=getattr(pcol.qualitative,"Plotly")
+    sns.set_context("notebook", font_scale=1.5, rc={"lines.linewidth": 1.2})
+    sns.set_style("whitegrid")
+    custom_style = {
+        'grid.color': '0.8',
+        'grid.linestyle': '--',
+        'grid.linewidth': 0.5,
+        'savefig.dpi':300,
+        'axes.linewidth': 1.5,
+        'axes.prop_cycle': cycler(color=colors),
+    }
+    sns.set_style(custom_style)
+    fontsize = 14
+    df2.hist( bins=20, color=colors[0])
+    plt.xlabel(r"$\beta_d$", fontsize=fontsize)
+    plt.title(" ")
+    plt.yticks(rotation=90, va="center", fontsize=fontsize)
+    plt.xticks(fontsize=fontsize)
+    sns.despine(top=True, right=True, left=True, bottom=True)
+    plt.tight_layout()
+    plt.savefig(dataset.replace("/","-")+"_histogram.pdf", dpi=300, bbox_inches="tight", pad_inches=0.02)
+
+
 @commands_plotting.command()
 @click.argument('filename', type=click.STRING)
 @click.option('-min', default=0, help='Min sample of dataset (burnin)')
@@ -540,6 +613,8 @@ def traceplot(filename, max, min, nbins, cmap):
     x = 'MCMC Sample'
     
     traceplotter(df, header, x, nbins, outname=filename.replace(".dat","_traceplot.pdf"), min_=min, cmap=cmap)
+
+
 
 @commands_plotting.command()
 @click.argument("chainfile", type=click.STRING)

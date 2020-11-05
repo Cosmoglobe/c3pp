@@ -113,47 +113,49 @@ def QU2ang(input, output,):
 @click.argument("input", type=click.STRING)
 @click.argument("template", nargs=-1, type=click.STRING)
 @click.option("-mask", type=click.STRING)
+@click.option("-noise", type=click.STRING)
 @click.option("-res", type=click.STRING)
-@click.option("-pol", is_flag=True)
-def fittemp(input, template, mask, res, pol):
+def fittemp(input, template, mask, noise, res):
     """
     Calculates polarization angle map from QU signals.
     """
     import healpy as hp
-    field = (0,1,2) if pol else 0
-    map_ = hp.read_map(input, field=field, dtype=None, verbose=False)
+    field = (1,2)
+    map_ = hp.read_map(input, field=(0,1), dtype=None, verbose=False)
+    nside = hp.get_nside(map_)
+    npix = hp.nside2npix(nside)
     ntemps = len(template)
-    temp_ = np.zeros((ntemps, *map_.shape))
+    temp = np.zeros((ntemps, *map_.shape))
+    #print("input: ", input, "template: ", template, "mask: ", mask)
     for i in range(ntemps):
-        temp_[i] = hp.read_map(template[i], field=field, dtype=None, verbose=False)
+        temp[i] = hp.read_map(template[i], field=field, dtype=None, verbose=False)
+    if mask:
+        mask = np.logical_not(hp.read_map(mask, field=field, dtype=None, verbose=False))
+    else:
+        mask = np.logical_not(np.ones_like(map_))
 
-    mask = hp.read_map(mask, field=field, dtype=None, verbose=False) if mask else np.ones_like(map_)
-    print("map:", map_.shape, "template:", temp_.shape, "mask:", mask.shape)
-    s = 1 if pol else 0
-    N = 10000
-    N_mask = np.sum(mask[s:])
-    n_ = np.sum(mask[s:]*map_[s:]**2)
-    residual=np.zeros_like(template)
+    map_masked = hp.ma(map_)
+    map_masked.mask = mask
+    temp_masked = hp.ma(temp)
+    temp_masked.mask = mask
 
-    gain = np.zeros((ntemps,N)); gain[:,0] = 1.0
-    offset = np.zeros((ntemps,N))
-
-    for i in range(1, N):
-        offset[:,i] = np.sum(mask[s:,:]*(temp_[s:,:] - gain[:,i-1]*map_[s:,:]))/N_mask
-        gain[:,i] = np.sum(mask[s:,:]*(map_[s:,:]*(temp_[s:,:]-offset[:,i])))/n_
-
-        if i > 10:
-            if np.sum(abs(gain[:,i]-gain[:,i-10])/abs(gain[:,i])) < 1e-5 and sum(abs(offset[:,i]-offset[:,i-10])) < 1e-5:
-                final = i
-                break
-            elif i==N-s:
-                final = i
-
-    residual[:,s:,:] = (gain[:,final]*map_[s:,:]+offset[:,final])-temp_[:,s:,:]
-    print(f"gain:", gain[:,final], "offset:", offset[:,final], "residual:", np.sum(residual[:,s:,:]))
-                        
+    if noise: #noise
+        from astropy.io import fits
+        with fits.open(noise) as hdulist:
+            for hdu in hdulist:
+                N = hdu.data
+    else:
+        N = np.eye(2*npix)
+    print("map:", map_.shape, "template:", temp.shape, "mask:", mask.shape, "N:", N.shape)
+    t = temp_masked.reshape((ntemps, 2*npix)).T
+    a = np.linalg.inv((t.T).dot(N).dot(t)).dot(t.T).dot(N).dot(map_masked.ravel())
+    print("coeffs: ", a)
+    residual = map_masked - np.sum(temp_masked*a.reshape(ntemps,1,1), axis=0)
+    residual_masked = hp.ma(residual)
+    residual_masked.mask = mask
+    print("Sum of residual: ", np.sum(residual_masked))
     if res:
-        hp.write_map(res, residual, dtype=None, overwrite=True)
+        hp.write_map(res, residual_masked, dtype=np.float32, overwrite=True)
 
 
 

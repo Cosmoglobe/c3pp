@@ -16,10 +16,11 @@ print("Importtime:", (time.time() - totaltime))
 
 
 def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, verbose, data, labelsize):
+    dpi = 150
     rcParams["backend"] = "agg" if png else "pdf"
     rcParams["legend.fancybox"] = True
     rcParams["lines.linewidth"] = 2
-    rcParams["savefig.dpi"] = 150 #300
+    rcParams["savefig.dpi"] = dpi #300
     rcParams["axes.linewidth"] = 1
 
     masked = False
@@ -538,7 +539,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, lmax, fwh
                 fn = outdir + "/" + os.path.split(fn)[-1]
 
             click.echo(click.style("Output:", fg="green") + f" {fn}")
-            plt.savefig(fn, bbox_inches="tight", pad_inches=0.02, transparent=tp, format=filetype,)
+            plt.savefig(fn, bbox_inches="tight", pad_inches=0.02, transparent=tp, format=filetype,dpi=dpi)
             click.echo("Savefig", (time.time() - starttime),) if verbose else None
 
             plt.close()
@@ -616,7 +617,7 @@ def get_params(m, outfile, polt, signal_label):
         title["comp"]  = ""
         title["param"] = r"$\chi^2$"
         ticks = [-3,0.,3]
-        cmap = "binary"
+        cmap = "black2white2black"
 
     # ------ SYNCH ------
     elif tag_lookup(synch_tags, outfile):
@@ -624,9 +625,10 @@ def get_params(m, outfile, polt, signal_label):
         if tag_lookup(synch_beta_tags, outfile+signal_label,):
             click.echo(click.style("{:-^48}".format(f"Detected Synchrotron beta"),fg="yellow"))
             click.echo("Detected Synchrotron beta")
-            ticks = [-3.2, -3.1, -3.0]
+            ticks = [-3.2, -3.15, -3.1]
             title["unit"]  = ""
             title["param"] = r"$\beta$"
+            cmap="swamp"
         else:
             click.echo(click.style("{:-^48}".format(f"Detected Synchrotron {sl}"),fg="yellow"))            
             title["param"] = r"$A$"
@@ -948,6 +950,7 @@ def get_sizes(size):
 
 
 def get_ticks(m, percentile):
+    """
     vmin = np.percentile(m, 100.0 - percentile)
     vmax = np.percentile(m, percentile)
 
@@ -957,8 +960,12 @@ def get_ticks(m, percentile):
 
     vmin = 0.0 if abs(vmin) < 1e-5 else vmin
     vmax = 0.0 if abs(vmax) < 1e-5 else vmax
+    """
+    vmin = np.percentile(m, 100.0 - percentile)
+    vmax = np.percentile(m, percentile)
 
-
+    vmin = 0.0 if abs(vmin) < 1e-5 else vmin
+    vmax = 0.0 if abs(vmax) < 1e-5 else vmax
     return vmin, vmax
 
 
