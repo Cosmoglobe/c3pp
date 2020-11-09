@@ -295,7 +295,8 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                     ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  fwhm=fwhm, range=rng)
 
                 # RMS maps
-                ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3, 4, 5,], )
+                ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,], min=0, max=30)
+                ctx.invoke(plot, input=f"BP_cmb_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[4, 5,], min=0, max=10)
             except Exception as e:
                 print(e)
                 click.secho("Continuing...", fg="yellow")
@@ -309,18 +310,19 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                 # 030 GHz IQU
                 ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=3400,)
                 ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  fwhm=60.0, range=30,)
-                ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3, 4, 5],)
-                ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[6, 7, 8],)
+                ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3, 4, 5], min=0, max=75)
+                ctx.invoke(plot, input=f"BP_030_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[6, 7, 8], min=0, max=2)
                 # 044 GHz IQU
                 ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=3400,)
                 ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  fwhm=60.0, range=30,)
-                ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,4,5,],)
-                ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[6,7,8],)
+                ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,4,5,],min=0, max=75)
+                ctx.invoke(plot, input=f"BP_044_IQU_full_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[6,7,8],min=0, max=2)
                 # 070 GHz IQU
                 ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=3400,)
                 ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  fwhm=60.0, range=30,)
-                ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,4,5,],)
-                ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[6,7,8,],)
+                ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,4,5,], min=0, max=75)
+                ctx.invoke(plot, input=f"BP_070_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[6, 7, 8], min=0, max=2)
+
             except Exception as e:
                 print(e)
                 click.secho("Continuing...", fg="yellow")
@@ -332,7 +334,13 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
     
             try:
                 # Synch IQU
-                ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], )
+                ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3,], )
+                ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[6,], min=0, max=2)
+                ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[7, 8,], min=0, max=5)
+                ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[9,], min=0, max=10)
+
+                ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[4, 5,], min=-3.05, max=-3.15 )
+                ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[10,11], min=0, max=0.15)
             except Exception as e:
                 print(e)
                 click.secho("Continuing...", fg="yellow")
@@ -343,7 +351,9 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                 os.mkdir(outdir)
             try:
                 # freefree mean and rms
-                ctx.invoke(plot, input=f"BP_freefree_I_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3], )
+                ctx.invoke(plot, input=f"BP_freefree_I_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1,], )
+                ctx.invoke(plot, input=f"BP_freefree_I_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[2,], min=0, max=30)
+                #Dont plot te
             except Exception as e:
                 print(e)
                 click.secho("Continuing...", fg="yellow")
@@ -354,7 +364,8 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                 os.mkdir(outdir)
             try:
                 # ame mean and rms
-                ctx.invoke(plot, input=f"BP_ame_I_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3], )
+                ctx.invoke(plot, input=f"BP_ame_I_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1,], )
+                ctx.invoke(plot, input=f"BP_ame_I_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[2,], min=0, max=50)
             except Exception as e:
                 print(e)
                 click.secho("Continuing...", fg="yellow")
@@ -366,7 +377,10 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
     
             try:
                 # dust IQU
-                ctx.invoke(plot, input=f"BP_dust_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], )
+                ctx.invoke(plot, input=f"BP_dust_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3, 4, 5, 6, 7,], )
+                ctx.invoke(plot, input=f"BP_dust_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[8,], min=0, max=30)
+                ctx.invoke(plot, input=f"BP_dust_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[9, 10], min=0, max=3)
+                ctx.invoke(plot, input=f"BP_dust_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[11,], min=0, max=5)
             except Exception as e:
                 print(e)
                 click.secho("Continuing...", fg="yellow")
@@ -482,8 +496,9 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
         t_e  = hp.read_map(f"BP_freefree_I_full_n1024_{procver}.fits", field=(1,), dtype=None, verbose=False)
         
         a_ame1 = hp.read_map(f"BP_ame_I_full_n1024_{procver}.fits", field=(0,), dtype=None, verbose=False)
-        a_ame1 = hp.smoothing(a_ame1, fwhm=arcmin2rad(np.sqrt(60.0**2-30**2)), verbose=False)
+        #a_ame1 = hp.smoothing(a_ame1, fwhm=arcmin2rad(np.sqrt(60.0**2-30**2)), verbose=False)
         nup    = hp.read_map(f"BP_ame_I_full_n1024_{procver}.fits", field=(1,), dtype=None, verbose=False)                
+        polfrac = 0.01
         a_ame2 = None
         
         a_d = hp.read_map(f"BP_dust_IQU_full_n1024_{procver}.fits", field=(0,1,2), dtype=None, verbose=False)
@@ -505,7 +520,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                 ctx.invoke(output_sky_model, pol=pol, long=long,
                            darkmode=False, png=False,
                            nside=64, a_cmb=a_cmb, a_s=a_s, b_s=b_s, a_ff=a_ff,
-                           t_e=t_e, a_ame1=a_ame1, a_ame2=a_ame2, nup=nup, a_d=a_d, b_d=b_d,
+                           t_e=t_e, a_ame1=a_ame1, a_ame2=a_ame2, nup=nup, polfrac=polfrac, a_d=a_d, b_d=b_d,
                            t_d=t_d, a_co10=a_co10, a_co21=a_co21, a_co32=a_co32, mask1=mask1,
                            mask2=mask2,)
         
@@ -897,6 +912,7 @@ def make_diff_plots(ctx, dir1, dir2, type1, type2):
 @click.option("-a_ame1",help="",)
 @click.option("-a_ame2", help="",)
 @click.option("-nup",  help="",)
+@click.option("-polfrac",  help="",)
 @click.option("-a_d", help="",)
 @click.option("-b_d", help="",)
 @click.option("-t_d", help="",)
@@ -905,13 +921,12 @@ def make_diff_plots(ctx, dir1, dir2, type1, type2):
 @click.option("-a_co32", help="",)
 @click.option("-mask1",  help="",)
 @click.option("-mask2",  help="",)
-def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e, a_ame1, a_ame2, nup, a_d, b_d, t_d, a_co10, a_co21, a_co32, mask1, mask2):
+def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e, a_ame1, a_ame2, nup, polfrac, a_d, b_d, t_d, a_co10, a_co21, a_co32, mask1, mask2):
     """
     Outputs spectrum plots.
     c3pp output-sky-model -a_s synch_c0001_k000100.fits -b_s synch_beta_c0001_k000100.fits -a_d dust_init_kja_n1024.fits -b_d dust_beta_init_kja_n1024.fits -t_d dust_T_init_kja_n1024.fits -a_ame1 ame_c0001_k000100.fits -nup ame_nu_p_c0001_k000100.fits -a_ff ff_c0001_k000100.fits -t_e ff_Te_c0001_k000100.fits -mask1 mask_70GHz_t70.fits -mask2 mask_70GHz_t7.fits -nside 16
     """
     from src.spectrum import Spectrum
-
     """
     if not a_cmb:
         a_cmb = 0.67 if pol else 45
@@ -929,6 +944,8 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
         a_ame2 = 50.
     if not nup:
         nup = 24
+    if not polfrac:
+        polfrac = 1
     if not a_d:
         a_d = 8 if pol else 163
     if not b_d:
@@ -941,14 +958,15 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
         a_co21=25
     if not a_co32:
         a_co32=10
-
     """
     if pol:
-        p = 0.4 if long else 12
+        # 15, 120, 40, (0,4, 12), (1.2,50)
+        p = 0.6 if long else 15
+        sd = 2 if long else 70
         foregrounds = {
             "Synchrotron" : {"function": "lf", 
                              "params"  : [a_s, b_s,],
-                             "position": 15,
+                             "position": 20,
                              "color"   : "C2",
                              "sum"     : True,
                              "linestyle": "solid",
@@ -956,7 +974,7 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
                          },
             "Thermal Dust": {"function": "tdust", 
                              "params": [a_d, b_d, t_d, 353],
-                             "position": 150,
+                             "position": 250,
                              "color":    "C1",
                              "sum"     : True,
                              "linestyle": "solid",
@@ -964,7 +982,7 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
                          }, 
             "Sum fg."      : {"function": "sum", 
                              "params"  : [],
-                             "position": 40,
+                             "position": 70,
                              "color"   : "grey",
                              "sum"     : False,
                              "linestyle": "--",
@@ -994,14 +1012,24 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
                              "linestyle": "solid",
                              "gradient": False,
                          },
+            "Spinning Dust" : {"function": "sdust", 
+                               "params"  : [a_ame1, nup, polfrac],
+                             "position": sd,
+                             "color"   : "C4",
+                             "sum"     : True,
+                             "linestyle": "solid",
+                             "gradient": True,
+                         },
 
             }
     else:
-        p = 2 if long else 57
+        #120, 12, 40, (2,57), 20, 70
+        p = 3 if long else 65
+        td = 10 if long else 17
         foregrounds = {
             "Synchrotron" : {"function": "lf", 
                              "params"  : [a_s, b_s,],
-                             "position": 120,
+                             "position": 170,
                              "color"   : "C2",
                              "sum"     : True,
                              "linestyle": "solid",
@@ -1009,22 +1037,22 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
                          },
             "Thermal Dust": {"function": "tdust", 
                              "params": [a_d, b_d, t_d, 545],
-                             "position": 12,
+                             "position": td,
                              "color":    "C1",
                              "sum"     : True,
                              "linestyle": "solid",
                              "gradient": False,
                          }, 
             "Free-Free"  : {"function": "ff", 
-                             "params"  : [a_ff, t_e,],
-                             "position": 40,
+                             "params"  : [a_ff, t_e],
+                             "position": 50,
                              "color"   : "C0",
                              "sum"     : True,
                              "linestyle": "solid",
                              "gradient": False,
                          },
-            "Spinning dust" : {"function": "sdust", 
-                             "params"  : [a_ame1, nup,],
+            "Spinning Dust" : {"function": "sdust", 
+                            "params"  : [a_ame1, nup, 1.],
                              "position": p,
                              "color"   : "C4",
                              "sum"     : True,
@@ -1057,7 +1085,7 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
                          },
             "Sum fg."      : {"function": "sum", 
                              "params"  : [],
-                             "position": 20,
+                             "position": 25,
                              "color"   : "grey",
                              "sum"     : False,
                              "linestyle": "--",

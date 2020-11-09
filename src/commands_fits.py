@@ -144,12 +144,18 @@ def fittemp(input, template, mask, noise, res):
         with fits.open(noise) as hdulist:
             for hdu in hdulist:
                 N = hdu.data
+                N *= 1e-6
+                print("scaling cov by 1e3")
     else:
         N = np.eye(2*npix)
     print("map:", map_.shape, "template:", temp.shape, "mask:", mask.shape, "N:", N.shape)
     t = temp_masked.reshape((ntemps, 2*npix)).T
-    a = np.linalg.inv((t.T).dot(N).dot(t)).dot(t.T).dot(N).dot(map_masked.ravel())
-    print("coeffs: ", a)
+    a = np.linalg.inv((t.T).dot(N).dot(t))
+    print(a.shape)
+    err = np.sqrt(np.diagonal(a))
+    a = a.dot(t.T).dot(N).dot(map_masked.ravel())
+    for i in range(len(a)):
+        print(f"T_{i}: {a[i]:.3f} +- {err[i]:.5f}")
     residual = map_masked - np.sum(temp_masked*a.reshape(ntemps,1,1), axis=0)
     residual_masked = hp.ma(residual)
     residual_masked.mask = mask

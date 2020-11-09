@@ -145,11 +145,6 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
                 foregrounds[fg]["params"][-2], _ = find_nearest(nu, foregrounds[fg]["params"][-2])
 
             foregrounds[fg]["spectrum"] = getspec(nu*1e9, fg, foregrounds[fg]["params"], foregrounds[fg]["function"], field, nside, npix, idx, m,)
-            """
-            if fg.startswith("CO"):#unit conversion fudge factor
-                foregrounds[fg]["spectrum"
-            ] = foregrounds[fg]["spectrum"]*75
-            """
             foregrounds[fg]["spectrum_mean"]= np.mean(foregrounds[fg]["spectrum"],axis=0)
             if add_error and foregrounds[fg]["spectrum"].shape[0]>1 and not fg.startswith("CO"):
                 thresh=0.1                    
@@ -172,8 +167,13 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
     j=0
     for label, fg in foregrounds.items(): # Plot all fgs except sumf
         if fg["gradient"]:
-            k = 0
-            gradient_fill(nu, fg["spectrum"][k], fill_color=fg["color"], ax=ax, alpha=0.5, linewidth=0.0,)
+            if label == "Spinning Dust":
+                k = 1
+                gradient_fill_between(ax, nu, fg["spectrum"][0], fg["spectrum"][1], color=fg["color"])
+            else:
+                k = 0
+                gradient_fill(nu, fg["spectrum"][k], fill_color=fg["color"], ax=ax, alpha=0.5, linewidth=0.0,)
+
         else:
             if label == "Sum fg.":
                 ax.loglog(nu,fg["spectrum"][0], linestyle=fg["linestyle"], linewidth=2, color=fg["color"])
@@ -221,14 +221,16 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
             ax.text(lfreq, np.max(fg["spectrum"][k])*0.5, label, color=fg["color"], alpha=0.7, ha='right',va='center',rotation=90,fontsize=fgtext, path_effects=[path_effects.withSimplePatchShadow(alpha=0.8, offset=(1, -1))], zorder=1000)
         else:
             x0, idx1 = find_nearest(nu, fg["position"])
-            x1, idx2 = find_nearest(nu, fg["position"]*1.2)
+            idx2 = idx1+2
+            x1 = nu[idx2] 
+            # idx2 = find_nearest(nu, fg["position"]**1.05)
             y0 = fg["spectrum"][k][idx1]
             y1 = fg["spectrum"][k][idx2]
             datascaling  = np.log(xmin/xmax)/np.log(ymin/ymax)
             rotator = (datascaling/aspect_ratio)
             alpha = np.arctan(np.log(y1/y0)/np.log(x1/x0)*rotator)
             rotation =  np.rad2deg(alpha)#*rotator
-            ax.annotate(label, xy=(x0,y0), xytext=(0,7), textcoords="offset pixels",  rotation=rotation, rotation_mode='anchor', fontsize=fgtext, color=fg["color"], path_effects=[path_effects.withSimplePatchShadow(alpha=0.8,offset=(1, -1)),],)# horizontalalignment="center")
+            ax.annotate(label, xy=(x0,y0), xytext=(0,7), textcoords="offset pixels",  rotation=rotation, rotation_mode='anchor', fontsize=fgtext, color=fg["color"], path_effects=[path_effects.withSimplePatchShadow(alpha=0.8,offset=(1, -1)),], horizontalalignment="center")
     
         
     
@@ -367,7 +369,7 @@ def fmt(x, pos):
         return fr"${a} \cdot 10^{b}$"
 
 	
-def gradient_fill(x, y, fill_color=None, ax=None,invert=False, **kwargs):
+def gradient_fill(x, y, fill_color=None, ax=None, alpha=1.0, invert=False, **kwargs):
     """
     Plot a line with a linear alpha gradient filled beneath it.
 
@@ -399,7 +401,7 @@ def gradient_fill(x, y, fill_color=None, ax=None,invert=False, **kwargs):
         fill_color = line.get_color()
 
     zorder = line.get_zorder()
-    alpha = line.get_alpha()
+    #alpha = line.get_alpha()
     alpha = 1.0 if alpha is None else alpha
 
     z = np.empty((100, 1, 4), dtype=float)
@@ -422,6 +424,18 @@ def gradient_fill(x, y, fill_color=None, ax=None,invert=False, **kwargs):
     ax.autoscale(True)
     return line, im
 
+
+def gradient_fill_between(ax, x, y1, y2, color="#ffa15a", alpha=0.5):
+    N = 100
+    y = np.zeros((N, len(y1)))
+    for i in range(len(y1)):
+        y[:,i] = np.linspace(y1[i], y2[i], N)
+
+    alpha=np.linspace(0,alpha,100)**1.5
+    for i in range(1,N):
+        ax.fill_between(x, y[i-1], y[i], color=color, alpha=alpha[i])
+
+
 def find_nearest(array, value):
     array = np.asarray(array)
     idx = (np.abs(array - value)).argmin()
@@ -433,6 +447,7 @@ def find_nearest(array, value):
 # Alternative 2 uses only scalar values
 def getspec(nu, fg, params, function, field, nside, npix, idx, m):
     val = []
+    #print(fg)
     # Alternative 1
     if any([str(x).endswith(".fits") for x in params]) or any([isinstance(x,np.ndarray) for x in params]):
         if fg == "Spinning Dust":
@@ -456,11 +471,11 @@ def getspec(nu, fg, params, function, field, nside, npix, idx, m):
                     p = hp.read_map(p, field=field, dtype=None, verbose=False)
                 nsides.append(hp.npix2nside(len(p)))
             elif isinstance(p, np.ndarray):
-                if field==1 and i==0:
-                    p = np.sqrt(p[1]**2+p[2]**2)
-                elif p.ndim > 1 and p.shape[0]>1:
-                    p = p[field]
-
+                if not fg == "Spinning Dust":
+                    if field==1 and i==0:
+                        p = np.sqrt(p[1]**2+p[2]**2)
+                    elif p.ndim > 1 and p.shape[0]>1:
+                        p = p[field]
                 nsides.append(hp.npix2nside(len(p)))
             else:
                 nsides.append(0)

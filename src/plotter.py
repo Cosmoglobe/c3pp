@@ -617,7 +617,7 @@ def get_params(m, outfile, polt, signal_label):
         title["comp"]  = ""
         title["param"] = r"$\chi^2$"
         ticks = [-3,0.,3]
-        cmap = "black2white2black"
+        cmap = "RdBu_r"
 
     # ------ SYNCH ------
     elif tag_lookup(synch_tags, outfile):
@@ -874,7 +874,8 @@ def get_params(m, outfile, polt, signal_label):
         logscale = False
         #vmin = 0
         ticks = [vmin, vmax]
-        cmap = "planck"
+        #cmap = "planck"
+        cmap = "neutral"
     else:
         title["stddev"] = False
 
@@ -886,7 +887,8 @@ def get_params(m, outfile, polt, signal_label):
         logscale = False
         #vmin = 0
         ticks = [vmin, vmax]
-        cmap = "planck"
+        #cmap = "planck"
+        cmap = "neutral"
     else:
         title["rms"] = False
 

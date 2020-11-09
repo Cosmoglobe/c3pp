@@ -322,7 +322,7 @@ def ff(nu,A,Te, nuref=40.):
     s_ff = A*S/S_ref*np.exp(-h*(nu-nu_ref)/k_b/Te)*(nu/nu_ref)**-2
     return s_ff
 
-def sdust(nu, Asd, nu_p, fnu = None, f_ = None, nuref=22.,):
+def sdust(nu, Asd, nu_p, polfrac, fnu = None, f_ = None, nuref=22.,):
     """
     Spinning dust spectrum using spdust2
     """
@@ -332,7 +332,6 @@ def sdust(nu, Asd, nu_p, fnu = None, f_ = None, nuref=22.,):
     try:
         f = np.interp(scale*nu, fnu, f_)
         f0 = np.interp(scale*nuref, fnu, f_) # Value of s at nu_0
-        
     except:
         from pathlib import Path
         ame_template = Path(__file__).parent / "spdust2_cnm.dat"
@@ -341,7 +340,7 @@ def sdust(nu, Asd, nu_p, fnu = None, f_ = None, nuref=22.,):
         f = np.interp(scale*nu, fnu, f_)
         f0 = np.interp(scale*nuref, fnu, f_) # Value of s at nu_0
         
-    s_sd = Asd*(nuref/nu)**2*f/f0
+    s_sd = polfrac*Asd*(nuref/nu)**2*f/f0
     return s_sd
 
 
