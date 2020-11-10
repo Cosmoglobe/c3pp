@@ -30,7 +30,7 @@ def specplot(input,cmap,long):
     colors=getattr(pcol.qualitative,cmap)    
     if cmap=="Plotly":
         colors.insert(3,colors.pop(-1))
-
+    plt.rcParams["mathtext.fontset"] = "stix"
     custom_style = {
         'grid.color': '0.8',
         'grid.linestyle': '--',
@@ -38,7 +38,10 @@ def specplot(input,cmap,long):
         'savefig.dpi':300,
         'font.size': 20, 
         'axes.linewidth': 1.5,
-        'axes.prop_cycle': cycler(color=colors)
+        'axes.prop_cycle': cycler(color=colors),
+        'mathtext.fontset': 'stix',
+        'font.family': 'serif',
+        'font.serif': 'Times',
     }
     sns.set_style(custom_style)
     lmax = 200
@@ -92,6 +95,7 @@ def specplot(input,cmap,long):
 @click.option("-mid", multiple=True, help='Adds tick values "-mid 2 -mid 4"',)
 @click.option("-range", default="auto", type=click.STRING, help='Color range. "-range auto" sets to 97.5 percentile of data., or "minmax" which sets to data min and max values.',)  # str until changed to float
 @click.option("-colorbar", "-bar", is_flag=True, help='Adds colorbar ("cb" in filename)',)
+@click.option("-graticule", is_flag=True, help='Adds graticule',)
 @click.option("-lmax", default=None, type=click.FLOAT, help="This is automatically set from the h5 file. Only available for alm inputs.",)
 @click.option("-fwhm", default=0.0, type=click.FLOAT, help="FWHM of smoothing, in arcmin.",)
 @click.option("-mask", default=None, type=click.STRING, help="Masks input with specified maskfile.",)
@@ -112,7 +116,7 @@ def specplot(input,cmap,long):
 @click.option("-outdir", type=click.Path(exists=True), help="Output directory for plot",)
 @click.option("-labelsize", default=10, type=click.INT, help="Title size.",)
 @click.option("-verbose", is_flag=True, help="Verbose mode")
-def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, labelsize, verbose,):
+def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, labelsize, verbose,):
     """
     Plots map from .fits or h5 file.
     ex. c3pp plot coolmap.fits -bar -auto -lmax 60 -darkmode -pdf -title $\beta_s$
@@ -128,7 +132,7 @@ def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, lmax, fwhm
         
     data = None # Only used if calling plotter directly for plotting data array
     from src.plotter import Plotter
-    Plotter(input, dataset, nside, auto, min, max, mid, range, colorbar, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, verbose, data, labelsize)
+    Plotter(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, verbose, data, labelsize)
 
 
 @commands_plotting.command()
@@ -335,12 +339,12 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
             try:
                 # Synch IQU
                 ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3,], )
-                ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[6,], min=0, max=2)
+                ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[6,], min=0, max=3)
                 ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[7, 8,], min=0, max=5)
                 ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[9,], min=0, max=10)
 
-                ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[4, 5,], min=-3.05, max=-3.15 )
-                ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[10,11], min=0, max=0.15)
+                ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[4, 5,], min=-3.2, max=-3.05, mid=[-3.1,-3.15], cmap="fusion" )
+                ctx.invoke(plot, input=f"BP_synch_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[10,11], min=0, mid=[0.05,0.1], max=0.15, cmap="neutral_r")
             except Exception as e:
                 print(e)
                 click.secho("Continuing...", fg="yellow")
@@ -352,7 +356,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
             try:
                 # freefree mean and rms
                 ctx.invoke(plot, input=f"BP_freefree_I_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1,], )
-                ctx.invoke(plot, input=f"BP_freefree_I_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[2,], min=0, max=30)
+                ctx.invoke(plot, input=f"BP_freefree_I_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[2,], min=0, max=50)
                 #Dont plot te
             except Exception as e:
                 print(e)
@@ -365,7 +369,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
             try:
                 # ame mean and rms
                 ctx.invoke(plot, input=f"BP_ame_I_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1,], )
-                ctx.invoke(plot, input=f"BP_ame_I_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[2,], min=0, max=50)
+                ctx.invoke(plot, input=f"BP_ame_I_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[2,], min=0, max=80)
             except Exception as e:
                 print(e)
                 click.secho("Continuing...", fg="yellow")
@@ -376,11 +380,12 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                 os.mkdir(outdir)
     
             try:
+                # I Q U P IBETA QUBETA ITMEAN QUTMEAN   ISTDDEV QSTDDEV USTDDEV PSTDDEV    IBETASTDDEV QUBETASTDDEV ITSTDDEV QUTSTDDEV
                 # dust IQU
                 ctx.invoke(plot, input=f"BP_dust_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3, 4, 5, 6, 7,], )
-                ctx.invoke(plot, input=f"BP_dust_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[8,], min=0, max=30)
+                ctx.invoke(plot, input=f"BP_dust_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[8,], min=0, max=50)
                 ctx.invoke(plot, input=f"BP_dust_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[9, 10], min=0, max=3)
-                ctx.invoke(plot, input=f"BP_dust_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[11,], min=0, max=5)
+                ctx.invoke(plot, input=f"BP_dust_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[11,], min=0, max=6)
             except Exception as e:
                 print(e)
                 click.secho("Continuing...", fg="yellow")
@@ -487,8 +492,8 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
         fg_path="/mn/stornext/u3/trygvels/compsep/cdata/like/sky-model/fgs_60arcmin"
         
         a_cmb = None
-        
-        a_s = hp.read_map(f"BP_synch_IQU_full_n1024_{procver}.fits", field=(0,1,2), dtype=None, verbose=False)
+        #BP_synch_IQU_full_n1024_BP8_noMedianFilter.fits
+        a_s = hp.read_map(f"BP_synch_IQU_full_n1024_{procver}_noMedianFilter.fits", field=(0,1,2), dtype=None, verbose=False)
         b_s = hp.read_map(f"BP_synch_IQU_full_n1024_{procver}.fits", field=(4,5), dtype=None, verbose=False)
         
         a_ff = hp.read_map(f"BP_freefree_I_full_n1024_{procver}.fits", field=(0,), dtype=None, verbose=False)
@@ -586,6 +591,7 @@ def hist(chainfile, dataset, burnin, maxchain, nbins,sig):
     colors=getattr(pcol.qualitative,"Plotly")
     sns.set_context("notebook", font_scale=1.5, rc={"lines.linewidth": 1.2})
     sns.set_style("whitegrid")
+    plt.rcParams["mathtext.fontset"] = "stix"
     custom_style = {
         'grid.color': '0.8',
         'grid.linestyle': '--',
@@ -593,11 +599,14 @@ def hist(chainfile, dataset, burnin, maxchain, nbins,sig):
         'savefig.dpi':300,
         'axes.linewidth': 1.5,
         'axes.prop_cycle': cycler(color=colors),
+        'mathtext.fontset': 'stix',
+        'font.family': 'serif',
+        'font.serif': 'times',
     }
     sns.set_style(custom_style)
     fontsize = 14
     df2.hist( bins=20, color=colors[0])
-    plt.xlabel(r"$\beta_d$", fontsize=fontsize)
+    plt.xlabel(r"$\beta_{\mathrm{d}}$", fontsize=fontsize)
     plt.title(" ")
     plt.yticks(rotation=90, va="center", fontsize=fontsize)
     plt.xticks(fontsize=fontsize)
@@ -750,6 +759,9 @@ def traceplotter(df, header, xlabel, nbins, outname, min_,ylabel, cmap="Plotly",
     import plotly.colors as pcol
     sns.set_context("notebook", font_scale=1.5, rc={"lines.linewidth": 1.2})
     sns.set_style("whitegrid")
+    plt.rcParams["mathtext.fontset"] = "stix"
+    plt.rcParams['font.family'] = 'serif'
+    plt.rcParams['font.serif'] = 'Times'
     custom_style = {
         'grid.color': '0.8',
         'grid.linestyle': '--',
@@ -757,6 +769,9 @@ def traceplotter(df, header, xlabel, nbins, outname, min_,ylabel, cmap="Plotly",
         'savefig.dpi':300,
         'font.size': 20, 
         'axes.linewidth': 1.5,
+        'mathtext.fontset': 'stix',
+        'font.family': 'serif',
+        'font.serif': 'Times',
     }
     sns.set_style(custom_style)
 

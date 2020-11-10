@@ -2,6 +2,7 @@ from matplotlib import rcParams, rc
 import matplotlib.patheffects as path_effects
 import matplotlib.ticker as ticker
 import matplotlib.pyplot as plt
+import matplotlib.font_manager
 from cycler import cycler
 from tqdm import trange, tqdm
 import numpy as np
@@ -12,10 +13,6 @@ import plotly.colors as pcol
 from brokenaxes import brokenaxes
 
 import src.tools as tls
-"""
-1) Litt storre avstand mellom x-aksen og x-ticklabels
-6) Rotér y-ticklabels, så de er parallelle med y-aksen 
-"""
 def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly"):
     params = {'savefig.dpi'        : 300, # save figures to 300 dpi
               'xtick.top'          : False,
@@ -36,11 +33,13 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
               'xtick.major.width'   : 1.5,
               'xtick.minor.width'   : 1.5,
               'axes.linewidth'      : 1.5,
-              'axes.prop_cycle'     : cycler(color=getattr(pcol.qualitative, cmap))
+              'axes.prop_cycle'     : cycler(color=getattr(pcol.qualitative, cmap)),
+              'mathtext.fontset': 'dejavusans',
               #'ytick.major.size'   : 6,
               #'ytick.minor.size'   : 3,
               #'xtick.major.size'   : 6,
               #'xtick.minor.size'   : 3,
+              
     }
     blue, red, green, purple, orange, teal, lightred, lightgreen, pink, yellow = ("C0","C1","C2","C3","C4","C5","C6","C7","C8","C9",)
     black = 'k'
