@@ -14,11 +14,12 @@ print("Importtime:", (time.time() - totaltime))
 def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar,
             graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole,
             logscale, size, white_background, darkmode, png, cmap, title,
-            ltitle, unit, scale, outdir, verbose, data, labelsize, gif):
+            ltitle, unit, scale, outdir, verbose, data, labelsize, gif, oldfont):
     fontsize = 11
     #plt.rcParams['font.family'] = 'serif'
     #plt.rcParams['font.serif'] = 'Times'
-    plt.rcParams["mathtext.fontset"] = "stix"
+    if not oldfont:
+        plt.rcParams["mathtext.fontset"] = "stix"
     plt.rcParams["backend"] = "agg" if png else "pdf"
     plt.rcParams["axes.linewidth"] = 1
     if darkmode:

@@ -116,8 +116,9 @@ def specplot(input,cmap,long):
 @click.option("-outdir", type=click.Path(exists=True), help="Output directory for plot",)
 @click.option("-labelsize", default=10, type=click.INT, help="Title size.",)
 @click.option("-gif", is_flag=True, help="Make gifs from input",)
+@click.option("-oldfont", is_flag=True, help="Use the old DejaVu font and not Times",)
 @click.option("-verbose", is_flag=True, help="Verbose mode")
-def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, labelsize,gif, verbose,):
+def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, labelsize,gif, oldfont,verbose,):
     """
     Plots map from .fits or h5 file.
     ex. c3pp plot coolmap.fits -bar -auto -lmax 60 -darkmode -pdf -title $\beta_s$
@@ -129,7 +130,7 @@ def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule,
     """
     from src.plotter import Plotter
     data=None
-    Plotter(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, verbose, data,labelsize,gif)
+    Plotter(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, verbose, data,labelsize,gif,oldfont)
 
 
 @commands_plotting.command()
