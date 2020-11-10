@@ -797,9 +797,10 @@ def get_map(input, sig, dataset, nside, lmax, fwhm,):
     # Get maps array if .h5 file
     signal_labels=None
     maps=[]
-    for input in input:
-        print(input)
-        if input.endswith(".h5"):
+    input = [input] if isinstance(input, str) else input
+    for input_ in input:
+        print(input_)
+        if input_.endswith(".h5"):
             from src.commands_hdf import h5map2fits
             from src.tools import alm2fits_tool
             # Get maps from alm data in .h5
@@ -809,20 +810,20 @@ def get_map(input, sig, dataset, nside, lmax, fwhm,):
                     sys.exit()
 
                 click.echo(click.style("Converting alms to map",fg="green"))
-                (maps_, _, _, _, outfile,) = alm2fits_tool(input, dataset, nside, lmax, fwhm, save=False,)
+                (maps_, _, _, _, outfile,) = alm2fits_tool(input_, dataset, nside, lmax, fwhm, save=False,)
             # Get maps from map data in .h5
             elif dataset.endswith("map"):
                 click.echo(click.style("Reading map from hdf",fg="green"))
-                (maps_, _, _, outfile,) = h5map2fits(input, dataset, save=False)
+                (maps_, _, _, outfile,) = h5map2fits(input_, dataset, save=False)
 
             # Found no data specified kind in .h5
             else:
                 click.echo(click.style("Dataset not found. Breaking.",fg="red"))
-                click.echo(click.style(f"Does {input}/{dataset} exist?",fg="red"))
+                click.echo(click.style(f"Does {input_}/{dataset} exist?",fg="red"))
                 sys.exit()
 
-        elif input.endswith(".fits"):
-            maps_, header = hp.read_map(input, field=sig, verbose=False, h=True, dtype=None,)
+        elif input_.endswith(".fits"):
+            maps_, header = hp.read_map(input_, field=sig, verbose=False, h=True, dtype=None,)
             header = dict(header)
             signal_labels = []
             for i in range(int(header["TFIELDS"])):
@@ -834,7 +835,7 @@ def get_map(input, sig, dataset, nside, lmax, fwhm,):
                 if signal_label in ["U-POLARISATION", "U_POLARISATION"]:
                     signal_label = "U"
                 signal_labels.append(signal_label)            
-            outfile = input.replace(".fits", "")
+            outfile = input_.replace(".fits", "")
         else:
             click.echo(click.style("Did not recognize data.",fg="red"))
             sys.exit()
