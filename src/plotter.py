@@ -834,7 +834,10 @@ def get_map(input, sig, dataset, nside, lmax, fwhm,):
                     signal_label = "U"
                 signal_labels.append(signal_label)            
             outfile = input.replace(".fits", "")
-    
+        else:
+            click.echo(click.style("Did not recognize data.",fg="red"))
+            sys.exit()
+
         if maps_.ndim == 1: maps_ = maps_.reshape(1,-1)
         maps.append(maps_)
 
