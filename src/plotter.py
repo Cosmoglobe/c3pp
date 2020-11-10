@@ -11,15 +11,19 @@ from src.tools import arcmin2rad
 
 print("Importtime:", (time.time() - totaltime))
 
-def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, verbose, data, labelsize):
-    fontsize = 12
+def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar,
+            graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole,
+            logscale, size, white_background, darkmode, png, cmap, title,
+            ltitle, unit, scale, outdir, verbose, data, labelsize, gif):
+    fontsize = 11
     #plt.rcParams['font.family'] = 'serif'
     #plt.rcParams['font.serif'] = 'Times'
     plt.rcParams["mathtext.fontset"] = "stix"
     plt.rcParams["backend"] = "agg" if png else "pdf"
     plt.rcParams["axes.linewidth"] = 1
     if darkmode:
-        params = ["text.color", "axes.facecolor", "axes.edgecolor", "axes.labelcolor", "xtick.color", "ytick.color", "grid.color", "legend.facecolor", "legend.edgecolor"]
+        params = ["text.color", "axes.facecolor", "axes.edgecolor", "axes.labelcolor", "xtick.color",
+                  "ytick.color", "grid.color", "legend.facecolor", "legend.edgecolor"]
         for p in params:
             plt.rcParams[p] = "white"
 
@@ -29,98 +33,115 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar, graticule
     click.echo(click.style("Plotting",fg="green") + f" {input}")
 
     ####   READ MAP   #####
-    maps, lmax, outfile, signal_labels = get_map(input, sig, dataset, nside, lmax, fwhm,)
+    if data: #In case you want to use function directly
+        maps_ = [data]
+    else:    
+        maps_, lmax, outfile, signal_labels = get_map(input, sig, dataset, nside, lmax, fwhm,)
     # Plot all signals specified
     click.echo(click.style("Using signals ",fg="green") + f"{sig}")
     click.echo(click.style("{:#^48}".format(""), fg="green"))
-    for pl, polt, in enumerate(sig):
-        #### Select data column  #####
-        m = hp.ma(maps[pl])
-        signal_label = signal_labels[polt] if signal_labels else get_signallabel(polt) 
-        nsid = hp.get_nside(m)
-        #### Smooth  #####
-        if float(fwhm) > 0 and input.endswith(".fits"):
-            click.echo(click.style(f"Smoothing fits map to {fwhm} arcmin fwhm",fg="yellow"))
-            m = hp.smoothing(m, fwhm=arcmin2rad(fwhm), lmax=lmax,)
-        #### Ud_grade #####
-        if nside is not None and input.endswith(".fits"):
-            if nsid != nside:
-                click.echo(click.style(f"UDgrading map from {nsid} to {nside}", fg="yellow"))
-                m = hp.ud_grade(m, nside,)
-        else:
-            nside = nsid
-        #### Remove monopole or dipole #####
-        if remove_dipole or remove_monopole: m = remove_md(m, remove_dipole, remove_monopole, nside)
-        #### Scaling factor #####
-        if scale:
-            if "chisq" in outfile:
-                click.echo(click.style(f"Scaling chisq data with dof={scale}",fg="yellow"))
-                m = (m-scale)/np.sqrt(2*scale)
+    imgs = [] # Store images for gif
+    for i, maps in enumerate(maps_):
+        for pl, polt, in enumerate(sig):
+            #### Select data column  #####
+            m = hp.ma(maps[pl])
+            signal_label = signal_labels[polt] if signal_labels else get_signallabel(polt) 
+            nsid = hp.get_nside(m)
+            #### Smooth  #####
+            if float(fwhm) > 0 and input[i].endswith(".fits"):
+                click.echo(click.style(f"Smoothing fits map to {fwhm} arcmin fwhm",fg="yellow"))
+                m = hp.smoothing(m, fwhm=arcmin2rad(fwhm), lmax=lmax,)
+            #### Ud_grade #####
+            if nside is not None and input[i].endswith(".fits"):
+                if nsid != nside:
+                    click.echo(click.style(f"UDgrading map from {nsid} to {nside}", fg="yellow"))
+                    m = hp.ud_grade(m, nside,)
             else:
-                click.echo(click.style(f"Scaling data by {scale}",fg="yellow"))
-                m *= scale
-
-         #### Automatic variables #####
-        if auto:
-            (m, ttl, lttl, unt, ticks, cmp, lgscale,) = get_params(m, outfile, signal_label,)
-
-            # Tick bug fix
-            mn, md, mx= (ticks[0], None, ticks[-1])
-            if not mid and len(ticks)>2:
-                if ticks[0]<ticks[1]  and ticks[-2]<ticks[-1]:
-                    md = ticks[1:-1]
+                nside = nsid
+            #### Remove monopole or dipole #####
+            if remove_dipole or remove_monopole: m = remove_md(m, remove_dipole, remove_monopole, nside)
+            #### Scaling factor #####
+            if scale:
+                if "chisq" in outfile:
+                    click.echo(click.style(f"Scaling chisq data with dof={scale}",fg="yellow"))
+                    m = (m-scale)/np.sqrt(2*scale)
                 else:
-                    ticks.pop(1)
-        else:
-            ttl = lttl = unt = ""
-            mn = md = mx = None
-            ticks = [False, False]
-            lgscale = False
-            cmp = "planck"
+                    click.echo(click.style(f"Scaling data by {scale}",fg="yellow"))
+                    m *= scale
 
-        # Commandline priority
-        if logscale != None: lgscale = logscale
-        if title: ttl = title
-        if ltitle: lttl = ltitle 
-        if unit: unt = unit 
+            #### Automatic variables #####
+            if auto:
+                (m, ttl, lttl, unt, ticks, cmp, lgscale,) = get_params(m, outfile, signal_label,)
 
-        # Get data ticks
-        ticks = get_ticks(m, ticks, mn, md, mx, min, mid, max, rng, auto)        
-        ticklabels = [fmt(i, 1) for i in ticks]
-        #### Logscale ######
-        if lgscale: m, ticks = apply_logscale(m, ticks, linthresh=1)
-        #### Color map #####
-        cmap_ = get_cmap(cmap, cmp,)
-        #### Projection ####
-        grid_pix, longitude, latitude = project_map(nside, xsize=2000, ysize=int(2000/ 2.0),)
-        #### Mask ##########
-        grid_map, cmap_ = apply_mask(m, mask, grid_pix, mfill, polt, cmap_) if mask else (m[grid_pix], cmap_)
+                # Tick bug fix
+                mn, md, mx= (ticks[0], None, ticks[-1])
+                if not mid and len(ticks)>2:
+                    if ticks[0]<ticks[1]  and ticks[-2]<ticks[-1]:
+                        md = ticks[1:-1]
+                    else:
+                        ticks.pop(1)
+            else:
+                ttl = lttl = unt = ""
+                mn = md = mx = None
+                ticks = [False, False]
+                lgscale = False
+                cmp = "planck"
 
-        click.echo(click.style("Ticks: ", fg="green") + f"{ticklabels}")
-        click.echo(click.style("Unit: ", fg="green") + f"{unt}")
-        click.echo(click.style("Title: ", fg="green") + f"{ttl}")
-        for width in get_sizes(size):
-            click.echo(click.style("Size: ", fg="green") + str(width))
-            #### Make figure ####
-            height = width / 2.0
-            if colorbar: height *= 1.275 # Make sure text doesnt change with colorbar
-            fig = plt.figure(figsize=(cm2inch(width), cm2inch(height),),)
-            ax = fig.add_subplot(111, projection="mollweide")
-            image = plt.pcolormesh(longitude[::-1], latitude, grid_map, vmin=ticks[0], vmax=ticks[-1], rasterized=True, cmap=cmap_, shading='auto',)
-            #### Graticule ####
-            if graticule: apply_graticule(ax, width)
-            ax.xaxis.set_ticklabels([]); ax.yaxis.set_ticklabels([]) # rm lonlat ticklabs
-            #### Colorbar ####
-            if colorbar: apply_colorbar(fig, image, ticks, ticklabels, unt, fontsize, linthresh=1, logscale=lgscale)
-            #### Right Title ####
-            plt.text(4.5, 1.1, r"%s" % ttl, ha="center", va="center", fontsize=labelsize,)
-            #### Left Title ####
-            plt.text(-4.5, 1.1, r"%s" % lttl, ha="center", va="center", fontsize=labelsize,)
-            #### Save ####
-            plt.tight_layout()
-            output_map(fig, outfile, png, fwhm, colorbar, mask, remove_dipole, darkmode, white_background,cmap_,nside,signal_label,width,outdir, verbose)
-            plt.close()
-            click.echo("Totaltime:", (time.time() - totaltime),) if verbose else None
+            # Commandline priority
+            if logscale != None: lgscale = logscale
+            if title: ttl = title
+            if ltitle: lttl = ltitle 
+            if unit: unt = unit 
+            # Get data ticks
+            ticks = get_ticks(m, ticks, mn, md, mx, min, mid, max, rng, auto)        
+            ticklabels = [fmt(i, 1) for i in ticks]
+            #### Logscale ######
+            if lgscale: m, ticks = apply_logscale(m, ticks, linthresh=1)
+            #### Color map #####
+            cmap_ = get_cmap(cmap, cmp,)
+            #### Projection ####
+            grid_pix, longitude, latitude = project_map(nside, xsize=2000, ysize=int(2000/ 2.0),)
+            #### Mask ##########
+            grid_map, cmap_ = apply_mask(m, mask, grid_pix, mfill, polt, cmap_) if mask else (m[grid_pix], cmap_)
+
+            click.echo(click.style("Ticks: ", fg="green") + f"{ticklabels}")
+            click.echo(click.style("Unit: ", fg="green") + f"{unt}")
+            click.echo(click.style("Title: ", fg="green") + f"{ttl}")
+            for width in get_sizes(size):
+                click.echo(click.style("Size: ", fg="green") + str(width))
+                #### Make figure ####
+                height = width / 2.0
+                if colorbar: height *= 1.275 # Make sure text doesnt change with colorbar
+                if gif:
+                    # Hacky gif implementation
+                    if i == 0:
+                        fig = plt.figure(figsize=(cm2inch(width), cm2inch(height),),)
+                        ax = fig.add_subplot(111, projection="mollweide")
+                else:
+                    fig = plt.figure(figsize=(cm2inch(width), cm2inch(height),),)
+                    ax = fig.add_subplot(111, projection="mollweide")
+
+                image = plt.pcolormesh(longitude[::-1], latitude, grid_map, vmin=ticks[0], vmax=ticks[-1], rasterized=True, cmap=cmap_, shading='auto',animated=gif)
+                # Save img for gif
+                if gif: imgs.append([image])
+                #### Graticule ####
+                if graticule: apply_graticule(ax, width)
+                ax.xaxis.set_ticklabels([]); ax.yaxis.set_ticklabels([]) # rm lonlat ticklabs
+                #### Colorbar ####
+                if colorbar: apply_colorbar(fig, image, ticks, ticklabels, unt, fontsize, linthresh=1, logscale=lgscale)
+                #### Right Title ####
+                plt.text(4.5, 1.1, r"%s" % ttl, ha="center", va="center", fontsize=labelsize,)
+                #### Left Title ####
+                plt.text(-4.5, 1.1, r"%s" % lttl, ha="center", va="center", fontsize=labelsize,)
+                #### Save ####
+                plt.tight_layout()
+                if gif: #output gif on last iteration only
+                    if i==len(input)-1:
+                        output_map(fig, outfile, png, fwhm, colorbar, mask, remove_dipole, darkmode, white_background,cmap_,nside,signal_label,width,outdir, gif, imgs, verbose)
+                else:
+                    output_map(fig, outfile, png, fwhm, colorbar, mask, remove_dipole, darkmode, white_background,cmap_,nside,signal_label,width,outdir, gif, imgs, verbose)
+                    plt.close()
+                click.echo("Totaltime:", (time.time() - totaltime),) if verbose else None
 
 
 def get_params(m, outfile, signal_label,):
@@ -774,44 +795,51 @@ def apply_graticule(ax, width):
 def get_map(input, sig, dataset, nside, lmax, fwhm,):
     # Get maps array if .h5 file
     signal_labels=None
-    if input.endswith(".h5"):
-        from src.commands_hdf import h5map2fits
-        from src.tools import alm2fits_tool
-        # Get maps from alm data in .h5
-        if dataset.endswith("alm"):
-            click.echo(click.style("Converting alms to map",fg="green"))
-            (maps, _, _, _, outfile,) = alm2fits_tool(input, dataset, nside, lmax, fwhm, save=False,)
+    maps=[]
+    for input in input:
+        if input.endswith(".h5"):
+            from src.commands_hdf import h5map2fits
+            from src.tools import alm2fits_tool
+            # Get maps from alm data in .h5
+            if dataset.endswith("alm"):
+                if not nside:
+                    click.echo(click.style("Specify nside for h5 files",fg="red"))
+                    sys.exit()
 
-        # Get maps from map data in .h5
-        elif dataset.endswith("map"):
-            click.echo(click.style("Reading map from hdf",fg="green"))
-            (maps, _, _, outfile,) = h5map2fits(input, dataset, save=False)
+                click.echo(click.style("Converting alms to map",fg="green"))
+                (maps_, _, _, _, outfile,) = alm2fits_tool(input, dataset, nside, lmax, fwhm, save=False,)
+            # Get maps from map data in .h5
+            elif dataset.endswith("map"):
+                click.echo(click.style("Reading map from hdf",fg="green"))
+                (maps_, _, _, outfile,) = h5map2fits(input, dataset, save=False)
 
-        # Found no data specified kind in .h5
-        else:
-            click.echo(click.style("Dataset not found. Breaking.",fg="red"))
-            click.echo(click.style(f"Does {input}/{dataset} exist?",fg="red"))
-            sys.exit()
+            # Found no data specified kind in .h5
+            else:
+                click.echo(click.style("Dataset not found. Breaking.",fg="red"))
+                click.echo(click.style(f"Does {input}/{dataset} exist?",fg="red"))
+                sys.exit()
 
-    elif input.endswith(".fits"):
-        maps, header = hp.read_map(input, field=sig, verbose=False, h=True, dtype=None,)
-        header = dict(header)
-        signal_labels = []
-        for i in range(int(header["TFIELDS"])):
-            signal_label = header[f"TTYPE{i+1}"]
-            if signal_label in ["TEMPERATURE", "TEMP"]:
-                signal_label = "T"
-            if signal_label in ["Q-POLARISATION", "Q_POLARISATION"]:
-                signal_label = "Q"
-            if signal_label in ["U-POLARISATION", "U_POLARISATION"]:
-                signal_label = "U"
-            signal_labels.append(signal_label)            
-        outfile = input.replace(".fits", "")
+        elif input.endswith(".fits"):
+            maps_, header = hp.read_map(input, field=sig, verbose=False, h=True, dtype=None,)
+            header = dict(header)
+            signal_labels = []
+            for i in range(int(header["TFIELDS"])):
+                signal_label = header[f"TTYPE{i+1}"]
+                if signal_label in ["TEMPERATURE", "TEMP"]:
+                    signal_label = "T"
+                if signal_label in ["Q-POLARISATION", "Q_POLARISATION"]:
+                    signal_label = "Q"
+                if signal_label in ["U-POLARISATION", "U_POLARISATION"]:
+                    signal_label = "U"
+                signal_labels.append(signal_label)            
+            outfile = input.replace(".fits", "")
+    
+        if maps_.ndim == 1: maps_ = maps_.reshape(1,-1)
+        maps.append(maps_)
 
-    if maps.ndim == 1: maps = maps.reshape(1,-1)
     return maps, lmax, outfile, signal_labels
 
-def output_map(fig, outfile, png, fwhm, colorbar, mask, remove_dipole, darkmode, white_background,cmap,nside,signal_label,width,outdir,verbose):
+def output_map(fig, outfile, png, fwhm, colorbar, mask, remove_dipole, darkmode, white_background,cmap,nside,signal_label,width,outdir,gif,imgs,verbose):
     #### filename ##
     outfile = outfile.replace("_IQU_", "_")
     outfile = outfile.replace("_I_", "_")
@@ -838,9 +866,15 @@ def output_map(fig, outfile, png, fwhm, colorbar, mask, remove_dipole, darkmode,
     if outdir:
         fn = outdir + "/" + os.path.split(fn)[-1]
 
-    click.echo(click.style("Output:", fg="green") + f" {fn}")
     tp = False if white_background else True  
-    fig.savefig(fn, bbox_inches="tight", pad_inches=0.02, transparent=tp, format=filetype, dpi=300)
+    if gif:
+        click.echo(click.style("Outputing GIF:", fg="green") + f" {fn}")
+        import matplotlib.animation as animation
+        ani = animation.ArtistAnimation(fig, imgs, interval=500, blit=True, repeat_delay=1000)
+        ani.save(fn.replace(filetype,"gif"),dpi=300)
+    else:
+        click.echo(click.style("Outputing PDF:", fg="green") + f" {fn}")
+        fig.savefig(fn, bbox_inches="tight", pad_inches=0.02, transparent=tp, format=filetype, dpi=300)
     click.echo("Savefig", (time.time() - starttime),) if verbose else None
 
 def get_ticks(m, ticks, mn, md, mx, min, mid, max, rng, auto):

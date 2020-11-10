@@ -86,7 +86,7 @@ def specplot(input,cmap,long):
     plt.show()
 
 @commands_plotting.command()
-@click.argument("input", type=click.Path(exists=True))#, nargs=-1,)
+@click.argument("input", nargs=-1,)
 @click.option("-dataset", type=click.STRING, help="for .h5 plotting (ex. 000007/cmb/amp_alm)")
 @click.option("-nside", type=click.INT, help="nside for optional ud_grade.",)
 @click.option("-auto", is_flag=True, help="Automatically sets all plotting parameters.",)
@@ -115,8 +115,9 @@ def specplot(input,cmap,long):
 @click.option("-scale", default=None, type=click.FLOAT, help="Scale input map [ex. 1e-6 for muK to K]",)
 @click.option("-outdir", type=click.Path(exists=True), help="Output directory for plot",)
 @click.option("-labelsize", default=10, type=click.INT, help="Title size.",)
+@click.option("-gif", is_flag=True, help="Make gifs from input",)
 @click.option("-verbose", is_flag=True, help="Verbose mode")
-def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, labelsize, verbose,):
+def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, labelsize,gif, verbose,):
     """
     Plots map from .fits or h5 file.
     ex. c3pp plot coolmap.fits -bar -auto -lmax 60 -darkmode -pdf -title $\beta_s$
@@ -126,13 +127,9 @@ def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule,
     RECOMMENDED: Use -auto to autodetect map type and set parameters.\n
     Some autodetected maps use logscale, you will be warned.
     """
-    if input.endswith(".h5") and not dataset and not nside:
-        print("Specify Nside when plotting alms!")
-        sys.exit()
-        
-    data = None # Only used if calling plotter directly for plotting data array
     from src.plotter import Plotter
-    Plotter(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, verbose, data, labelsize)
+    data=None
+    Plotter(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, verbose, data,labelsize,gif)
 
 
 @commands_plotting.command()
@@ -188,7 +185,6 @@ def gnomplot(filename, lon, lat, sig, size, min_, max_, rng, unit, cmap, graticu
     x = hp.read_map(filename, field=sig, verbose=False, dtype=None)
     nside=hp.get_nside(x)
 
-    half = size/2
     proj = hp.projector.GnomonicProj(rot=[lon,lat,0.0], coord='G', xsize=xsize, ysize=xsize,reso=reso)
     reproj_im = proj.projmap(x, vec2pix_func=partial(hp.vec2pix, nside))
 
@@ -426,11 +422,12 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
             for i, method in enumerate(["Commander", "SEVEM", "NILC", "SMICA",]):
                 try:
                     input = f"BP_cmb_diff_{method.lower()}_{procver}.fits"
-                    ctx.invoke(plot, input=input, size="s", outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask3, remove_monopole=mask3, sig=[0,],  range=10, title=method, ltitle=" ", mask=mask3, mfill="gray", labelsize=6)
-                    ctx.invoke(plot, input=input, size="s", outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], remove_monopole=mask2, range=4, title=method, ltitle=" ", mask=mask2, mfill="gray", labelsize=6)
+                    ttl = "$\mathrm{"+method+"}$"
+                    ctx.invoke(plot, input=input, size="s", outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask3, remove_monopole=mask3, sig=[0,],  range=10, title=ttl, ltitle=" ", mask=mask3, mfill="gray", labelsize=6)
+                    ctx.invoke(plot, input=input, size="s", outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], remove_monopole=mask2, range=4, title=ttl, ltitle=" ", mask=mask2, mfill="gray", labelsize=6)
 
-                    ctx.invoke(plot, input=input, size="ml", outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask3, remove_monopole=mask3, sig=[0,],  range=10, title=method, ltitle=" ", mask=mask3, mfill="gray",)
-                    ctx.invoke(plot, input=input, size="ml", outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], remove_monopole=mask2, range=4, title=method, ltitle=" ", mask=mask2, mfill="gray",)
+                    ctx.invoke(plot, input=input, size="ml", outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask3, remove_monopole=mask3, sig=[0,],  range=10, title=ttl, ltitle=" ", mask=mask3, mfill="gray",)
+                    ctx.invoke(plot, input=input, size="ml", outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], remove_monopole=mask2, range=4, title=ttl, ltitle=" ", mask=mask2, mfill="gray",)
                 except Exception as e:
                     print(e)
                     click.secho("Continuing...", fg="yellow")
