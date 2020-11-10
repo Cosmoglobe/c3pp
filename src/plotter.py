@@ -798,6 +798,7 @@ def get_map(input, sig, dataset, nside, lmax, fwhm,):
     signal_labels=None
     maps=[]
     for input in input:
+        print(input)
         if input.endswith(".h5"):
             from src.commands_hdf import h5map2fits
             from src.tools import alm2fits_tool
