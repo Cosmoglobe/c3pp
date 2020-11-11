@@ -2,3 +2,4 @@ include src/planck_cmap.dat
 include src/planck_cmap_logscale.dat
 include src/spdust2_cnm.dat
 include src/Synchrotron_template_GHz_extended.txt
+include src/autoparams.json

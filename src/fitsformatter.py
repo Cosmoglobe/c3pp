@@ -43,7 +43,7 @@ def get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types, cm
         dset[6] = mask1
         dset[7] = mask2
 
-    if extname.endswith("RESAMP"):
+    if extname.endswith("RESAMP-T"):
         # Mean data
         amp_mean = h5handler(input=chain, dataset="cmb/amp_alm", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=fwhm, nside=nside, command=np.mean,)
 
@@ -53,7 +53,18 @@ def get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types, cm
         dset = np.zeros((len(types), hp.nside2npix(nside)))
         dset[0] = amp_mean
         dset[1] = amp_stddev
+    elif extname.endswith("RESAMP-P"):
+        # Mean data
+        amp_mean = h5handler(input=chain, dataset="cmb_lowl/amp_alm", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=fwhm, nside=nside, command=np.mean,)
 
+        # stddev data
+        amp_stddev = h5handler(input=chain, dataset="cmb_lowl/amp_alm", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=fwhm, nside=nside, command=np.std,)
+
+        dset = np.zeros((len(types), hp.nside2npix(nside)))
+        dset[0] = amp_mean[0,:]
+        dset[1] = amp_mean[1,:]
+        dset[2] = amp_stddev[0,:]
+        dset[3] = amp_stddev[1,:]
     elif extname.endswith("SYNCHROTRON"):
         # Mean data
         amp_mean = h5handler(input=chain, dataset="synch/amp_alm", min=burnin, max=None, maxchain=maxchain, output="map", fwhm=fwhm, nside=nside, command=np.mean,)

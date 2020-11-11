@@ -73,13 +73,13 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar,
             #### Automatic variables #####
             if auto:
                 (m, ttl, lttl, unt, ticks, cmp, lgscale,) = get_params(m, outfile, signal_label,)
-
                 # Tick bug fix
                 mn, md, mx= (ticks[0], None, ticks[-1])
                 if not mid and len(ticks)>2:
                     if ticks[0]<ticks[1]  and ticks[-2]<ticks[-1]:
                         md = ticks[1:-1]
                     else:
+                        print(ticks)
                         ticks.pop(1)
             else:
                 ttl = lttl = unt = ""
@@ -144,388 +144,66 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar,
                     plt.close()
                 click.echo("Totaltime:", (time.time() - totaltime),) if verbose else None
 
-
 def get_params(m, outfile, signal_label,):
     outfile = os.path.split(outfile)[-1] # Remove path 
-    logscale = False
-
-    # Everything listed here will be recognized
-    # If tag is found in output file, use template
-    cmb_tags = ["cmb", "BP_cmb"]
-    chisq_tags = ["chisq"]
-    synch_tags = ["synch",]
-    dust_tags = ["dust",]
-    ame_tags = [ "ame_","ame1","ame2",]
-    ff_tags = ["ff_", "freefree",]
-    co10_tags = ["co10", "co-100"]
-    co21_tags = ["co21", "co-217"]
-    co32_tags = ["co32", "co-353"]
-    hcn_tags = ["hcn"]
-    ame_nup_tags = ["_nup","_nu_p", "_NU_P",]
-    dust_T_tags = ["_T_", "Td"]
-    dust_beta_tags = ["beta","BETA",]
-    synch_beta_tags = ["beta", "BETA",]
-    ff_Te_tags = ["T_e", "_Te", "_TE_", "_T_E",]
-    ff_EM_tags = ["_EM"]
-    res_tags = ["residual_", "res_"]
-    tod_tags = ["Smap"]
-    freqmap_tags = ["BP_030", "BP_044", "BP_070"]
-    bpcorr_tags = ["_bpcorr_"]
-    ignore_tags = ["radio_"]
-    mask_tags = ["mask"]
-
-    # Simple signal label from pol index
-    title = {}
     sl = signal_label.split("_")[0]
-    title["sig"] = sl
-    title["unit"] = ""
-    title["special"] = False
-    cmap = "planck"  # Default cmap
-
-    #######################
-    #### Component maps ###
-    #######################
-    
-    # ------ CMB ------
-    if tag_lookup(cmb_tags, outfile,):
-        click.echo(click.style("{:-^48}".format(f"Detected CMB signal {sl}"),fg="yellow"))
-        title["unit"]  = r"$\mu\mathrm{K}_{\mathrm{CMB}}$"
-        title["comp"]  = "cmb" 
-        title["param"] = r"$A$"
-        if sl == "Q" or sl == "U" or sl == "QU" or sl=="P":
-            ticks = [-10, 0, 10]
-        else:
-            ticks = [-300, 0, 300]
-    # ------ Chisq ------
-    elif tag_lookup(chisq_tags, outfile):
-        click.echo(click.style("{:-^48}".format(f"Detected chisq {sl}"),fg="yellow"))
-        title["special"] = True
-        title["unit"]  = ""
-        title["comp"]  = ""
-        title["param"] = r"$\chi^2$"
-        ticks = [-3, 0., 3]
-        cmap = "RdBu_r"
-
-    # ------ SYNCH ------
-    elif tag_lookup(synch_tags, outfile):
-        title["comp"] = "s"
-        if tag_lookup(synch_beta_tags, outfile+signal_label,):
-            click.echo(click.style("{:-^48}".format(f"Detected Synchrotron beta"),fg="yellow"))
-            click.echo("Detected Synchrotron beta")
-            ticks = [-3.2, -3.15, -3.1]
-            title["unit"]  = ""
-            title["param"] = r"$\beta$"
-            cmap="swamp"
-        else:
-            click.echo(click.style("{:-^48}".format(f"Detected Synchrotron {sl}"),fg="yellow"))            
-            title["param"] = r"$A$"
-            logscale = True
-            cmap = "swamp"
-            if sl == "Q" or sl == "U" or sl == "QU":
-                # BP uses 30 GHz ref freq for pol
-                title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
-                cmap = "wildfire"
-                ticks = [-100, 0, 100]
-            elif title["sig"] == "P": 
-                title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
-                ticks = [5, 10, 25, 50]
-            else:
-                # scale = 1e-6
-                ticks = [50, 100, 200, 400]
-                title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
-
-    # ------ FREE-FREE ------
-    elif tag_lookup(ff_tags, outfile) and not tag_lookup(["diff",], outfile+signal_label,):
-        title["comp"]  = "ff" 
-        if tag_lookup(ff_Te_tags, outfile+signal_label,):
-            click.echo(click.style("{:-^48}".format(f"Detected free-free Te"),fg="yellow"))
-            ticks = [5000, 8000]
-            title["unit"]  = r"$\mathrm{K}$"
-            title["param"] = r"$T_{e}$"
-        elif tag_lookup(ff_EM_tags, outfile+signal_label,):
-            click.echo("Detected freefree EM MIN AND MAX VALUES UPDATE!")
-            vmin, vmax = get_percentile(m, 97.5)
-            ticks = [vmin, vmax]
-            title["unit"]  = r"$\mathrm{K}$"
-            title["param"] = r"$T_{e}$"
-        else:
-            click.echo(click.style("{:-^48}".format(f"Detected free-free"),fg="yellow"))
-            title["param"] = r"$A$"
-            cmap = "freeze"
-            ticks = [40, 400, 2000]
-            title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
-            logscale = True
-
-    # ------ AME ------
-    elif tag_lookup(ame_tags, outfile):
-        title["comp"]  = "ame"
-        if tag_lookup(ame_nup_tags, outfile+signal_label,):
-            click.echo(click.style("{:-^48}".format(f"Detected AME nu_p"),fg="yellow"))        
-            ticks = [17, 23]
-            title["unit"]  = "GHz"
-            title["param"] = r"$\nu_{p}$"
-        else:
-            click.echo(click.style("{:-^48}".format(f"Detected AME"),fg="yellow"))
-            title["param"] = r"$A$"
-            title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
-            cmap = "amber"
-            ticks = [30, 300, 3000]
-            logscale = True
-
-    # ------ THERMAL DUST ------
-    elif tag_lookup(dust_tags, outfile):
-        title["comp"]  = "d"
-        if tag_lookup(dust_T_tags, outfile+signal_label,):
-            click.echo(click.style("{:-^48}".format(f"Detected Thermal dust temperature"),fg="yellow"))
-            ticks = [14, 30]
-            title["unit"]  = r"$\mathrm{K}$"
-            title["param"] = r"$T$"
-        elif tag_lookup(dust_beta_tags, outfile+signal_label,):
-            click.echo(click.style("{:-^48}".format(f"Detected Thermal dust beta"),fg="yellow"))
-            ticks = [1.3, 1.8]
-            title["unit"]  = ""
-            title["param"] = r"$\beta$"
-        else:
-            click.echo(click.style("{:-^48}".format(f"Detected Thermal dust {sl}"),fg="yellow"))
-            title["param"] = r"$A$"
-            title["unit"] = r"$\mu\mathrm{K}_{\mathrm{RJ}}$"
-            logscale = True
-
-            if sl == "Q" or sl == "U" or sl == "QU":
-                ticks = [-100, 0, 100]
-                cmap = "iceburn"
-            elif sl=="P":
-                cmap = "sunburst"
-                ticks = [5, 10, 25, 50] #10, 100, 1000]
-            else:
-                cmap = "sunburst"
-                ticks = [30, 300, 3000]
-                
-
-    #######################
-    ## LINE EMISSION MAPS #
-    #######################
-
-    elif tag_lookup(co10_tags, outfile):
-        click.echo(click.style("{:-^48}".format(f"Detected CO10"),fg="yellow"))
-        click.echo("Detected CO10")
-        cmap = "arctic"
-        title["comp"] = "co10"
-        title["param"] = r"$A$"
-        title["unit"] = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
-        
-        ticks = [0, 10, 100]
-
-        logscale = True
-
-    elif tag_lookup(co21_tags, outfile):
-        click.echo(click.style("{:-^48}".format(f"Detected CO21"),fg="yellow"))
-        title["comp"] = "co21"
-        title["param"] =r"$A$"
-        title["unit"] = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
-        ticks = [0, 10, 100]
-        cmap = "arctic"
-        logscale = True
-
-    elif tag_lookup(co32_tags, outfile):
-        click.echo(click.style("{:-^48}".format(f"Detected CO32"),fg="yellow"))
-        title["comp"] = "co32"
-        title["param"] = r"$A$"
-        ticks = [0, 10, 100]
-        cmap = "arctic"
-        title["unit"] = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
-        logscale = True
-
-    elif tag_lookup(hcn_tags, outfile):
-        click.echo(click.style("{:-^48}".format(f"Detected HCN"),fg="yellow"))
-        title["comp"] = "hcn"
-        title["param"] = r"$A$"
-        ticks = [0.01, 100]
-        cmap = "arctic"
-        title["unit"] = r"$\mathrm{K}_{\mathrm{RJ}}\, \mathrm{km}/\mathrm{s}$"
-        logscale = True
-
-    #################
-    # RESIDUAL MAPS #
-    #################
-
-    elif tag_lookup(res_tags, outfile):
-        from re import findall
-        click.echo(click.style("{:-^48}".format(f"Detected residual map {sl}"),fg="yellow"))
-
-        if "res_" in outfile:
-            if "WMAP" in outfile:
-                tit = str(findall(r"WMAP_(.*?)_", outfile)[0])
-            else:
-                tit = str(findall(r"res_(.*?)_", outfile)[0])
-            if "Haslam" in outfile:
-                tit = "Haslam"
-        else:
-            tit = str(findall(r"residual_(.*?)_", outfile)[0])
-        
-        ticks = [-3, 0, 3]
-        
-        if "WMAP" in outfile:
-            if "_P_" in outfile and sl != "T":
-                ticks = [-10, 0, 10]
-            
-        title["comp"] = fr"{tit}"
-        title["param"] = r"$r$"
-        title["unit"] = r"$\mu\mathrm{K}$"
-
-        if "545" in outfile:
-            #ticks = [-100, 0, 100]
-            #title["unit"] = r"$\mathrm{MJy/sr}$"
-            m = m*2.2703e-6 
-            ticks = [-100, 0, 100]
-        elif "857" in outfile:
-            m *= 2.2703e-6 
-            ticks = [-300,0,300]
-            #ticks = [-0.05, 0, 0.05]
-            #title["unit"] = r"$\mathrm{MJy/sr}$"
-        elif "Haslam" in outfile:
-            ticks = [-1e4, 0, 1e4]
-        
-
-    ############
-    # TOD MAPS #
-    ############
-    elif tag_lookup(tod_tags, outfile):
-        from re import findall
-        click.echo(click.style("{:-^48}".format(f"Detected Smap {sl}"),fg="yellow"))
-        
-        tit = str(findall(r"tod_(.*?)_Smap", outfile)[0])
-        title["comp"] = fr"{tit}"
-        title["param"] = r"$smap$"
-        ticks = [-0.2, 0, 0.2]
-        title["unit"] = r"$\mu\mathrm{K}$"
-
-    ############
-    # FREQMAPS #
-    ############
-
-    elif tag_lookup(freqmap_tags, outfile):
-        from re import findall
-        click.echo(click.style("{:-^48}".format(f"Detected frequency map {sl}"),fg="yellow"))
-        
-        vmin, vmax = get_percentile(m, 97.5)
-        ticks = [vmin, vmax]
-        #logscale=True
-        #if logscale:
-        #    ticks = [-1e3, 0, 1e3, 1e7]
-        title["unit"] = r"$\mu\mathrm{K}$"
-        tit = str(findall(r"BP_(.*?)_", outfile)[0])
-        title["comp"] = fr"{tit}"
-        title["param"] = r"$A$"
-
-    ############
-    #  BPcorr  #
-    ############
-
-    elif tag_lookup(bpcorr_tags, outfile):
-        from re import findall
-        click.echo(click.style("{:-^48}".format(f"Detected BPcorr map {sl}"),fg="yellow"))
-        
-        ticks = [-30,0,30]
-        title["unit"] = r"$\mu\mathrm{K}$"
-        tit = str(findall(r"tod_(.*?)_bpcorr", outfile)[0])
-
-        title["comp"] = fr"{tit}"
-        title["param"] = r"$s$"
-        title["custom"] = title["param"] + r"$_{\mathrm{leak}}^{" + title["comp"].lstrip('0') + "}}$"
-
-    #############
-    #  Mask     #
-    #############
-
-    elif tag_lookup(mask_tags, outfile):
-        from re import findall
-        click.echo(click.style("{:-^48}".format(f"Detected mask file {sl}"),fg="yellow"))
-        
-        ticks = [0, 1]
-        title["unit"] = r""
-
-        title["comp"] = r"Mask"
-        title["param"] = r""
-        title["custom"] = title["comp"]
-
-        cmap = "bone"
- 
-    ##
-    # Not idenified or ignored #
-    ##
-    elif tag_lookup(ignore_tags, outfile):
-        click.echo(f'{outfile} is on the ignore list, under tags {ignore_tags}. Remove from "ignore_tags" in plotter.py. Breaking.')
-        sys.exit()
+    if sl in ["Q", "U", "QU"]:
+        i = 1
+    elif sl == "P":
+        i = 2
     else:
-        # Run map autoset
-        title, ticks, cmap, logscale, = not_identified(m, signal_label, logscale, title)
+        i = 0
+    import json
+    from pathlib import Path
+    with open(Path(__file__).parent /'autoparams.json', 'r') as f:
+        params = json.load(f)
+    for label, comp in params.items():
+        if tag_lookup(comp["tags"], outfile+signal_label):
+            click.echo(click.style("{:-^48}".format(f"Detected {label} signal {sl}"),fg="yellow"))
+            if label in ["residual", "freqmap",  "smap", "bpcorr"]:
+                from re import findall
+                if label == "smap": tit = str(findall(r"tod_(.*?)_Smap", outfile)[0])
+                if label == "freqmap": 
+                    tit = str(findall(r"BP_(.*?)_", outfile)[0])
+                if label == "bpcorr": 
+                    tit = str(findall(r"tod_(.*?)_bpcorr", outfile)[0])
+                    ttl ="$s_{\mathrm{leak}}^{"+tit+"}}$"
+                if label == "residual":
+                    if "WMAP" in outfile:
+                        tit = str(findall(r"WMAP_(.*?)_", outfile)[0])
+                    elif "Haslam" in outfile:
+                        tit = "Haslam"
+                    else:
+                        if "res_"in outfile:
+                            tit = str(findall(r"res_(.*?)_", outfile)[0])
+                        else:
+                            tit = str(findall(r"residual_(.*?)_", outfile)[0])
+                    if "_P_" in outfile and sl != "T":
+                        comp["ticks"] = [-10, 0, 10]
+                    if "857" in outfile:
+                        m *= 2.2703e-6 
+                        comp["ticks"] = [-300,0,300]
+                    elif "Haslam" in outfile:
+                        comp["ticks"] = [-1e4, 0, 1e4]
+                comp["comp"] = r"${"+tit+"}$"
 
-    # If signal is an RMS map, add tag.
-    if signal_label.endswith("STDDEV") or "_stddev" in outfile:
-        click.echo(click.style(f"Detected STDDEV map",fg="yellow"))
-        title["stddev"] = True
-        vmin, vmax = get_percentile(m, 97.5)
-        logscale = False
-        #vmin = 0
-        ticks = [vmin, vmax]
-        #cmap = "planck"
-        cmap = "neutral"
-    else:
-        title["stddev"] = False
-
-    # If signal is an RMS map, add tag.
-    if signal_label.endswith("RMS") or "_rms" in outfile:
-        click.echo(click.style(f"Detected RMS map",fg="yellow"))
-        title["rms"] = True
-        vmin, vmax = get_percentile(m, 97.5)
-        logscale = False
-        #vmin = 0
-        ticks = [vmin, vmax]
-        #cmap = "planck"
-        cmap = "neutral"
-    else:
-        title["rms"] = False
-
-    if tag_lookup(["diff"], outfile):
-        if tag_lookup(["dx12"], outfile):
-            title["diff_label"] = "\mathrm{2018}"
-        elif tag_lookup(["npipe"], outfile):
-            title["diff_label"] = "\mathrm{NPIPE}"
-        else:
-            title["diff_label"] = ""
-
-        vmin, vmax = get_percentile(m, 97.5)
-        logscale = False
-        #vmin = 0
-        ticks = [vmin, vmax]
-        title["diff"] = True 
-    else:
-        title["diff"] = False
-
-    if signal_label.endswith("MEAN") or "_mean" in outfile:
-        click.echo(click.style(f"Detected MEAN map",fg="yellow"))
-        title["mean"] = True 
-    else:
-        title["mean"] = False
-
-    title["comp"] = title["comp"].lstrip('0')    
-
-    ttl, lttl = get_title(title)
-    unt = title["unit"]
-    return (m, ttl, lttl, unt, ticks, cmap, logscale,)
-
-def not_identified(m, signal_label, logscale, title):
+            comp["comp"] = comp["comp"].lstrip('0')    
+            #print(i,sl,len(comp["cmap"]),len(comp["ticks"]))
+            if i>=len(comp["cmap"]): i = len(comp["cmap"])-1
+            comp["cmap"] = comp["cmap"][i]
+            comp["ticks"] = comp["ticks"][i]
+            ttl, lttl = get_title(comp,outfile,signal_label,)
+            if comp["ticks"] == "auto": comp["ticks"] = get_percentile(m,97.5)
+            if label == "chisq": ttl = r"$\chi^2$"
+            if comp["unit"]: comp["unit"] = r"$"+comp["unit"].replace('$','')+"$"
+            return (m,  ttl, lttl, comp["unit"], comp["ticks"], comp["cmap"], comp["logscale"],)
+    # If not recognized
     click.echo(click.style("{:-^48}".format(f"Map not recognized, plotting with min and max values"),fg="yellow"))
-    title["comp"] = signal_label.split("_")[-1]
-    title["param"] = ""
-    title["unit"] = ""
-    vmin, vmax = get_percentile(m, 97.5)
-    ticks = [vmin, vmax]
-    cmap = "planck"
-    ttl, lttl = get_title(title)
-    unt = title["unit"]
-    return (m, ttl, lttl, unt, ticks, cmap, logscale,)
+    comp = params["unidentified"]
+    comp["comp"] = signal_label.split("_")[-1]
+    ttl, lttl = get_title(comp,outfile,signal_label,)
+    if comp["ticks"] == "auto": comp["ticks"] = get_percentile(m,97.5)
+    return (m,  ttl, lttl, comp["unit"], comp["ticks"], comp["cmap"], comp["logscale"],)
 
 def get_signallabel(x):
     if x == 0:
@@ -552,7 +230,7 @@ def get_percentile(m, percentile):
 
     vmin = 0.0 if abs(vmin) < 1e-5 else vmin
     vmax = 0.0 if abs(vmax) < 1e-5 else vmax
-    return vmin, vmax
+    return [vmin, vmax]
 
 def fmt(x, pos):
     """
@@ -700,35 +378,44 @@ def remove_md(m, remove_dipole, remove_monopole, nside):
         m = m - mono
     return m
 
-def get_title(_title):
-    # Title
-    if _title["stddev"]:
-        if _title["special"]:
-            ttl =   r"$\sigma_{\mathrm{" + _title["param"].replace("$","") + "}}$"
+def get_title(comp, outfile, signal_label,):
+    sl = signal_label.split("_")[0]
+    if tag_lookup(["STDDEV","_stddev"], outfile+signal_label):
+        if comp["special"]:
+            ttl = r"$\sigma_{\mathrm{" + comp["param"].replace("$","") + "}}$"
         else:
-            #_title["param"] + r"$_{\mathrm{" + _title["comp"] + "}}^{\sigma}$" 
-            ttl =   r"$\sigma_{\mathrm{" + _title["comp"] + "}}$"
-    elif _title["rms"]:
-        ttl =  _title["param"] + r"$_{\mathrm{" + _title["comp"] + "}}^{\mathrm{RMS}}$" 
-    elif _title["mean"]:
-        #r"$\langle$" + _title["param"] + r"$\rangle$" + r"$_{\mathrm{" + _title["comp"] + "}}^{ }$" 
-        ttl = r"$\langle$" + _title["param"] + r"$_{\mathrm{" + _title["comp"] + "}}^{ }$" + r"$\rangle$"  
-    elif _title["diff"]:
-        ttl = r"$\Delta$ " + _title["param"] + r"$_{\mathrm{" + _title["comp"] + "}}^{" + _title["diff_label"] + "}$" 
+            ttl =   r"$\sigma_{\mathrm{" + comp["comp"] + "}}$"
+        comp["cmap"] = "neutral"
+        comp["ticks"] = "auto"
+        comp["logscale"] = comp["special"] = False
+    elif tag_lookup(["RMS","_rms",], outfile+signal_label):
+        ttl =  comp["param"] + r"$_{\mathrm{" + comp["comp"] + "}}^{\mathrm{RMS}}$" 
+        comp["cmap"] = "neutral"
+        comp["ticks"] = "auto"
+        comp["logscale"] = comp["special"] = False
+    elif tag_lookup(["mean"], outfile+signal_label):
+        ttl = r"$\langle$" + comp["param"] + r"$_{\mathrm{" + comp["comp"] + "}}^{ }$" + r"$\rangle$"
+    elif tag_lookup(["diff"], outfile+signal_label):
+        if "dx12" in outfile: difflabel = "\mathrm{2018}"
+        difflabel = "\mathrm{NPIPE}" if "npipe" in outfile else ""
+        ttl = r"$\Delta$ " + comp["param"] + r"$_{\mathrm{" + comp["comp"] + "}}^{" + difflabel + "}$"
     else:
-        ttl =  _title["param"] + r"$_{\mathrm{" + _title["comp"] + "}}^{ }$" 
+        ttl =  comp["param"] + r"$_{\mathrm{" + comp["comp"] + "}}^{ }$" 
     try:
-        ttl = _title["custom"]
+        ttl = comp["custom"]
     except:
         pass
-
     # Left signal label
-    lttl = r"$" + _title["sig"] +"$"
+    lttl = r"$" + sl +"$"
     if lttl == "$I$":
         lttl = "$T$"
     elif lttl == "$QU$":
         lttl= "$P$"
 
+    ttl = r"$"+ttl.replace('$','')+"$"
+    lttl = r"$"+lttl.replace('$','')+"$",
+    if ttl == "$$": ttl =""
+    if lttl == "$$": lttl =""
     return ttl, lttl
 
 def apply_colorbar(fig, image, ticks, ticklabels, unit, fontsize, linthresh, logscale):
@@ -887,7 +574,7 @@ def get_ticks(m, ticks, mn, md, mx, min, mid, max, rng, auto):
     # If min and max have been specified, set.
     if rng == "auto" and not auto:
         click.echo(click.style("Setting range from 97.5th percentile of data",fg="yellow"))
-        mn, mx = get_percentile(m, 97.5)
+        mn,mx = get_percentile(m, 97.5)
     elif rng == "minmax":
         click.echo(click.style("Setting range from min to max of data",fg="yellow"))
         mn = np.min(m)
