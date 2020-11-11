@@ -167,7 +167,6 @@ def get_params(m, outfile, signal_label,):
                     tit = str(findall(r"BP_(.*?)_", outfile)[0])
                 if label == "bpcorr": 
                     tit = str(findall(r"tod_(.*?)_bpcorr", outfile)[0])
-                    ttl ="$s_{\mathrm{leak}}^{"+tit+"}}$"
                 if label == "residual":
                     if "WMAP" in outfile:
                         tit = str(findall(r"WMAP_(.*?)_", outfile)[0])
@@ -193,8 +192,10 @@ def get_params(m, outfile, signal_label,):
             comp["cmap"] = comp["cmap"][i]
             comp["ticks"] = comp["ticks"][i]
             ttl, lttl = get_title(comp,outfile,signal_label,)
+            
             if comp["ticks"] == "auto": comp["ticks"] = get_percentile(m,97.5)
             if label == "chisq": ttl = r"$\chi^2$"
+            if label == "bpcorr": ttl ="$s_{\mathrm{leak}}^{"+tit+"}}$"
             if comp["unit"]: comp["unit"] = r"$"+comp["unit"].replace('$','')+"$"
             return (m,  ttl, lttl, comp["unit"], comp["ticks"], comp["cmap"], comp["logscale"],)
     # If not recognized

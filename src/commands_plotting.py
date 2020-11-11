@@ -492,7 +492,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
         
         a_cmb = None
         #BP_synch_IQU_n1024_BP8_noMedianFilter.fits
-        a_s = hp.read_map(f"BP_synch_IQU_n1024_{procver}_noMedianFilter.fits", field=(0,1,2), dtype=None, verbose=False)
+        a_s = hp.read_map(f"unprocessed/BP_synch_IQU_n1024_{procver}_noMedianFilter.fits", field=(0,1,2), dtype=None, verbose=False)
         b_s = hp.read_map(f"BP_synch_IQU_n1024_{procver}.fits", field=(4,5), dtype=None, verbose=False)
         
         a_ff = hp.read_map(f"BP_freefree_I_n1024_{procver}.fits", field=(0,), dtype=None, verbose=False)
