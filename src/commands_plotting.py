@@ -255,7 +255,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
     elif goodness:
         goodness_temp = goodness_pol = chisq = True
 
-    size = "s" #"mls"
+    size = "mls"
     for colorbar in [True, False]:
         if (cmbresamp and mask) or (cmbresamp and defaultmask):
             outdir = "figs/cmb/"
