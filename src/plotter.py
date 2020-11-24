@@ -492,7 +492,6 @@ def get_map(input, sig, dataset, nside, lmax, fwhm,):
     input = [input] if isinstance(input, str) else input
     if not input: print("No input specified"); sys.exit()
     for input_ in input:
-        print(input_)
         if input_.endswith(".h5"):
             from src.commands_hdf import h5map2fits
             from src.tools import alm2fits_tool
