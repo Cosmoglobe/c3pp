@@ -2,8 +2,8 @@
     "cmb": {
         "tags": ["cmb","BP_cmb"],
         "unit": "$\\mu\\mathrm{K}_{\\mathrm{CMB}}$",
-        "comp": "$A$",
-        "param": "cmb",
+        "comp": "cmb",
+        "param": "$A$",
         "cmap": ["planck"],
         "ticks": [[-300,0,300], [-10,0,10]],
         "logscale": false,
