@@ -246,21 +246,20 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
     chipass = True
     spass = True
     cbass = True
-    quijote = False
+    quijote = True
     wmap = True
     planck = True
     dirbe = True
-    
     databands = {"Haslam":  {"0.408\nHaslam": {"pol": False, "show": haslam, "position": [.408, ymin*yscaletextup],  "range": [.406,.410], "color": purple,}},
                  "S-PASS":  {"2.303\nS-PASS":  {"pol": True, "show": spass,  "position": [2.35, ymax2*yscaletext],  "range": [2.1,2.4], "color": green,}},
-                 "C-BASS":  {"5.0\nC-BASS":   {"pol": True, "show": spass,  "position": [5., ymax2*yscaletext],    "range": [4.,6.], "color": blue,}},
+                 "C-BASS":  {"5.0\nC-BASS":   {"pol": True, "show": cbass,  "position": [5., ymax2*yscaletext],    "range": [4.,6.], "color": blue,}},
                  "CHI-PASS":{"1.394\nCHI-PASS":{"pol": False, "show": chipass,"position": [1.3945, ymin*yscaletextup],"range": [1.3945-0.064/2, 1.3945+0.064/2], "color": lightred,}},
-                 "QUIJOTE": {"11\nQUIJOTE":    {"pol": True, "show": quijote,"position": [11, ymax2*yscaletext],    "range":  [10.,12.], "color": orange,},
-                             "13":             {"pol": True, "show": quijote, "position": [13, ymax2*yscaletext], "range":  [12.,14.], "color": orange,},
-                             "17":             {"pol": True, "show": quijote, "position": [17, ymax2*yscaletext], "range":  [16.,18.], "color": orange,},
-                             "19":             {"pol": True, "show": quijote, "position": [20, ymax2*yscaletext], "range":  [18.,21.], "color": orange,},
-                             "31":             {"pol": True, "show": quijote, "position": [31, ymax2*yscaletext], "range":  [26.,36.], "color": orange,},
-                             "41":             {"pol": True, "show": quijote, "position": [42, ymax2*yscaletext], "range":  [35.,47.], "color": orange,}},
+                 "QUIJOTE": {"11\nQUIJOTE":    {"pol": True, "show": quijote,"position": [11, ymax2*yscaletext],    "range":  [10.,12.], "color": red,},
+                             "13":             {"pol": True, "show": quijote, "position": [13, ymax2*yscaletext], "range":  [12.,14.], "color": red,},
+                             "17":             {"pol": True, "show": quijote, "position": [17, ymax2*yscaletext], "range":  [16.,18.], "color": red,},
+                             "19":             {"pol": True, "show": quijote, "position": [20, ymax2*yscaletext], "range":  [18.,21.], "color": red,},
+                             ".\n31":             {"pol": True, "show": quijote, "position": [31, ymax2*yscaletext], "range":  [26.,36.], "color": red,},
+                             ".\n41":             {"pol": True, "show": quijote, "position": [42, ymax2*yscaletext], "range":  [35.,47.], "color": red,}},
                  "Planck":  {"30":          {"pol": True, "show": planck, "position": [27,  ymax2*yscaletext], "range": [23.9,34.5],"color": orange,},      # Planck 30
                              "44":          {"pol": True, "show": planck, "position": [40,  ymax2*yscaletext], "range": [39,50]    ,"color": orange,},      # Planck 44
                              "70":          {"pol": True, "show": planck, "position": [60,  ymax2*yscaletext], "range": [60,78]    ,"color": orange,},      # Planck 70
@@ -279,11 +278,53 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
                              "V":       {"pol": True, "show": wmap, "position": [58.,  ymin*yscaletextup], "range": [54,68], "color": teal,}, 
                              "W":       {"pol": True, "show": wmap, "position": [90.,  ymin*yscaletextup], "range": [84,106], "color": teal,}}, 
     }
+    """
+    BP SETUP
+    """
+    """
+    haslam = True
+    chipass = False
+    spass = False
+    cbass = False
+    quijote = False
+    wmap = True
+    planck = True
+    dirbe = False
     
-   # Set databands from dictonary
+    databands = {"Haslam":  {"0.408\nHaslam": {"pol": False, "show": haslam, "position": [.408, ymin*yscaletextup],  "range": [.406,.410], "color": purple,}},
+                 "S-PASS":  {"2.303\nS-PASS":  {"pol": True, "show": spass,  "position": [2.35, ymax2*yscaletext],  "range": [2.1,2.4], "color": green,}},
+                 "C-BASS":  {"5.0\nC-BASS":   {"pol": True, "show": cbass,  "position": [5., ymax2*yscaletext],    "range": [4.,6.], "color": blue,}},
+                 "CHI-PASS":{"1.394\nCHI-PASS":{"pol": False, "show": chipass,"position": [1.3945, ymin*yscaletextup],"range": [1.3945-0.064/2, 1.3945+0.064/2], "color": lightred,}},
+                 "QUIJOTE": {"11\nQUIJOTE":    {"pol": True, "show": quijote,"position": [11, ymax2*yscaletext],    "range":  [10.,12.], "color": orange,},
+                             "13":             {"pol": True, "show": quijote, "position": [13, ymax2*yscaletext], "range":  [12.,14.], "color": orange,},
+                             "17":             {"pol": True, "show": quijote, "position": [17, ymax2*yscaletext], "range":  [16.,18.], "color": orange,},
+                             "19":             {"pol": True, "show": quijote, "position": [20, ymax2*yscaletext], "range":  [18.,21.], "color": orange,},
+                             "31":             {"pol": True, "show": quijote, "position": [31, ymax2*yscaletext], "range":  [26.,36.], "color": orange,},
+                             "41":             {"pol": True, "show": quijote, "position": [42, ymax2*yscaletext], "range":  [35.,47.], "color": orange,}},
+                 "Planck":  {"30":          {"pol": True, "show": planck, "position": [27,  ymax2*yscaletext], "range": [23.9,34.5],"color": orange,},      # Planck 30
+                             "44":          {"pol": True, "show": planck, "position": [40,  ymax2*yscaletext], "range": [39,50]    ,"color": orange,},      # Planck 44
+                             "70\nPlanck":  {"pol": True, "show": planck, "position": [60,  ymax2*yscaletext], "range": [60,78]    ,"color": orange,},      # Planck 70
+                             "100":         {"pol": True, "show": True, "position": [90,  ymax2*yscaletext], "range": [82,120]   ,"color": orange,},      # Planck 100
+                             "143":         {"pol": True, "show": True, "position": [130, ymax2*yscaletext], "range": [125,170]  ,"color": orange,},      # Planck 143
+                             "217":         {"pol": True, "show": True, "position": [195, ymax2*yscaletext], "range": [180,265]  ,"color": orange,},      # Planck 217
+                             "353":         {"pol": True, "show": True, "position": [320, ymax2*yscaletext], "range": [300,430]  ,"color": orange,},      # Planck 353
+                             "545":         {"pol": False, "show": True, "position": [490, ymax2*yscaletext], "range": [450,650]  ,"color": orange,},      # Planck 545
+                             "857":         {"pol": False, "show": planck, "position": [730, ymax2*yscaletext], "range": [700,1020] ,"color": orange,}},      # Planck 857
+                 "DIRBE":   {"DIRBE\n1250":  {"pol": False, "show": dirbe, "position": [1000, ymin*yscaletextup], "range": [1000,1540] , "color": red,},     # DIRBE 1250
+                             "2140":         {"pol": False, "show": dirbe, "position": [1750, ymin*yscaletextup], "range": [1780,2500] , "color": red,},     # DIRBE 2140
+                             "3000":         {"pol": False, "show": dirbe, "position": [2500, ymin*yscaletextup], "range": [2600,3500] , "color": red,}},     # DIRBE 3000
+                 "WMAP":     {"K": {"pol": True, "show": True, "position": [21.8, ymin*yscaletextup], "range": [21,25.5], "color": teal,}, 
+                             "WMAP\nKa":      {"pol": True, "show": wmap, "position": [31.5, ymin*yscaletextup], "range": [30,37], "color": teal,},
+                             "Q":       {"pol": True, "show": wmap, "position": [39.,  ymin*yscaletextup], "range": [38,45], "color": teal,}, 
+                             "V":       {"pol": True, "show": wmap, "position": [58.,  ymin*yscaletextup], "range": [54,68], "color": teal,}, 
+                             "W":       {"pol": True, "show": True, "position": [90.,  ymin*yscaletextup], "range": [84,106], "color": teal,}}, 
+    }
+    """
+    # Set databands from dictonary
     for experiment, bands in databands.items():
         for label, band in bands.items():
             if band["show"]:
+                #if label == "353" and not pol: continue # SPECIFIC FOR BP SETUP
                 if pol and not band["pol"]:
                     continue # Skip non-polarization bands
                 if band["position"][0]>=xmax or band["position"][0]<=xmin:

@@ -64,32 +64,30 @@ def stddev(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, pi
 @click.argument("filename", type=click.STRING)
 @click.argument("nchains", type=click.INT)
 @click.argument("burnin", type=click.INT)
+@click.option("-suffix", type=click.STRING, default="",  help='if there is some, ex. Tresamp_v1')
 @click.option("-path", default="cmb/sigma_l", help="Dataset path ex. cmb/sigma_l",)
 @click.argument("outname", type=click.STRING)
-def sigma_l2fits(filename, nchains, burnin, path, outname, save=True,):
+def sigma_l2fits(filename, nchains, burnin, path, suffix, outname, save=True,):
     """
     Converts c3-h5 dataset to fits for c1 BR and GBR estimator analysis.
-
-    ex. c3pp sigma-l2fits chains_v1/chain 5 10 cmb_sigma_l_GBRlike.fits 
-    If "chain_c0001.h5", filename is cut to "chain" and will look in same directory for "chain_c*****.h5".
+    ex. c3pp sigma-l2fits chains_v1/chain 5 10 cmb_sigma_l_GBRlike.fits
+    If "chain_c0001.h5", filename is cut to "chain" and will look in same directory for "chain_c*****.h5". If a -suffix is present, it is added after c****, ex. -suffix Tr\
+esamp_v1 will point to chain_c****_Tresamp_v1.h5.
     See comm_like_tools for further information about BR and GBR post processing
     """
     click.echo("{:-^48}".format("Formatting sigma_l data to fits file"))
     import h5py
-
     if filename.endswith(".h5"):
         filename = filename.rsplit("_", 1)[0]
-
     temp = np.zeros(nchains)
     for nc in range(1, nchains + 1):
-        with h5py.File(filename + "_c" + str(nc).zfill(4) + ".h5", "r",) as f:
+        with h5py.File(filename + "_c" + str(nc).zfill(4) + suffix + ".h5", "r",) as f:
             groups = list(f.keys())
             temp[nc - 1] = len(groups)
     nsamples_max = int(max(temp[:]))
     click.echo(f"Largest chain has {nsamples_max} samples, using burnin {burnin}\n")
-
     for nc in range(1, nchains + 1):
-        fn = filename + "_c" + str(nc).zfill(4) + ".h5"
+        fn = filename + "_c" + str(nc).zfill(4) + suffix + ".h5"
         with h5py.File(fn, "r",) as f:
             click.echo(f"Reading {fn}")
             groups = list(f.keys())
@@ -101,20 +99,17 @@ def sigma_l2fits(filename, nchains, burnin, path, outname, save=True,):
             else:
                 dset = np.append(dset, np.zeros((nsamples_max + 1, 1, nspec, lmax + 1,)), axis=1,)
             click.echo(f"Dataset: {path} \n# samples: {nsamples} \n# spectra: {nspec} \nlmax: {lmax}")
-
             for i in range(nsamples):
                 for j in range(nspec):
                     dset[i + 1, nc - 1, j, :] = np.asarray(f[groups[i] + "/" + path][j][:])
-
             click.echo("")
-
     # Optimize with jit?
     ell = np.arange(lmax + 1)
     for nc in range(1, nchains + 1):
         for i in range(1, nsamples_max + 1):
             for j in range(nspec):
                 dset[i, nc - 1, j, :] = dset[i, nc - 1, j, :] * ell[:] * (ell[:] + 1.0) / 2.0 / np.pi
-    dset[0, :, :, :] = nsamples - burnin
+    dset[0, :, :, :] = nsamples - 2 #burnin 
 
     if save:
         click.echo(f"Dumping fits file: {outname}")

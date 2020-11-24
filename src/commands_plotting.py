@@ -104,7 +104,7 @@ def specplot(input,cmap,long):
 @click.option("-remove_dipole", default=None, type=click.STRING, help="Fits a dipole to the map and removes it.",)
 @click.option("-remove_monopole", default=None, type=click.STRING, help="Fits a monopole to the map and removes it.",)
 @click.option("-log/-no-log", "logscale", default=None, help="Plots using planck semi-logscale (Linear between -1,1). Autodetector sometimes uses this.",)
-@click.option("-size", default="m", type=click.STRING, help="Size: 1/3, 1/2 and full page width (8.8/12/18cm) [ex. s, m or l, or ex. slm for all], m by default",)
+@click.option("-size", default="m", type=click.STRING, help="Size: 1/3, 1/2 and full page width (8.8/12/18cm) [ex. x, s, m or l, or ex. slm for all], m by default",)
 @click.option("-white_background", is_flag=True, help="Sets the background to be white. (Transparent by default [recommended])",)
 @click.option("-darkmode", is_flag=True, help='Plots all outlines in white for dark bakgrounds ("dark" in filename)',)
 @click.option("-png", is_flag=True, help="Saves output as .png ().pdf by default)",)
@@ -117,8 +117,9 @@ def specplot(input,cmap,long):
 @click.option("-labelsize", default=10, type=click.INT, help="Title size.",)
 @click.option("-gif", is_flag=True, help="Make gifs from input",)
 @click.option("-oldfont", is_flag=True, help="Use the old DejaVu font and not Times",)
+@click.option("-fontsize", default=11, type=click.INT, help="Fontsize",)
 @click.option("-verbose", is_flag=True, help="Verbose mode")
-def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, labelsize,gif, oldfont,verbose,):
+def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, labelsize,gif, oldfont, fontsize, verbose,):
     """
     Plots map from .fits or h5 file.
     ex. c3pp plot coolmap.fits -bar -auto -lmax 60 -darkmode -pdf -title $\beta_s$
@@ -130,7 +131,7 @@ def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule,
     """
     from src.plotter import Plotter
     data=None
-    Plotter(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, verbose, data,labelsize,gif,oldfont)
+    Plotter(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, verbose, data,labelsize,gif,oldfont, fontsize)
 
 
 @commands_plotting.command()
@@ -462,10 +463,10 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                         sig = [0,1,2,3] if not band in ["030_IQU","044_IQU","070_IQU"] else [1,2,4,5]
                         b = glob.glob(f'goodness/BP_res_{band}*fits')[0]
                         if band in ["033-WMAP_Ka_P", "041-WMAP_Q_P", "061-WMAP_V_P",]:
-                            ctx.invoke(plot, input=b, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=sig, mask=mask_path+masks[m], mfill="gray")                
+                            ctx.invoke(plot, input=b, size='x', outdir=outdir, colorbar=colorbar, auto=True, sig=sig, mask=mask_path+masks[m], mfill="gray")                
                             m+=1
                         else:
-                            ctx.invoke(plot, input=b, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=sig,)                
+                            ctx.invoke(plot, input=b, size='x', outdir=outdir, colorbar=colorbar, auto=True, sig=sig,)                
                     except Exception as e:
                         print(e)
                         click.secho("Continuing...", fg="yellow")
@@ -545,7 +546,8 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
 @click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]",)
 @click.option('-nbins', default=1, help='Bins for plotting')
 @click.option('-sig', default="P", help='T or P')
-def hist(chainfile, dataset, burnin, maxchain, nbins,sig):
+@click.option('-prior', nargs=2, type=float, help='Specify mean and stddev')
+def hist(chainfile, dataset, burnin, maxchain, nbins,sig, prior):
     """
     Make histogram
     """
@@ -604,9 +606,57 @@ def hist(chainfile, dataset, burnin, maxchain, nbins,sig):
     }
     sns.set_style(custom_style)
     fontsize = 14
-    df2.hist( bins=20, color=colors[0])
-    plt.xlabel(r"$\beta_{\mathrm{d}}$", fontsize=fontsize)
+    x = df2.to_numpy()
+    #np.savetxt('regdata.dat', x, delimiter=',',)
+    if "synch" in dataset:
+        xmin, xmax = (-3.38,-2.61)
+        bins = np.linspace(xmin,xmax,50)
+        n1, _, _ = plt.hist(x[:,1],bins=bins, histtype='step', color="#636efa", density=True, stacked=True, linewidth=2, label=r"$P_{-3.1}(\beta^{\mathrm{Spur}}_{\mathrm{s}}|\,d)$")
+        #plt.hist(x[:,3],bins=20, histtype='step', color="#00cc96", density=True, stacked=True, linewidth=2, label=r"$P_{-3.1}(\beta^{\mathrm{Plane}}_{\mathrm{s}}|\,d, \omega_{\mathrm{TOD}})$")
+        #t3 = np.loadtxt("sampletrace_t3.csv",delimiter=",",) #"regdatat3.dat", delimiter=",")
+        t3 = np.loadtxt("regdatat3.dat", delimiter=",")
+        plt.hist(t3[:,4],  bins=bins, histtype='step', density=True, stacked=True, linestyle="--", color="#ef553b", label=r"$P_{-2.8}(\beta^{\mathrm{Spur}}_{\mathrm{s}}|\,d, \omega_{\mathrm{TOD}})$")
+        bp8r = np.loadtxt("sampletrace_P_synch-beta_pixreg_val.csv", delimiter=",", skiprows=1)
+        plt.hist(bp8r[:,2],bins=bins, histtype='step', density=True, stacked=True, linestyle="--", color="#636efa", label=r"$P_{-3.1}(\beta^{\mathrm{Spur}}_{\mathrm{s}}|\,d, \omega_{\mathrm{TOD}})$")
+        #n1, bins, _ = plt.hist(x[:,4],bins=20, histtype='step', color="#636efa", label=r"$P(\beta^{\mathrm{Spur}}_{\mathrm{s}}|\,d)$")
+        #xmin, xmax = (-3.25,-2.75)
+        if prior:
+            import scipy.stats as stats
+            N = len(x[:,1])
+            x = np.linspace(xmin,xmax,N)
+            dx = bins[1]-bins[0]
+            norm = sum(n1)*dx
+            Pprior = stats.norm.pdf(x, -2.8, 0.1)#*norm
+            plt.plot(x, Pprior*norm, color="#ef553b", linestyle=":", label=r"$P(\beta_{\mathrm{s}})=\mathcal{N}(-2.8,0.1)$")
+            Pprior = stats.norm.pdf(x, prior[0], prior[1])#*norm
+            plt.plot(x, Pprior*norm, color="#636efa", linestyle=":", label=r"$P(\beta_{\mathrm{s}})=\mathcal{N}(-3.1,0.1)$")
+
+        plt.xlabel(r"Synchrotron index, $\beta_{\mathrm{s}}$", fontsize=fontsize)
+        plt.xlim(xmin,xmax,)
+        plt.ylim(0,11)
+        plt.legend(frameon=False,loc=1, fontsize=13)
+    else:
+        n, bins, _ = plt.hist(x,bins=20, histtype='step', color="black", label=r"$P(\beta_{\mathrm{d}}|\,d)$")
+        N = len(x)
+        xmin, xmax = (1.46, 1.74)
+        if prior:
+            import scipy.stats as stats
+            N = len(x)
+            x = np.linspace(xmin,xmax,N)
+            dx = bins[1]-bins[0]
+            norm = sum(n)*dx
+            Pprior = stats.norm.pdf(x, prior[0], prior[1])*norm
+            plt.plot(x, Pprior, color="black", linestyle="--", label=r"Prior $P(\beta_{\mathrm{d}})$")
+        plt.xlabel(r"Thermal dust index, $\beta_{\mathrm{d}}$", fontsize=fontsize)
+        plt.xlim(xmin,xmax)
+        plt.legend(frameon=False,loc=2)
+    #from matplotlib import rc
+    #rc('text', usetex=True)
+
+    
+    plt.ylabel(r"Normalized number of samples", fontsize=fontsize)
     plt.title(" ")
+
     plt.yticks(rotation=90, va="center", fontsize=fontsize)
     plt.xticks(fontsize=fontsize)
     sns.despine(top=True, right=True, left=True, bottom=True)

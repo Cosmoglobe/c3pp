@@ -14,8 +14,8 @@ print("Importtime:", (time.time() - totaltime))
 def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar,
             graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole,
             logscale, size, white_background, darkmode, png, cmap, title,
-            ltitle, unit, scale, outdir, verbose, data, labelsize, gif, oldfont):
-    fontsize = 11
+            ltitle, unit, scale, outdir, verbose, data, labelsize, gif, oldfont, fontsize):
+    fontsize = int(fontsize)
     #plt.rcParams['font.family'] = 'serif'
     #plt.rcParams['font.serif'] = 'Times'
     if not oldfont:
@@ -59,6 +59,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar,
                     m = hp.ud_grade(m, nside,)
             else:
                 nside = nsid
+
             #### Remove monopole or dipole #####
             if remove_dipole or remove_monopole: m = remove_md(m, remove_dipole, remove_monopole, nside)
             #### Scaling factor #####
@@ -73,13 +74,13 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar,
             #### Automatic variables #####
             if auto:
                 (m, ttl, lttl, unt, ticks, cmp, lgscale,) = get_params(m, outfile, signal_label,)
+
                 # Tick bug fix
                 mn, md, mx= (ticks[0], None, ticks[-1])
                 if not mid and len(ticks)>2:
                     if ticks[0]<ticks[1]  and ticks[-2]<ticks[-1]:
                         md = ticks[1:-1]
                     else:
-                        print(ticks)
                         ticks.pop(1)
             else:
                 ttl = lttl = unt = ""
@@ -141,6 +142,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar,
                         output_map(fig, outfile, png, fwhm, colorbar, mask, remove_dipole, darkmode, white_background,cmap_,nside,signal_label,width,outdir, gif, imgs, verbose)
                 else:
                     output_map(fig, outfile, png, fwhm, colorbar, mask, remove_dipole, darkmode, white_background,cmap_,nside,signal_label,width,outdir, gif, imgs, verbose)
+                    click.echo("Saved, closing fig")
                     plt.close()
                 click.echo("Totaltime:", (time.time() - totaltime),) if verbose else None
 
@@ -178,12 +180,12 @@ def get_params(m, outfile, signal_label,):
                         else:
                             tit = str(findall(r"residual_(.*?)_", outfile)[0])
                     if "_P_" in outfile and sl != "T":
-                        comp["ticks"] = [-10, 0, 10]
+                        comp["ticks"] = [[-10, 0, 10]]
                     if "857" in outfile:
                         m *= 2.2703e-6 
-                        comp["ticks"] = [-300,0,300]
+                        comp["ticks"] = [[-300,0,300]]
                     elif "Haslam" in outfile:
-                        comp["ticks"] = [-1e4, 0, 1e4]
+                        comp["ticks"] = [[-1e4, 0, 1e4]]
                 comp["comp"] = r"${"+tit+"}$"
 
             comp["comp"] = comp["comp"].lstrip('0')    
@@ -217,6 +219,8 @@ def get_signallabel(x):
 
 def get_sizes(size):
     sizes = []
+    if "x" in size:
+        sizes.append(7)
     if "s" in size:
         sizes.append(8.8)
     if "m" in size:
@@ -486,6 +490,7 @@ def get_map(input, sig, dataset, nside, lmax, fwhm,):
     signal_labels=None
     maps=[]
     input = [input] if isinstance(input, str) else input
+    if not input: print("No input specified"); sys.exit()
     for input_ in input:
         print(input_)
         if input_.endswith(".h5"):
@@ -525,6 +530,7 @@ def get_map(input, sig, dataset, nside, lmax, fwhm,):
                 signal_labels.append(signal_label)            
             outfile = input_.replace(".fits", "")
         else:
+            outfile = input_.replace(".fits", "")
             click.echo(click.style("Did not recognize data.",fg="red"))
             sys.exit()
 
@@ -564,7 +570,8 @@ def output_map(fig, outfile, png, fwhm, colorbar, mask, remove_dipole, darkmode,
     if gif:
         click.echo(click.style("Outputing GIF:", fg="green") + f" {fn}")
         import matplotlib.animation as animation
-        ani = animation.ArtistAnimation(fig, imgs, interval=500, blit=True, repeat_delay=1000)
+        interval = 100 #500
+        ani = animation.ArtistAnimation(fig, imgs, interval=interval, blit=True, repeat_delay=1000)
         ani.save(fn.replace(filetype,"gif"),dpi=300)
     else:
         click.echo(click.style("Outputing PDF:", fg="green") + f" {fn}")
