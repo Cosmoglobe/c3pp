@@ -608,7 +608,7 @@ def hist(chainfile, dataset, burnin, maxchain, nbins,sig, prior):
     fontsize = 14
     x = df2.to_numpy()
     n1, bins, _ = plt.hist(x[:,1],bins=50, histtype='step', density=True, stacked=True)
-    for i in range(x.shape()[1]):
+    for i in range(x.shape[1]):
         plt.hist(x[:,i],bins=bins, histtype='step', density=True, stacked=True)
     plt.legend(frameon=False)
 
