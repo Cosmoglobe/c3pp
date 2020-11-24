@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as col
 from src.tools import arcmin2rad
 
-print("Importtime:", (time.time() - totaltime))
+#print("Importtime:", (time.time() - totaltime))
 
 def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar,
             graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole,
