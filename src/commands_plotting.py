@@ -607,7 +607,12 @@ def hist(chainfile, dataset, burnin, maxchain, nbins,sig, prior):
     sns.set_style(custom_style)
     fontsize = 14
     x = df2.to_numpy()
-    #np.savetxt('regdata.dat', x, delimiter=',',)
+    n1, bins, _ = plt.hist(x[:,1],bins=50, histtype='step', density=True, stacked=True)
+    for i in range(x.shape()[1]):
+        plt.hist(x[:,i],bins=bins, histtype='step', density=True, stacked=True)
+    plt.legend(frameon=False)
+
+    """
     if "synch" in dataset:
         xmin, xmax = (-3.38,-2.61)
         bins = np.linspace(xmin,xmax,50)
@@ -650,11 +655,8 @@ def hist(chainfile, dataset, burnin, maxchain, nbins,sig, prior):
         plt.xlabel(r"Thermal dust index, $\beta_{\mathrm{d}}$", fontsize=fontsize)
         plt.xlim(xmin,xmax)
         plt.legend(frameon=False,loc=2)
-    #from matplotlib import rc
-    #rc('text', usetex=True)
-
-    
-    plt.ylabel(r"Normalized number of samples", fontsize=fontsize)
+    """
+    #plt.ylabel(r"Normalized number of samples", fontsize=fontsize)
     plt.title(" ")
 
     plt.yticks(rotation=90, va="center", fontsize=fontsize)
