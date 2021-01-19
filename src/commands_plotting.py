@@ -940,7 +940,7 @@ def make_diff_plots(ctx, dir1, dir2, type1, type2):
         mapn = {dir1:'', dir2:''}
 
         for dirtype, dirloc in zip([type1, type2],[dir1, dir2]): 
-            print(filenames[dirloc])
+            #print(filenames[dirloc])
             if len(filenames[dirloc]) == 0:
                 mapn[dirloc] = glob.glob(os.path.join(dirloc, 'BP_' + comp + '_I*.fits'))[0]
             else:
@@ -951,7 +951,6 @@ def make_diff_plots(ctx, dir1, dir2, type1, type2):
                 else:
                     mapn[dirloc] = 'tod_' + comp + '_map' + filenames[dirloc]
       
-        print(mapn) 
         map1 = hp.read_map(os.path.join(dir1, mapn[dir1]))
         map2 = hp.read_map(os.path.join(dir2, mapn[dir2]))
 
@@ -959,10 +958,10 @@ def make_diff_plots(ctx, dir1, dir2, type1, type2):
   
         from src.plotter import Plotter
  
-        Plotter(input=comp + '_diff' + '.fits', dataset='', nside=None, auto=True, min=None, max=None, mid=0.0,
+        Plotter(input=comp + '_diff' + '.fits', dataset='', nside=None, auto=True, min=False, max=False, mid=[],
                 rng='auto', colorbar=True, lmax=None, fwhm=0.0, mask=None, mfill=None, sig=[0,], remove_dipole=None,
                 logscale=None, size='m', white_background=True, darkmode=False, png=False, cmap=None, title=None,
-                ltitle=None, unit=None, scale=None, outdir='.', verbose=False, data=diff_map)
+                ltitle=None, unit=None, scale=None, outdir='.', verbose=False, data=diff_map, graticule=False, remove_monopole=None, labelsize=10, gif=False, oldfont=False, fontsize=11)
 
 @commands_plotting.command()
 @click.option("-pol", is_flag=True, help="",)
