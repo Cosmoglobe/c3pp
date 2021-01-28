@@ -70,7 +70,7 @@ def alm2fits_tool(input, dataset, nside, lmax, fwhm, save=True):
     return maps, nside, lmax, fwhm, outfile
 
 
-def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command, pixweight=None, zerospin=False, lowmem=False,):
+def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command, pixweight=None, zerospin=False, lowmem=False, notchain=False):
     """
     Function for calculating mean and stddev of signals in hdf file
     """
@@ -83,7 +83,7 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command, 
         mean_data = h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.mean, pixweight, zerospin, lowmem,)
 
     print()
-    print("{:-^50}".format(f" {dataset} calculating {command.__name__} "))
+    if command: print("{:-^50}".format(f" {dataset} calculating {command.__name__} "))
     print("{:-^50}".format(f" nside {nside}, {fwhm} arcmin smoothing "))
 
     if dataset.endswith("map"):
@@ -95,8 +95,7 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command, 
     elif dataset.endswith("sigma"):
         type = "sigma"
     else:
-        print(f"Type {type} not recognized")
-        sys.exit()
+        type = "data"
 
     if (lowmem):
         nsamp = 0 #track number of samples
@@ -110,6 +109,16 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command, 
     for c in range(1, maxchain + 1):
         filename = input.replace("c0001", "c" + str(c).zfill(4))
         with h5py.File(filename, "r") as f:
+
+            if notchain:
+                data = f[dataset][()]
+                if data.shape[0] == 1:
+                    # Make sure its interprated as I by healpy
+                    # For non-polarization data, (1,npix) is not accepted by healpy
+                    data = data.ravel()
+                dats.append(data)
+                continue
+
             if maxnone:
                 # If no max is specified, chose last sample
                 max = len(f.keys()) - 2
@@ -154,7 +163,7 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command, 
                 if type == "alm":
                     lmax_h5 = f[f"{tag[:-3]}lmax"][()]
                     data = unpack_alms(data, lmax_h5)  # Unpack alms
-
+                    
                 if data.shape[0] == 1:
                     # Make sure its interprated as I by healpy
                     # For non-polarization data, (1,npix) is not accepted by healpy
@@ -202,8 +211,8 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command, 
         # Convert list to array
         dats = np.array(dats)
         # Calculate std or mean
-        outdata = command(dats, axis=0)
-
+        print(dats.shape)
+        outdata = command(dats, axis=0) if command else dats
     # Smoothing afterwards when calculating mean
     if type == "alm" and command == np.mean and alm2map:
         print(f"# --- alm2map mean with {fwhm} arcmin, lmax {lmax_h5} ---")
@@ -222,6 +231,15 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command, 
     if output.endswith(".fits"):
         hp.write_map(output, outdata, overwrite=True, dtype=None)
     elif output.endswith(".dat"):
+        while np.ndim(outdata)>2: 
+            if outdata.shape[-1]==4:
+                tdata = outdata[:,0,0]
+                print(tdata)
+                outdata = outdata[:,:,3]
+                outdata[:,0] = tdata
+            else:
+                outdata = outdata[:,:,0]
+
         np.savetxt(output, outdata)
     return outdata
 
@@ -432,7 +450,7 @@ def fits_handler(input, min, max, minchain, maxchain, chdir, output, fwhm, nside
     aline=input.split('/')
     dataset=aline[-1]
     print()
-    print("{:-^50}".format(f" {dataset} calculating {command.__name__} "))
+    if command: print("{:-^50}".format(f" {dataset} calculating {command.__name__} "))
     if (nside == None):
         print("{:-^50}".format(f" {fwhm} arcmin smoothing "))
     else:

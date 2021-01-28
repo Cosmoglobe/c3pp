@@ -17,6 +17,20 @@ def commands_hdf():
 @click.option("-min", default=1, type=click.INT, help="Start sample, default 1",)
 @click.option("-max", default=None, type=click.INT, help="End sample, calculated automatically if not set",)
 @click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]",)
+@click.option("-notchain", is_flag=True, help="Flag if parsing a non-chain hdf file",)
+def split(input,dataset,output,min,max,maxchain,notchain):
+    """
+    This function saves whatever specified data to a separate file.
+    """
+    h5handler(input, dataset, min, max, maxchain, output, fwhm=None, nside=None, command=False, pixweight=None, zerospin=False, lowmem=False,notchain=True)
+
+@commands_hdf.command()
+@click.argument("input", type=click.STRING)
+@click.argument("dataset", type=click.STRING)
+@click.argument("output", type=click.STRING)
+@click.option("-min", default=1, type=click.INT, help="Start sample, default 1",)
+@click.option("-max", default=None, type=click.INT, help="End sample, calculated automatically if not set",)
+@click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]",)
 @click.option("-fwhm", default=0.0, help="FWHM in arcmin")
 @click.option("-nside", default=None, type=click.INT, help="Nside for alm binning",)
 @click.option("-zerospin", is_flag=True, help="If smoothing, treat maps as zero-spin maps.",)

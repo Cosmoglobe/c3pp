@@ -1,6 +1,6 @@
 {
     "cmb": {
-        "tags": ["cmb","BP_cmb"],
+        "tags": ["CMB","cmb","BP_cmb"],
         "unit": "$\\mu\\mathrm{K}_{\\mathrm{CMB}}$",
         "comp": "cmb",
         "param": "$A$",

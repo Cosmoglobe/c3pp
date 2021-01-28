@@ -118,8 +118,11 @@ def specplot(input,cmap,long):
 @click.option("-gif", is_flag=True, help="Make gifs from input",)
 @click.option("-oldfont", is_flag=True, help="Use the old DejaVu font and not Times",)
 @click.option("-fontsize", default=11, type=click.INT, help="Fontsize",)
+@click.option("-dpi", default=300, type=click.INT, help="DPI",)
+@click.option("-xsize", default=2000, type=click.INT, help="figuresize in px (2000 default)",)
+@click.option("-hires", is_flag=True, help="sets dpi to 3000 and xsize to 10000",)
 @click.option("-verbose", is_flag=True, help="Verbose mode")
-def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, labelsize,gif, oldfont, fontsize, verbose,):
+def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, labelsize,gif, oldfont, fontsize, dpi, xsize, hires, verbose,):
     """
     Plots map from .fits or h5 file.
     ex. c3pp plot coolmap.fits -bar -auto -lmax 60 -darkmode -pdf -title $\beta_s$
@@ -129,9 +132,13 @@ def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule,
     RECOMMENDED: Use -auto to autodetect map type and set parameters.\n
     Some autodetected maps use logscale, you will be warned.
     """
+    if hires:
+        xsize=10000
+        dpi=1000
+
     from src.plotter import Plotter
     data=None
-    Plotter(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, verbose, data,labelsize,gif,oldfont, fontsize)
+    Plotter(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, verbose, data,labelsize,gif,oldfont, fontsize, dpi, xsize)
 
 
 @commands_plotting.command()
@@ -213,6 +220,80 @@ def gnomplot(filename, lon, lat, sig, size, min_, max_, rng, unit, cmap, graticu
 
     click.echo(f"Outputting {outname}")
     plt.savefig(outname, bbox_inches="tight", pad_inches=0.02, transparent=True, format="pdf",)
+
+
+@commands_plotting.command()
+@click.argument("filename", type=click.STRING)
+@click.option("-size", default=20, type=click.INT)
+@click.option("-sig", default=0, help="Which sky signal to plot",)
+@click.option("-min", "min_", type=click.FLOAT, help="Min value of colorbar, overrides autodetector.",)
+@click.option("-max", "max_", type=click.FLOAT, help="Max value of colorbar, overrides autodetector.",)
+@click.option("-range", "rng", help="Color bar range")
+@click.option("-unit", default=None, type=click.STRING, help="Set unit (Under color bar), has LaTeX functionality. Ex. $\mu$",)
+@click.option("-cmap", default="planck", help="Choose different color map (string), such as Jet or planck",)
+@click.option("-graticule", is_flag=True, help="Add graticule",)
+@click.option("-log", is_flag=True, help="Add graticule",)
+@click.option("-bar", is_flag=True, help="remove colorbar",)
+@click.option("-outname", help="Output filename, else, filename with different format.",)
+def cartplot(filename, sig, size, min_, max_, rng, unit, cmap, graticule, log, bar, outname):
+    """
+    Cartesian view plotting. 
+    """
+    #c3pp cartplot BP_dust_IQU_n1024_v1.fits -sig 0 -min 10 -max 1000 -cmap sunburst -nobar -log
+    #c3pp cartplot BP_dust_IQU_n1024_v1.fits -sig 2 -range 50 -cmap iceburn -nobar
+    import healpy as hp
+    import matplotlib.pyplot as plt
+    from src.plotter import fmt, apply_logscale, get_percentile
+    from functools import partial
+    
+    from matplotlib import rcParams, rc
+    rcParams["backend"] = "pdf"
+    rcParams["legend.fancybox"] = True
+    rcParams["lines.linewidth"] = 2
+    rcParams["savefig.dpi"] = 300
+    rcParams["axes.linewidth"] = 1
+    rc("text.latex", preamble=r"\usepackage{sfmath}",)
+
+    if cmap == "planck":
+        import matplotlib.colors as col
+        from pathlib import Path
+        if log:
+            cmap = Path(__file__).parent / "planck_cmap_logscale.dat"
+        else:
+            cmap = Path(__file__).parent / "planck_cmap.dat"
+        cmap = col.ListedColormap(np.loadtxt(cmap) / 255.0, "planck")
+    else:
+        try:
+            import cmasher
+            cmap = eval(f"cmasher.{cmap}")
+        except:
+            cmap = plt.get_cmap(cmap)
+
+            
+    fontsize=10
+    x = hp.read_map(filename, field=sig, verbose=False, dtype=None)
+    nside=hp.get_nside(x)
+
+    if rng:
+        if rng == "auto":
+            min_, max_ = get_percentile(x, 97.5)
+        else:
+            min_ = -float(rng)
+            max_ = float(rng)
+    
+    if log:
+        x, new_ticks = apply_logscale(x, [min_, max_], 1)
+        min_, max_ = new_ticks
+
+    dpi = 1000
+    xsize = 10000#3840
+    ysize = xsize/2 #2400 #2160
+    hp.cartview(map=x, xsize=xsize, ysize=ysize, title='', min=min_, max=max_, cbar=bar, cmap=cmap, return_projected_map=False)
+    #proj = hp.projector.CartesianProj(rot=[lon,lat,0.0], coord='G', xsize=xsize, ysize=xsize,reso=reso)
+    if not outname:
+        outname = filename.replace(".fits", f"_sig{sig}_cartesian.png")
+    click.echo(f"Outputting {outname}")
+    plt.savefig(outname, bbox_inches="tight", pad_inches=0.0, transparent=True, format="png", dpi=dpi)
 
 
 @commands_plotting.command()

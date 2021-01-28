@@ -14,7 +14,7 @@ from src.tools import arcmin2rad
 def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar,
             graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole,
             logscale, size, white_background, darkmode, png, cmap, title,
-            ltitle, unit, scale, outdir, verbose, data, labelsize, gif, oldfont, fontsize):
+            ltitle, unit, scale, outdir, verbose, data, labelsize, gif, oldfont, fontsize, dpi, xsize):
     fontsize = int(fontsize)
     #plt.rcParams['font.family'] = 'serif'
     #plt.rcParams['font.serif'] = 'Times'
@@ -102,7 +102,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar,
             #### Color map #####
             cmap_ = get_cmap(cmap, cmp,)
             #### Projection ####
-            grid_pix, longitude, latitude = project_map(nside, xsize=2000, ysize=int(2000/ 2.0),)
+            grid_pix, longitude, latitude = project_map(nside, xsize=xsize, ysize=int(xsize/ 2.0),)
             #### Mask ##########
             grid_map, cmap_ = apply_mask(m, mask, grid_pix, mfill, polt, cmap_) if mask else (m[grid_pix], cmap_)
 
@@ -139,9 +139,9 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar,
                 plt.tight_layout()
                 if gif: #output gif on last iteration only
                     if i==len(input)-1:
-                        output_map(fig, outfile, png, fwhm, colorbar, mask, remove_dipole, darkmode, white_background,cmap_,nside,signal_label,width,outdir, gif, imgs, verbose)
+                        output_map(fig, outfile, png, fwhm, colorbar, mask, remove_dipole, darkmode, white_background,cmap_,nside,signal_label,width,outdir, gif, imgs, dpi, verbose)
                 else:
-                    output_map(fig, outfile, png, fwhm, colorbar, mask, remove_dipole, darkmode, white_background,cmap_,nside,signal_label,width,outdir, gif, imgs, verbose)
+                    output_map(fig, outfile, png, fwhm, colorbar, mask, remove_dipole, darkmode, white_background,cmap_,nside,signal_label,width,outdir, gif, imgs, dpi, verbose)
                     click.echo("Saved, closing fig")
                     plt.close()
                 click.echo("Totaltime:", (time.time() - totaltime),) if verbose else None
@@ -538,7 +538,7 @@ def get_map(input, sig, dataset, nside, lmax, fwhm,):
 
     return maps, lmax, outfile, signal_labels
 
-def output_map(fig, outfile, png, fwhm, colorbar, mask, remove_dipole, darkmode, white_background,cmap,nside,signal_label,width,outdir,gif,imgs,verbose):
+def output_map(fig, outfile, png, fwhm, colorbar, mask, remove_dipole, darkmode, white_background,cmap,nside,signal_label,width,outdir,gif,imgs,dpi, verbose):
     #### filename ##
     outfile = outfile.replace("_IQU_", "_")
     outfile = outfile.replace("_I_", "_")
@@ -571,10 +571,10 @@ def output_map(fig, outfile, png, fwhm, colorbar, mask, remove_dipole, darkmode,
         import matplotlib.animation as animation
         interval = 100 #500
         ani = animation.ArtistAnimation(fig, imgs, interval=interval, blit=True, repeat_delay=1000)
-        ani.save(fn.replace(filetype,"gif"),dpi=300)
+        ani.save(fn.replace(filetype,"gif"),dpi=dpi)
     else:
         click.echo(click.style("Outputing PDF:", fg="green") + f" {fn}")
-        fig.savefig(fn, bbox_inches="tight", pad_inches=0.02, transparent=tp, format=filetype, dpi=300)
+        fig.savefig(fn, bbox_inches="tight", pad_inches=0.02, transparent=tp, format=filetype, dpi=dpi)
     click.echo("Savefig", (time.time() - starttime),) if verbose else None
 
 def get_ticks(m, ticks, mn, md, mx, min, mid, max, rng, auto):
