@@ -958,10 +958,16 @@ def make_diff_plots(ctx, dir1, dir2, type1, type2):
   
         from src.plotter import Plotter
  
+        units = None
+        size = 'm'
+        if comp in ['030', '044', '070']:
+            units = '$\mu\mathrm{K}_{\mathrm{CMB}}$'
+            size = 's'
+
         Plotter(input=comp + '_diff' + '.fits', dataset='', nside=None, auto=True, min=False, max=False, mid=[],
                 rng='auto', colorbar=True, lmax=None, fwhm=0.0, mask=None, mfill=None, sig=[0,], remove_dipole=None,
-                logscale=None, size='m', white_background=True, darkmode=False, png=False, cmap=None, title=None,
-                ltitle=None, unit=None, scale=None, outdir='.', verbose=False, data=diff_map, graticule=False, remove_monopole=None, labelsize=10, gif=False, oldfont=False, fontsize=11)
+                logscale=None, size=size, white_background=True, darkmode=False, png=False, cmap=None, title=None,
+                ltitle=None, unit=units, scale=None, outdir='.', verbose=False, data=diff_map, graticule=False, remove_monopole=None, labelsize=10, gif=False, oldfont=False, fontsize=11)
 
 @commands_plotting.command()
 @click.option("-pol", is_flag=True, help="",)
