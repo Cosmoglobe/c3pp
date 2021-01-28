@@ -34,8 +34,10 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar,
     click.echo(click.style("Plotting",fg="green") + f" {input}")
 
     ####   READ MAP   #####
-    if data: #In case you want to use function directly
+    if data is not None: #In case you want to use function directly
         maps_ = [data]
+        outfile = input.replace('.fits', "")
+        signal_labels = None 
     else:    
         maps_, lmax, outfile, signal_labels = get_map(input, sig, dataset, nside, lmax, fwhm,)
     # Plot all signals specified
@@ -43,6 +45,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar,
     click.echo(click.style("{:#^48}".format(""), fg="green"))
     imgs = [] # Store images for gif
     for i, maps in enumerate(maps_):
+        if maps.ndim == 1: maps = maps.reshape(1,-1)
         for pl, polt, in enumerate(sig):
             #### Select data column  #####
             m = hp.ma(maps[pl])
@@ -95,7 +98,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar,
             if ltitle: lttl = ltitle 
             if unit: unt = unit 
             # Get data ticks
-            ticks = get_ticks(m, ticks, mn, md, mx, min, mid, max, rng, auto)        
+            ticks = get_ticks(m, ticks, mn, md, mx, min, mid, max, rng, auto)
             ticklabels = [fmt(i, 1) for i in ticks]
             #### Logscale ######
             if lgscale: m, ticks = apply_logscale(m, ticks, linthresh=1)
@@ -205,7 +208,8 @@ def get_params(m, outfile, signal_label,):
     comp = params["unidentified"]
     comp["comp"] = signal_label.split("_")[-1]
     ttl, lttl = get_title(comp,outfile,signal_label,)
-    if comp["ticks"] == "auto": comp["ticks"] = get_percentile(m,97.5)
+    if comp["ticks"][i] == "auto": comp["ticks"] = get_percentile(m,97.5)
+    comp["cmap"] = comp["cmap"][i]
     return (m,  ttl, lttl, comp["unit"], comp["ticks"], comp["cmap"], comp["logscale"],)
 
 def get_signallabel(x):
@@ -578,8 +582,11 @@ def output_map(fig, outfile, png, fwhm, colorbar, mask, remove_dipole, darkmode,
     click.echo("Savefig", (time.time() - starttime),) if verbose else None
 
 def get_ticks(m, ticks, mn, md, mx, min, mid, max, rng, auto):
+
     # If min and max have been specified, set.
-    if rng == "auto" and not auto:
+    if rng == "auto": # Mathew: I have changed this to give the desired behaviour for make_diff_plots, but I don't know if this breaks other functionality
+    # it used to be
+    # if rng == "auto" and not auto:
         click.echo(click.style("Setting range from 97.5th percentile of data",fg="yellow"))
         mn,mx = get_percentile(m, 97.5)
     elif rng == "minmax":
