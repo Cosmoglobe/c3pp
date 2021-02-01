@@ -473,7 +473,8 @@ def gradient_fill_between(ax, x, y1, y2, color="#ffa15a", alpha=0.5):
 
     alpha=np.linspace(0,alpha,100)**1.5
     for i in range(1,N):
-        ax.fill_between(x, y[i-1], y[i], color=color, alpha=alpha[i])
+        ax.fill_between(x, y[i-1], y[i], color=color, alpha=alpha[i], zorder=-10)
+        ax.set_rasterization_zorder(-1)
 
 
 def find_nearest(array, value):
