@@ -150,6 +150,7 @@ def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule,
 @click.option("-min", "min_", type=click.FLOAT, help="Min value of colorbar, overrides autodetector.",)
 @click.option("-max", "max_", type=click.FLOAT, help="Max value of colorbar, overrides autodetector.",)
 @click.option("-range", "rng", type=click.FLOAT, help="Color bar range")
+@click.option("-title", default=None, type=click.STRING, help="Set title, has LaTeX functionality. Ex. $\mu$",)
 @click.option("-unit", default=None, type=click.STRING, help="Set unit (Under color bar), has LaTeX functionality. Ex. $\mu$",)
 @click.option("-cmap", default="planck", help="Choose different color map (string), such as Jet or planck",)
 @click.option("-graticule", is_flag=True, help="Add graticule",)
@@ -159,7 +160,7 @@ def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule,
 @click.option("-remove_dipole", default=None, type=click.STRING, help="Fits a dipole to the map and removes it. Specify mask or type auto.",)
 @click.option("-remove_monopole", default=None, type=click.STRING, help="Fits a monopole to the map and removes it.",)
 @click.option("-outname", help="Output filename, else, filename with different format.",)
-def gnomplot(filename, lon, lat, sig, size, min_, max_, rng, unit, cmap, graticule, log, nobar, fwhm, remove_dipole, remove_monopole, outname):
+def gnomplot(filename, lon, lat, sig, size, min_, max_, rng, title, unit, cmap, graticule, log, nobar, fwhm, remove_dipole, remove_monopole, outname):
     """
     Gnomonic view plotting. 
     """
@@ -202,17 +203,18 @@ def gnomplot(filename, lon, lat, sig, size, min_, max_, rng, unit, cmap, graticu
         x = hp.smoothing(x, fwhm=arcmin2rad(fwhm), lmax=3*nside,)
     if remove_dipole or remove_monopole: x = remove_md(x, remove_dipole, remove_monopole, nside)
 
-    proj = hp.projector.GnomonicProj(rot=[lon,lat,0.0], coord='G', xsize=xsize, ysize=xsize,reso=reso)
-    reproj_im = proj.projmap(x, vec2pix_func=partial(hp.vec2pix, nside))
+    proj = hp.projector.GnomonicProj(rot=[lon,lat,0.0], coord='G', xsize=xsize, ysize=xsize, reso=reso)
+    reproj_im = proj.projmap(x, vec2pix_func = partial(hp.vec2pix, nside))
 
     if rng:
         min_ = -rng
         max_ = rng
     #norm="log" if log else None
-    image = plt.imshow(reproj_im, origin='lower', interpolation='nearest', vmin=min_,vmax=max_, cmap=cmap)
+    fig, ax = plt.subplots()
+    image = plt.imshow(reproj_im, origin='lower', interpolation='nearest', vmin=min_, vmax=max_, cmap=cmap)
     plt.xticks([])
     plt.yticks([])
-
+    plt.text(0.02,0.98,title, color="black", va="top", transform=ax.transAxes)
     if not nobar:
         # colorbar
         from matplotlib.ticker import FuncFormatter
@@ -237,13 +239,14 @@ def gnomplot(filename, lon, lat, sig, size, min_, max_, rng, unit, cmap, graticu
 @click.option("-min", "min_", type=click.FLOAT, help="Min value of colorbar, overrides autodetector.",)
 @click.option("-max", "max_", type=click.FLOAT, help="Max value of colorbar, overrides autodetector.",)
 @click.option("-range", "rng", help="Color bar range")
+@click.option("-title", default=None, type=click.STRING, help="Set title, has LaTeX functionality. Ex. $\mu$",)
 @click.option("-unit", default=None, type=click.STRING, help="Set unit (Under color bar), has LaTeX functionality. Ex. $\mu$",)
 @click.option("-cmap", default="planck", help="Choose different color map (string), such as Jet or planck",)
 @click.option("-graticule", is_flag=True, help="Add graticule",)
 @click.option("-log", is_flag=True, help="Add graticule",)
 @click.option("-bar", is_flag=True, help="remove colorbar",)
 @click.option("-outname", help="Output filename, else, filename with different format.",)
-def cartplot(filename, sig, size, min_, max_, rng, unit, cmap, graticule, log, bar, outname):
+def cartplot(filename, sig, size, min_, max_, rng, title, unit, cmap, graticule, log, bar, outname):
     """
     Cartesian view plotting. 
     """
@@ -296,7 +299,7 @@ def cartplot(filename, sig, size, min_, max_, rng, unit, cmap, graticule, log, b
     dpi = 1000
     xsize = 10000#3840
     ysize = xsize/2 #2400 #2160
-    hp.cartview(map=x, xsize=xsize, ysize=ysize, title='', min=min_, max=max_, cbar=bar, cmap=cmap, return_projected_map=False)
+    hp.cartview(map=x, xsize=xsize, ysize=ysize, title=title, min=min_, max=max_, cbar=bar, cmap=cmap, return_projected_map=False)
     #proj = hp.projector.CartesianProj(rot=[lon,lat,0.0], coord='G', xsize=xsize, ysize=xsize,reso=reso)
     if not outname:
         outname = filename.replace(".fits", f"_sig{sig}_cartesian.png")
