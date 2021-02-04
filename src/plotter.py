@@ -200,7 +200,7 @@ def get_params(m, outfile, signal_label,):
             
             if comp["ticks"] == "auto": comp["ticks"] = get_percentile(m,97.5)
             if label == "chisq": ttl = r"$\chi^2$"
-            if label == "bpcorr": ttl ="$s_{\mathrm{leak}}^{"+tit+"}}$"
+            if label == "bpcorr": ttl ="$s_{\mathrm{leak}}^{"+tit.lstrip('0')+"}}$"
             if comp["unit"]: comp["unit"] = r"$"+comp["unit"].replace('$','')+"$"
             return (m,  ttl, lttl, comp["unit"], comp["ticks"], comp["cmap"], comp["logscale"],)
     # If not recognized
@@ -316,6 +316,13 @@ def get_cmap(cmap, cmp):
             planck_cmap = planck_cmap[::-1]
 
         cmap = col.ListedColormap(planck_cmap, "planck")
+    elif "wmap" in cmap:
+        from pathlib import Path
+        cmap_path = Path(__file__).parent / "wmap_cmap.dat"
+        wmap_cmap = np.loadtxt(cmap_path) / 255.0            
+        if cmap.endswith("_r"):
+            planck_cmap = planck_cmap[::-1]
+        cmap = col.ListedColormap(wmap_cmap, "wmap")
     elif cmap.startswith("q-"):
         import plotly.colors as pcol
         _, clab, *numvals = cmap.split("-")
@@ -337,7 +344,11 @@ def get_cmap(cmap, cmp):
             import cmasher
             cmap = eval(f"cmasher.{cmap}")
         except:
-            cmap = plt.get_cmap(cmap)
+            try:
+                from cmcrameri import cm
+                cmap = eval(f"cm.{cmap}")
+            except:
+                cmap = plt.get_cmap(cmap)
 
     click.echo(click.style("Colormap:", fg="green") + f" {cmap.name}")
     return cmap

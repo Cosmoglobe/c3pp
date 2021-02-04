@@ -101,14 +101,14 @@ def specplot(input,cmap,long):
 @click.option("-mask", default=None, type=click.STRING, help="Masks input with specified maskfile.",)
 @click.option("-mfill", default=None, type=click.STRING, help='Color to fill masked area. for example "gray". Transparent by default.',)
 @click.option("-sig", default=[0,], type=click.INT, multiple=True, help="Signal to be plotted 0 by default (0, 1, 2 is interprated as IQU)",)
-@click.option("-remove_dipole", default=None, type=click.STRING, help="Fits a dipole to the map and removes it.",)
+@click.option("-remove_dipole", default=None, type=click.STRING, help="Fits a dipole to the map and removes it. Specify mask or type auto.",)
 @click.option("-remove_monopole", default=None, type=click.STRING, help="Fits a monopole to the map and removes it.",)
 @click.option("-log/-no-log", "logscale", default=None, help="Plots using planck semi-logscale (Linear between -1,1). Autodetector sometimes uses this.",)
 @click.option("-size", default="m", type=click.STRING, help="Size: 1/3, 1/2 and full page width (8.8/12/18cm) [ex. x, s, m or l, or ex. slm for all], m by default",)
 @click.option("-white_background", is_flag=True, help="Sets the background to be white. (Transparent by default [recommended])",)
 @click.option("-darkmode", is_flag=True, help='Plots all outlines in white for dark bakgrounds ("dark" in filename)',)
 @click.option("-png", is_flag=True, help="Saves output as .png ().pdf by default)",)
-@click.option("-cmap", default=None, help="Chose colormap (ex. sunburst, planck, etc). Available are matplotlib and cmasher. Also qualitative plotly [ex. q-Plotly-4 (q for qualitative 4 for max color)]",)
+@click.option("-cmap", default=None, type=click.STRING, help="Chose colormap (ex. sunburst, planck, etc). Available are matplotlib and cmasher. Also qualitative plotly [ex. q-Plotly-4 (q for qualitative 4 for max color)]",)
 @click.option("-title", default=None, type=click.STRING, help="Set title (Upper right), has LaTeX functionality. Ex. $A_{s}$.",)
 @click.option("-ltitle", default=None, type=click.STRING, help="Set title (Upper left), has LaTeX functionality. Ex. $A_{s}$.",)
 @click.option("-unit", default=None, type=click.STRING, help="Set unit (Under color bar), has LaTeX functionality. Ex. $\mu$",)
@@ -155,14 +155,17 @@ def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule,
 @click.option("-graticule", is_flag=True, help="Add graticule",)
 @click.option("-log", is_flag=True, help="Add graticule",)
 @click.option("-nobar", is_flag=True, help="remove colorbar",)
+@click.option("-fwhm", default=0.0, type=click.FLOAT, help="FWHM of smoothing, in arcmin.",)
+@click.option("-remove_dipole", default=None, type=click.STRING, help="Fits a dipole to the map and removes it. Specify mask or type auto.",)
+@click.option("-remove_monopole", default=None, type=click.STRING, help="Fits a monopole to the map and removes it.",)
 @click.option("-outname", help="Output filename, else, filename with different format.",)
-def gnomplot(filename, lon, lat, sig, size, min_, max_, rng, unit, cmap, graticule, log, nobar, outname):
+def gnomplot(filename, lon, lat, sig, size, min_, max_, rng, unit, cmap, graticule, log, nobar, fwhm, remove_dipole, remove_monopole, outname):
     """
     Gnomonic view plotting. 
     """
     import healpy as hp
     import matplotlib.pyplot as plt
-    from src.plotter import fmt
+    from src.plotter import fmt, remove_md
     from functools import partial
     
     from matplotlib import rcParams, rc
@@ -193,6 +196,11 @@ def gnomplot(filename, lon, lat, sig, size, min_, max_, rng, unit, cmap, graticu
     fontsize=10
     x = hp.read_map(filename, field=sig, verbose=False, dtype=None)
     nside=hp.get_nside(x)
+        
+    if float(fwhm) > 0:
+        click.echo(click.style(f"Smoothing fits map to {fwhm} arcmin fwhm",fg="yellow"))
+        x = hp.smoothing(x, fwhm=arcmin2rad(fwhm), lmax=3*nside,)
+    if remove_dipole or remove_monopole: x = remove_md(x, remove_dipole, remove_monopole, nside)
 
     proj = hp.projector.GnomonicProj(rot=[lon,lat,0.0], coord='G', xsize=xsize, ysize=xsize,reso=reso)
     reproj_im = proj.projmap(x, vec2pix_func=partial(hp.vec2pix, nside))
