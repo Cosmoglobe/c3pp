@@ -114,6 +114,7 @@ def specplot(input,cmap,long):
 @click.option("-unit", default=None, type=click.STRING, help="Set unit (Under color bar), has LaTeX functionality. Ex. $\mu$",)
 @click.option("-scale", default=None, type=click.FLOAT, help="Scale input map [ex. 1e-6 for muK to K]",)
 @click.option("-outdir", type=click.Path(exists=True), help="Output directory for plot",)
+@click.option("-outname", type=click.STRING, help="Output filename, overwrites autonaming",)
 @click.option("-labelsize", default=10, type=click.INT, help="Title size.",)
 @click.option("-gif", is_flag=True, help="Make gifs from input",)
 @click.option("-oldfont", is_flag=True, help="Use the old DejaVu font and not Times",)
@@ -122,7 +123,7 @@ def specplot(input,cmap,long):
 @click.option("-xsize", default=2000, type=click.INT, help="figuresize in px (2000 default)",)
 @click.option("-hires", is_flag=True, help="sets dpi to 3000 and xsize to 10000",)
 @click.option("-verbose", is_flag=True, help="Verbose mode")
-def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, labelsize,gif, oldfont, fontsize, dpi, xsize, hires, verbose,):
+def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, outname, labelsize,gif, oldfont, fontsize, dpi, xsize, hires, verbose,):
     """
     Plots map from .fits or h5 file.
     ex. c3pp plot coolmap.fits -bar -auto -lmax 60 -darkmode -pdf -title $\beta_s$
@@ -136,9 +137,8 @@ def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule,
         xsize=10000
         dpi=1000
 
-    from src.plotter import Plotter
-    data=None
-    Plotter(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, verbose, data,labelsize,gif,oldfont, fontsize, dpi, xsize)
+    from src.plotter import trygveplot
+    trygveplot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, outname, verbose,labelsize,gif,oldfont, fontsize, dpi, xsize)
 
 
 @commands_plotting.command()
@@ -1048,7 +1048,7 @@ def make_diff_plots(ctx, dir1, dir2, type1, type2):
 
         diff_map = map1 - map2 
   
-        from src.plotter import Plotter
+        from src.plotter import trygveplot
  
         units = None
         size = 'm'
@@ -1056,10 +1056,7 @@ def make_diff_plots(ctx, dir1, dir2, type1, type2):
             units = '$\mu\mathrm{K}_{\mathrm{CMB}}$'
             size = 's'
 
-        Plotter(input=comp + '_diff' + '.fits', dataset='', nside=None, auto=True, min=False, max=False, mid=[],
-                rng='auto', colorbar=True, lmax=None, fwhm=0.0, mask=None, mfill=None, sig=[0,], remove_dipole=None,
-                logscale=None, size=size, white_background=True, darkmode=False, png=False, cmap=None, title=None,
-                ltitle=None, unit=units, scale=None, outdir='.', verbose=False, data=diff_map, graticule=False, remove_monopole=None, labelsize=10, gif=False, oldfont=False, fontsize=11)
+        trygveplot(diff_map, outname=comp + '_diff' + '.fits', auto=True, rng='auto', colorbar=True, size=size, unit=units, )
 
 @commands_plotting.command()
 @click.option("-pol", is_flag=True, help="",)

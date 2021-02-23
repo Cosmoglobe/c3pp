@@ -1,3 +1,4 @@
+from re import A
 import time
 totaltime = time.time()
 import click
@@ -8,19 +9,79 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as col
 from src.tools import arcmin2rad
+import os
+hp.disable_warnings()
+# Fix for macos openMP duplicate bug
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 #print("Importtime:", (time.time() - totaltime))
 
-def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar,
-            graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole,
-            logscale, size, white_background, darkmode, png, cmap, title,
-            ltitle, unit, scale, outdir, verbose, data, labelsize, gif, oldfont, fontsize, dpi, xsize):
+def trygveplot(input, dataset=None, nside=None, auto=False, min=False, max=False, mid=[], rng="auto", colorbar=False,
+            graticule=False, lmax=None, fwhm=0.0, mask=None, mfill=None, sig=[0,], remove_dipole=None, remove_monopole=None,
+            logscale=False, size="m", white_background=False, darkmode=False, png=False, cmap=None, title=None,
+            ltitle=None, unit=None, scale=None, outdir='.', outname=None, verbose=False, labelsize=10, gif=False,
+            oldfont=False, fontsize=11, dpi=300, xsize=2000,):
+    """
+    Plots a fits file, a h5 data structure or a data array in Mollview with pretty formatting.
+    Option of autodecting component base on file-string with json look-up table.
+
+    Parameters
+    ----------
+    input : array, str or list
+        String or list of strings with filenames such as "cmb.fits" or "chain_c001.h5" for input data.
+    dataset : str
+        if input is a .h5 hdf-file specify which dataset to plot, for example "000007/cmb/amp_alm"
+        default = None        
+    
+    input, nargs=-1,)
+    dataset", type=click.STRING, help="for .h5 plotting (ex. 000007/cmb/amp_alm)")
+    nside", type=click.INT, help="nside for optional ud_grade.",)
+    auto", is_flag=True, help="Automatically sets all plotting parameters.",)
+    min", default=False, help="Min value of colorbar, overrides autodetector.",)
+    max", default=False, help="Max value of colorbar, overrides autodetector.",)
+    mid", multiple=True, help='Adds tick values "-mid 2 -mid 4"',)
+    range", default="auto", type=click.STRING, help='Color range. "-range auto" sets to 97.5 percentile of data., or "minmax" which sets to data min and max values.',)  # str until changed to float
+    colorbar", "-bar", is_flag=True, help='Adds colorbar ("cb" in filename)',)
+    graticule", is_flag=True, help='Adds graticule',)
+    lmax", default=None, type=click.FLOAT, help="This is automatically set from the h5 file. Only available for alm inputs.",)
+    fwhm", default=0.0, type=click.FLOAT, help="FWHM of smoothing, in arcmin.",)
+    mask", default=None, type=click.STRING, help="Masks input with specified maskfile.",)
+    mfill", default=None, type=click.STRING, help='Color to fill masked area. for example "gray". Transparent by default.',)
+    sig", default=[0,], type=click.INT, multiple=True, help="Signal to be plotted 0 by default (0, 1, 2 is interprated as IQU)",)
+    remove_dipole", default=None, type=click.STRING, help="Fits a dipole to the map and removes it. Specify mask or type auto.",)
+    remove_monopole", default=None, type=click.STRING, help="Fits a monopole to the map and removes it.",)
+    log/-no-log", "logscale", default=None, help="Plots using planck semi-logscale (Linear between -1,1). Autodetector sometimes uses this.",)
+    size", default="m", type=click.STRING, help="Size: 1/3, 1/2 and full page width (8.8/12/18cm) [ex. x, s, m or l, or ex. slm for all], m by default",)
+    white_background", is_flag=True, help="Sets the background to be white. (Transparent by default [recommended])",)
+    darkmode", is_flag=True, help='Plots all outlines in white for dark bakgrounds ("dark" in filename)',)
+    png", is_flag=True, help="Saves output as .png ().pdf by default)",)
+    cmap", default=None, type=click.STRING, help="Chose colormap (ex. sunburst, planck, etc). Available are matplotlib and cmasher. Also qualitative plotly [ex. q-Plotly-4 (q for qualitative 4 for max color)]",)
+    title", default=None, type=click.STRING, help="Set title (Upper right), has LaTeX functionality. Ex. $A_{s}$.",)
+    ltitle", default=None, type=click.STRING, help="Set title (Upper left), has LaTeX functionality. Ex. $A_{s}$.",)
+    unit", default=None, type=click.STRING, help="Set unit (Under color bar), has LaTeX functionality. Ex. $\mu$",)
+    scale", default=None, type=click.FLOAT, help="Scale input map [ex. 1e-6 for muK to K]",)
+    outdir", type=click.Path(exists=True), help="Output directory for plot",)
+    outname", type=click.STRING, help="Output filename, overwrites autonaming",)
+    labelsize", default=10, type=click.INT, help="Title size.",)
+    gif", is_flag=True, help="Make gifs from input",)
+    oldfont", is_flag=True, help="Use the old DejaVu font and not Times",)
+    fontsize", default=11, type=click.INT, help="Fontsize",)
+    dpi", default=300, type=click.INT, help="DPI",)
+    xsize", default=2000, type=click.INT, help="figuresize in px (2000 default)",)
+    hires", is_flag=True, help="sets dpi to 3000 and xsize to 10000",)
+    verbose", is_flag=True, help="Verbose mode")
+
+    """
     fontsize = int(fontsize)
     #plt.rcParams['font.family'] = 'serif'
     #plt.rcParams['font.serif'] = 'Times'
     if not oldfont:
         plt.rcParams["mathtext.fontset"] = "stix"
+
     plt.rcParams["backend"] = "agg" if png else "pdf"
+    if outname:
+        plt.rcParams["backend"] = "agg" if outname.endswith("png") else "pdf"
+    
     plt.rcParams["axes.linewidth"] = 1
     if darkmode:
         params = ["text.color", "axes.facecolor", "axes.edgecolor", "axes.labelcolor", "xtick.color",
@@ -34,12 +95,7 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar,
     click.echo(click.style("Plotting",fg="green") + f" {input}")
 
     ####   READ MAP   #####
-    if data is not None: #In case you want to use function directly
-        maps_ = [data]
-        outfile = input.replace('.fits', "")
-        signal_labels = None 
-    else:    
-        maps_, lmax, outfile, signal_labels = get_map(input, sig, dataset, nside, lmax, fwhm,)
+    maps_, lmax, outfile, signal_labels = get_map(input, sig, dataset, nside, lmax, fwhm,)
     # Plot all signals specified
     click.echo(click.style("Using signals ",fg="green") + f"{sig}")
     click.echo(click.style("{:#^48}".format(""), fg="green"))
@@ -77,7 +133,6 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar,
             #### Automatic variables #####
             if auto:
                 (m, ttl, lttl, unt, ticks, cmp, lgscale,) = get_params(m, outfile, signal_label,)
-
                 # Tick bug fix
                 mn, md, mx= (ticks[0], None, ticks[-1])
                 if not mid and len(ticks)>2:
@@ -99,17 +154,16 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar,
             if unit: unt = unit 
             # Get data ticks
             ticks = get_ticks(m, ticks, mn, md, mx, min, mid, max, rng, auto)
-            ticklabels = [fmt(i, 1) for i in ticks]
-            #### Logscale ######
-            if lgscale: m, ticks = apply_logscale(m, ticks, linthresh=1)
             #### Color map #####
-            cmap_ = get_cmap(cmap, cmp,)
+            cmap_ = get_cmap(cmap, cmp, logscale=lgscale)
             #### Projection ####
             grid_pix, longitude, latitude = project_map(nside, xsize=xsize, ysize=int(xsize/ 2.0),)
             #### Mask ##########
             grid_map, cmap_ = apply_mask(m, mask, grid_pix, mfill, polt, cmap_) if mask else (m[grid_pix], cmap_)
 
-            click.echo(click.style("Ticks: ", fg="green") + f"{ticklabels}")
+            click.echo(click.style("FWHM: ", fg="green") + f"{fwhm}")
+            click.echo(click.style("nside: ", fg="green") + f"{nside}")
+            click.echo(click.style("Ticks: ", fg="green") + f"{ticks}")
             click.echo(click.style("Unit: ", fg="green") + f"{unt}")
             click.echo(click.style("Title: ", fg="green") + f"{ttl}")
             for width in get_sizes(size):
@@ -125,15 +179,17 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar,
                 else:
                     fig = plt.figure(figsize=(cm2inch(width), cm2inch(height),),)
                     ax = fig.add_subplot(111, projection="mollweide")
+                
+                norm=col.SymLogNorm(linthresh=1, base=10) if logscale else None
+                image = plt.pcolormesh(longitude[::-1], latitude, grid_map, vmin=ticks[0], vmax=ticks[-1], norm=norm, rasterized=True, cmap=cmap_, shading='auto', animated=gif)
 
-                image = plt.pcolormesh(longitude[::-1], latitude, grid_map, vmin=ticks[0], vmax=ticks[-1], rasterized=True, cmap=cmap_, shading='auto',animated=gif)
                 # Save img for gif
                 if gif: imgs.append([image])
                 #### Graticule ####
                 if graticule: apply_graticule(ax, width)
                 ax.xaxis.set_ticklabels([]); ax.yaxis.set_ticklabels([]) # rm lonlat ticklabs
                 #### Colorbar ####
-                if colorbar: apply_colorbar(fig, image, ticks, ticklabels, unt, fontsize, linthresh=1, logscale=lgscale)
+                if colorbar: apply_colorbar(fig, image, ticks, unt, fontsize, norm)
                 #### Right Title ####
                 plt.text(4.5, 1.1, r"%s" % ttl, ha="center", va="center", fontsize=labelsize,)
                 #### Left Title ####
@@ -142,12 +198,88 @@ def Plotter(input, dataset, nside, auto, min, max, mid, rng, colorbar,
                 plt.tight_layout()
                 if gif: #output gif on last iteration only
                     if i==len(input)-1:
-                        output_map(fig, outfile, png, fwhm, colorbar, mask, remove_dipole, darkmode, white_background,cmap_,nside,signal_label,width,outdir, gif, imgs, dpi, verbose)
+                        output_map(fig, outfile, png, fwhm, colorbar, mask, remove_dipole, darkmode, white_background,cmap_,nside,signal_label,width,outdir, gif, imgs, dpi, verbose, outname)
                 else:
-                    output_map(fig, outfile, png, fwhm, colorbar, mask, remove_dipole, darkmode, white_background,cmap_,nside,signal_label,width,outdir, gif, imgs, dpi, verbose)
+                    output_map(fig, outfile, png, fwhm, colorbar, mask, remove_dipole, darkmode, white_background,cmap_,nside,signal_label,width,outdir, gif, imgs, dpi, verbose, outname)
                     click.echo("Saved, closing fig")
                     plt.close()
                 click.echo("Totaltime:", (time.time() - totaltime),) if verbose else None
+
+def apply_colorbar(fig, image, ticks, unit, fontsize, norm):
+    click.echo(click.style("Applying colorbar", fg="yellow"))
+    from matplotlib.ticker import FuncFormatter
+    cb = fig.colorbar(image, orientation="horizontal", shrink=0.4, pad=0.04, format=FuncFormatter(fmt),)
+    cb.ColorbarBase(ax, norm=norm, boundaries=[-10] + bounds + [10], extend='both', extendfrac='auto', ticks=ticks, spacing='uniform', orientation='horizontal')
+    #ticklabels =  [fmt(i,1) for i in ticks]
+    if norm is not None:
+        """
+        This is an absolute pain in the ass.
+        """
+        """
+        # Make grid of major tick values for a logspace grid
+        linthresh = 1 # harcode to 1 for now
+        linticks = np.linspace(-1, 1, 3)*linthresh
+        logmin = np.round(np.log10(ticks[0]))
+        logmax = np.round(np.log10(ticks[-1]))
+        logticks_min = -10**np.arange(abs(logmin)+1)
+        logticks_max = 10**np.arange(logmax+1)
+        ticks_total = np.asarray(np.sort(np.unique([*ticks, *logticks_min, *linticks, *logticks_max])))
+        ticklabels = []
+        ticks_total = ticks_total[ (ticks_total >= ticks[0]) & ( ticks_total<= ticks[-1]) ] 
+        for label in ticks_total:
+            if label in ticks:  
+                ticklabels.append(fmt(label,1))
+            else:
+                ticklabels.append('')
+        # Set major ticks
+        print(ticks_total)
+        print(ticklabels)
+        cb.ax.set_xticks(ticks_total) 
+        cb.ax.set_xticklabels(ticklabels)
+        print(cb.get_ticks())
+        print(cb.ax.xaxis.get_ticklabels())
+        
+        #minor ticks
+        minorticks = np.linspace(-linthresh, linthresh, 5) # Minor ticks in linear regime
+        minorticks2 = np.arange(2,10)#*linthresh # Minor ticks for logarithmic regime
+        for i in range(len(logticks_min)):
+            minorticks = np.concatenate((-10**i*minorticks2,minorticks))
+        for i in range(len(logticks_max)):
+            minorticks = np.concatenate((minorticks, 10**i*minorticks2))
+        minorticks = minorticks[ (minorticks >= ticks[0]) & ( minorticks<= ticks[-1]) ] 
+        print(minorticks)
+        print(ticks)
+        cb.ax.xaxis.set_ticks(minorticks, minor=True)
+
+    else:
+        cb.set_ticks(ticks)
+        cb.set_ticklabels(ticklabels)
+        cb.ax.minorticks_on()
+        """
+    """
+    logmin = np.round(np.log10(ticks[0]))
+    logmax = np.round(np.log10(ticks[-1]))
+    logticks_min = -10**np.arange(0, abs(logmin)+1)
+    logticks_max = 10**np.arange(0, logmax+1)
+    ticks_generated = np.unique(np.concatenate((logticks_min, logticks_max, cb.get_ticks())))
+    ticks_generated =cb.get_ticks()
+    ticks_total = np.sort(list(set(ticks) | set(ticks_generated)))
+    ticklabels = []
+    for label in ticks_total:
+        if label in ticks:
+            ticklabels.append(fmt(label,1))
+        else:
+            ticklabels.append('')
+    cb.set_ticks(ticks_total)
+    cb.set_ticklabels(ticklabels)
+    """
+    cb.ax.xaxis.set_label_text(unit)
+    cb.ax.xaxis.label.set_size(fontsize)
+    cb.ax.tick_params(which="both", axis="x", direction="in", labelsize=fontsize,)
+    cb.ax.xaxis.labelpad = 0
+    # workaround for issue with viewers, see colorbar docstring
+    cb.solids.set_edgecolor("face")
+    return cb
 
 def get_params(m, outfile, signal_label,):
     outfile = os.path.split(outfile)[-1] # Remove path 
@@ -266,21 +398,6 @@ def cm2inch(cm):
 def tag_lookup(tags, outfile):
     return any(e in outfile for e in tags)
 
-def symlog(m, linthresh=1.0):
-    # Extra fact of 2 ln 10 makes symlog(m) = m in linear regime
-    m = m/linthresh/(2*np.log(10))
-    return np.log10(0.5 * (m + np.sqrt(4.0 + m * m)))
-
-def apply_logscale(m, ticks, linthresh):
-    click.echo(click.style("Applying semi-logscale", fg="yellow", blink=True, bold=True))
-    m = symlog(m,linthresh)
-    new_ticks = []
-    for i in ticks:
-        new_ticks.append(symlog(i,linthresh))
-
-    m = np.maximum(np.minimum(m, new_ticks[-1]), new_ticks[0])
-    return m, new_ticks
-
 def apply_mask(m, mask, grid_pix, mfill, polt, cmap):
     click.echo(click.style(f"Masking using {mask}", fg="yellow"))
     # Apply mask
@@ -299,14 +416,14 @@ def apply_mask(m, mask, grid_pix, mfill, polt, cmap):
 
     return grid_map, cmap
 
-def get_cmap(cmap, cmp):
+def get_cmap(cmap, cmp, logscale=False):
     # Chose colormap manually
     if cmap == None:
         # If not defined autoset or goto planck
         cmap = cmp
     if "planck" in cmap:
         from pathlib import Path
-        if False: #logscale:
+        if "planck_log" in cmap: #logscale:
             cmap_path = Path(__file__).parent / "planck_cmap_logscale.dat"
         else:
             cmap_path = Path(__file__).parent / "planck_cmap.dat"
@@ -414,7 +531,7 @@ def get_title(comp, outfile, signal_label,):
         comp["ticks"] = "auto"
         comp["logscale"] = comp["special"] = False
     elif tag_lookup(["mean"], outfile+signal_label):
-        ttl = r"$\langle$" + comp["param"] + r"$_{\mathrm{" + comp["comp"] + "}}^{ }$" + r"$\rangle$"
+        ttl = r"$\langle $" + comp["param"] + r"$_{\mathrm{" + comp["comp"] + "}}^{ }$" + r"$\rangle$"
     elif tag_lookup(["diff"], outfile+signal_label):
         if "dx12" in outfile: difflabel = "\mathrm{2018}"
         difflabel = "\mathrm{NPIPE}" if "npipe" in outfile else ""
@@ -438,46 +555,7 @@ def get_title(comp, outfile, signal_label,):
     if lttl == "$$": lttl =""
     return ttl, lttl
 
-def apply_colorbar(fig, image, ticks, ticklabels, unit, fontsize, linthresh, logscale):
-    click.echo(click.style("Applying colorbar", fg="yellow"))
-    from matplotlib.ticker import FuncFormatter, LogLocator
-    cb = fig.colorbar(image, orientation="horizontal", shrink=0.4, pad=0.04, ticks=ticks, format=FuncFormatter(fmt),)
 
-    cb.ax.set_xticklabels(ticklabels)
-    cb.ax.xaxis.set_label_text(unit)
-    cb.ax.xaxis.label.set_size(fontsize)
-    if logscale:
-        linticks = np.linspace(-1, 1, 3)*linthresh
-        logmin = np.round(ticks[0])
-        logmax = np.round(ticks[-1])
-
-        logticks_min = -10**np.arange(0, abs(logmin)+1)
-        logticks_max = 10**np.arange(0, logmax+1)
-        ticks_ = np.unique(np.concatenate((logticks_min, linticks, logticks_max)))
-        #cb.set_ticks(np.concatenate((ticks,symlog(ticks_))), []) # Set major ticks
-
-        logticks = symlog(ticks_, linthresh)
-        logticks = [x for x in logticks if x not in ticks]
-        cb.set_ticks(np.concatenate((ticks,logticks ))) # Set major ticks
-        cb.ax.set_xticklabels(ticklabels + ['']*len(logticks))
-
-        minorticks = np.linspace(-linthresh, linthresh, 5)
-        minorticks2 = np.arange(2,10)*linthresh
-
-        for i in range(len(logticks_min)):
-            minorticks = np.concatenate((-10**i*minorticks2,minorticks))
-        for i in range(len(logticks_max)):
-            minorticks = np.concatenate((minorticks, 10**i*minorticks2))
-
-        minorticks = symlog(minorticks, linthresh)
-        minorticks = minorticks[ (minorticks >= ticks[0]) & ( minorticks<= ticks[-1]) ] 
-        cb.ax.xaxis.set_ticks(minorticks, minor=True)
-
-    cb.ax.tick_params(which="both", axis="x", direction="in", labelsize=fontsize,)
-    cb.ax.xaxis.labelpad = 0
-    # workaround for issue with viewers, see colorbar docstring
-    cb.solids.set_edgecolor("face")
-    return cb
 
 def apply_graticule(ax, width):
     click.echo(click.style("Applying graticule", fg="yellow"))
@@ -504,10 +582,15 @@ def get_map(input, sig, dataset, nside, lmax, fwhm,):
     # Get maps array if .h5 file
     signal_labels=None
     maps=[]
-    input = [input] if isinstance(input, str) else input
+    input = [input] if isinstance(input, (str, np.ndarray)) else input
     if not input: print("No input specified"); sys.exit()
     for input_ in input:
-        if input_.endswith(".h5"):
+        if isinstance(input_, np.ndarray):
+            if not nside: nside=hp.get_nside(input_)
+            if not lmax:  lmax = 2.5*nside
+            outfile = "figure"
+            maps_ = input_[sig]
+        elif input_.endswith(".h5"):
             from src.commands_hdf import h5map2fits
             from src.tools import alm2fits_tool
             # Get maps from alm data in .h5
@@ -544,16 +627,14 @@ def get_map(input, sig, dataset, nside, lmax, fwhm,):
                 signal_labels.append(signal_label)            
             outfile = input_.replace(".fits", "")
         else:
-            outfile = input_.replace(".fits", "")
             click.echo(click.style("Did not recognize data.",fg="red"))
             sys.exit()
 
         if maps_.ndim == 1: maps_ = maps_.reshape(1,-1)
         maps.append(maps_)
-
     return maps, lmax, outfile, signal_labels
 
-def output_map(fig, outfile, png, fwhm, colorbar, mask, remove_dipole, darkmode, white_background,cmap,nside,signal_label,width,outdir,gif,imgs,dpi, verbose):
+def output_map(fig, outfile, png, fwhm, colorbar, mask, remove_dipole, darkmode, white_background,cmap,nside,signal_label,width,outdir,gif,imgs,dpi, verbose, outname):
     #### filename ##
     outfile = outfile.replace("_IQU_", "_")
     outfile = outfile.replace("_I_", "_")
@@ -573,9 +654,14 @@ def output_map(fig, outfile, png, fwhm, colorbar, mask, remove_dipole, darkmode,
 
     for i in filename:
         fn += f"_{i}"
-    filetype = "png" if png else "pdf"
-    fn += f".{filetype}"
 
+
+    filetype = "png" if png else "pdf"
+    if outname:
+        filetype = "png" if outname.endswith(".png") else "pdf"
+
+    fn += f".{filetype}"
+    if outname: fn = outname
     starttime = time.time()
     if outdir:
         fn = outdir + "/" + os.path.split(fn)[-1]
@@ -588,14 +674,14 @@ def output_map(fig, outfile, png, fwhm, colorbar, mask, remove_dipole, darkmode,
         ani = animation.ArtistAnimation(fig, imgs, interval=interval, blit=True, repeat_delay=1000)
         ani.save(fn.replace(filetype,"gif"),dpi=dpi)
     else:
-        click.echo(click.style("Outputing PDF:", fg="green") + f" {fn}")
+        click.echo(click.style("Outputin file", fg="green") + f" {fn}")
         fig.savefig(fn, bbox_inches="tight", pad_inches=0.02, transparent=tp, format=filetype, dpi=dpi)
     click.echo("Savefig", (time.time() - starttime),) if verbose else None
 
 def get_ticks(m, ticks, mn, md, mx, min, mid, max, rng, auto):
 
     # If min and max have been specified, set.
-    if rng == "auto": # Mathew: I have changed this to give the desired behaviour for make_diff_plots, but I don't know if this breaks other functionality
+    if rng == "auto" and not auto: # Mathew: I have changed this to give the desired behaviour for make_diff_plots, but I don't know if this breaks other functionality
     # it used to be
     # if rng == "auto" and not auto:
         click.echo(click.style("Setting range from 97.5th percentile of data",fg="yellow"))
