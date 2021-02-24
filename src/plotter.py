@@ -154,6 +154,9 @@ def trygveplot(input, dataset=None, nside=None, auto=False, min=False, max=False
             if unit: unt = unit 
             # Get data ticks
             ticks = get_ticks(m, ticks, mn, md, mx, min, mid, max, rng, auto)
+            ticklabels = [fmt(i, 1) for i in ticks]
+            #### Logscale ####
+            if lgscale: m, ticks = apply_logscale(m, ticks, linthresh=1)
             #### Color map #####
             cmap_ = get_cmap(cmap, cmp, logscale=lgscale)
             #### Projection ####
@@ -180,8 +183,8 @@ def trygveplot(input, dataset=None, nside=None, auto=False, min=False, max=False
                     fig = plt.figure(figsize=(cm2inch(width), cm2inch(height),),)
                     ax = fig.add_subplot(111, projection="mollweide")
                 
-                norm=col.SymLogNorm(linthresh=1, base=10) if logscale else None
-                image = plt.pcolormesh(longitude[::-1], latitude, grid_map, vmin=ticks[0], vmax=ticks[-1], norm=norm, rasterized=True, cmap=cmap_, shading='auto', animated=gif)
+                #norm=col.SymLogNorm(linthresh=1, base=10) if logscale else None
+                image = plt.pcolormesh(longitude[::-1], latitude, grid_map, vmin=ticks[0], vmax=ticks[-1], rasterized=True, cmap=cmap_, shading='auto', animated=gif)
 
                 # Save img for gif
                 if gif: imgs.append([image])
@@ -189,7 +192,7 @@ def trygveplot(input, dataset=None, nside=None, auto=False, min=False, max=False
                 if graticule: apply_graticule(ax, width)
                 ax.xaxis.set_ticklabels([]); ax.yaxis.set_ticklabels([]) # rm lonlat ticklabs
                 #### Colorbar ####
-                if colorbar: apply_colorbar(fig, image, ticks, unt, fontsize, norm)
+                if colorbar: apply_colorbar(fig, image, ticks, ticklabels, unit, fontsize, linthresh=1, logscale=lgscale)
                 #### Right Title ####
                 plt.text(4.5, 1.1, r"%s" % ttl, ha="center", va="center", fontsize=labelsize,)
                 #### Left Title ####
@@ -204,82 +207,6 @@ def trygveplot(input, dataset=None, nside=None, auto=False, min=False, max=False
                     click.echo("Saved, closing fig")
                     plt.close()
                 click.echo("Totaltime:", (time.time() - totaltime),) if verbose else None
-
-def apply_colorbar(fig, image, ticks, unit, fontsize, norm):
-    click.echo(click.style("Applying colorbar", fg="yellow"))
-    from matplotlib.ticker import FuncFormatter
-    cb = fig.colorbar(image, orientation="horizontal", shrink=0.4, pad=0.04, format=FuncFormatter(fmt),)
-    cb.ColorbarBase(ax, norm=norm, boundaries=[-10] + bounds + [10], extend='both', extendfrac='auto', ticks=ticks, spacing='uniform', orientation='horizontal')
-    #ticklabels =  [fmt(i,1) for i in ticks]
-    if norm is not None:
-        """
-        This is an absolute pain in the ass.
-        """
-        """
-        # Make grid of major tick values for a logspace grid
-        linthresh = 1 # harcode to 1 for now
-        linticks = np.linspace(-1, 1, 3)*linthresh
-        logmin = np.round(np.log10(ticks[0]))
-        logmax = np.round(np.log10(ticks[-1]))
-        logticks_min = -10**np.arange(abs(logmin)+1)
-        logticks_max = 10**np.arange(logmax+1)
-        ticks_total = np.asarray(np.sort(np.unique([*ticks, *logticks_min, *linticks, *logticks_max])))
-        ticklabels = []
-        ticks_total = ticks_total[ (ticks_total >= ticks[0]) & ( ticks_total<= ticks[-1]) ] 
-        for label in ticks_total:
-            if label in ticks:  
-                ticklabels.append(fmt(label,1))
-            else:
-                ticklabels.append('')
-        # Set major ticks
-        print(ticks_total)
-        print(ticklabels)
-        cb.ax.set_xticks(ticks_total) 
-        cb.ax.set_xticklabels(ticklabels)
-        print(cb.get_ticks())
-        print(cb.ax.xaxis.get_ticklabels())
-        
-        #minor ticks
-        minorticks = np.linspace(-linthresh, linthresh, 5) # Minor ticks in linear regime
-        minorticks2 = np.arange(2,10)#*linthresh # Minor ticks for logarithmic regime
-        for i in range(len(logticks_min)):
-            minorticks = np.concatenate((-10**i*minorticks2,minorticks))
-        for i in range(len(logticks_max)):
-            minorticks = np.concatenate((minorticks, 10**i*minorticks2))
-        minorticks = minorticks[ (minorticks >= ticks[0]) & ( minorticks<= ticks[-1]) ] 
-        print(minorticks)
-        print(ticks)
-        cb.ax.xaxis.set_ticks(minorticks, minor=True)
-
-    else:
-        cb.set_ticks(ticks)
-        cb.set_ticklabels(ticklabels)
-        cb.ax.minorticks_on()
-        """
-    """
-    logmin = np.round(np.log10(ticks[0]))
-    logmax = np.round(np.log10(ticks[-1]))
-    logticks_min = -10**np.arange(0, abs(logmin)+1)
-    logticks_max = 10**np.arange(0, logmax+1)
-    ticks_generated = np.unique(np.concatenate((logticks_min, logticks_max, cb.get_ticks())))
-    ticks_generated =cb.get_ticks()
-    ticks_total = np.sort(list(set(ticks) | set(ticks_generated)))
-    ticklabels = []
-    for label in ticks_total:
-        if label in ticks:
-            ticklabels.append(fmt(label,1))
-        else:
-            ticklabels.append('')
-    cb.set_ticks(ticks_total)
-    cb.set_ticklabels(ticklabels)
-    """
-    cb.ax.xaxis.set_label_text(unit)
-    cb.ax.xaxis.label.set_size(fontsize)
-    cb.ax.tick_params(which="both", axis="x", direction="in", labelsize=fontsize,)
-    cb.ax.xaxis.labelpad = 0
-    # workaround for issue with viewers, see colorbar docstring
-    cb.solids.set_edgecolor("face")
-    return cb
 
 def get_params(m, outfile, signal_label,):
     outfile = os.path.split(outfile)[-1] # Remove path 
@@ -343,6 +270,21 @@ def get_params(m, outfile, signal_label,):
     if comp["ticks"][i] == "auto": comp["ticks"] = get_percentile(m,97.5)
     comp["cmap"] = comp["cmap"][i]
     return (m,  ttl, lttl, comp["unit"], comp["ticks"], comp["cmap"], comp["logscale"],)
+
+def symlog(m, linthresh=1.0):
+    # Extra fact of 2 ln 10 makes symlog(m) = m in linear regime
+    m = m/linthresh/(2*np.log(10))
+    return np.log10(0.5 * (m + np.sqrt(4.0 + m * m)))
+
+def apply_logscale(m, ticks, linthresh=1):
+    click.echo(click.style("Applying semi-logscale", fg="yellow", blink=True, bold=True))
+    m = symlog(m,linthresh)
+    new_ticks = []
+    for i in ticks:
+        new_ticks.append(symlog(i,linthresh))
+
+    m = np.maximum(np.minimum(m, new_ticks[-1]), new_ticks[0])
+    return m, new_ticks
 
 def get_signallabel(x):
     if x == 0:
@@ -555,6 +497,46 @@ def get_title(comp, outfile, signal_label,):
     if lttl == "$$": lttl =""
     return ttl, lttl
 
+def apply_colorbar(fig, image, ticks, ticklabels, unit, fontsize, linthresh, logscale):
+    click.echo(click.style("Applying colorbar", fg="yellow"))
+    from matplotlib.ticker import FuncFormatter, LogLocator
+    cb = fig.colorbar(image, orientation="horizontal", shrink=0.4, pad=0.04, ticks=ticks, format=FuncFormatter(fmt),)
+
+    cb.ax.set_xticklabels(ticklabels)
+    cb.ax.xaxis.set_label_text(unit)
+    cb.ax.xaxis.label.set_size(fontsize)
+    if logscale:
+        linticks = np.linspace(-1, 1, 3)*linthresh
+        logmin = np.round(ticks[0])
+        logmax = np.round(ticks[-1])
+
+        logticks_min = -10**np.arange(0, abs(logmin)+1)
+        logticks_max = 10**np.arange(0, logmax+1)
+        ticks_ = np.unique(np.concatenate((logticks_min, linticks, logticks_max)))
+        #cb.set_ticks(np.concatenate((ticks,symlog(ticks_))), []) # Set major ticks
+
+        logticks = symlog(ticks_, linthresh)
+        logticks = [x for x in logticks if x not in ticks]
+        cb.set_ticks(np.concatenate((ticks,logticks ))) # Set major ticks
+        cb.ax.set_xticklabels(ticklabels + ['']*len(logticks))
+
+        minorticks = np.linspace(-linthresh, linthresh, 5)
+        minorticks2 = np.arange(2,10)*linthresh
+
+        for i in range(len(logticks_min)):
+            minorticks = np.concatenate((-10**i*minorticks2,minorticks))
+        for i in range(len(logticks_max)):
+            minorticks = np.concatenate((minorticks, 10**i*minorticks2))
+
+        minorticks = symlog(minorticks, linthresh)
+        minorticks = minorticks[ (minorticks >= ticks[0]) & ( minorticks<= ticks[-1]) ] 
+        cb.ax.xaxis.set_ticks(minorticks, minor=True)
+
+    cb.ax.tick_params(which="both", axis="x", direction="in", labelsize=fontsize,)
+    cb.ax.xaxis.labelpad = 0
+    # workaround for issue with viewers, see colorbar docstring
+    cb.solids.set_edgecolor("face")
+    return cb
 
 
 def apply_graticule(ax, width):
@@ -717,3 +699,54 @@ def get_ticks(m, ticks, mn, md, mx, min, mid, max, rng, auto):
         ticks = [min, *md, max] 
 
     return [float(i) for i in ticks]
+
+
+
+"""
+
+def apply_colorbar(fig, image, ticks, unit, fontsize, norm):
+    click.echo(click.style("Applying colorbar", fg="yellow"))
+    from matplotlib.ticker import FuncFormatter
+    cb = fig.colorbar(image, orientation="horizontal", shrink=0.4, pad=0.04, format=FuncFormatter(fmt),)
+    ticklabels =  [fmt(i,1) for i in ticks]
+    print(cb.ax.get_xticklabels())
+    click.echo(click.style("Applying colorbar", fg="yellow"))
+    from matplotlib.ticker import FuncFormatter, LogLocator
+    cb = fig.colorbar(image, orientation="horizontal", shrink=0.4, pad=0.04, ticks=ticks, format=FuncFormatter(fmt),)
+
+    cb.ax.set_xticklabels(ticklabels)
+    cb.ax.xaxis.set_label_text(unit)
+    cb.ax.xaxis.label.set_size(fontsize)
+    if logscale:
+        linticks = np.linspace(-1, 1, 3)*linthresh
+        logmin = np.round(ticks[0])
+        logmax = np.round(ticks[-1])
+
+        logticks_min = -10**np.arange(0, abs(logmin)+1)
+        logticks_max = 10**np.arange(0, logmax+1)
+        ticks_ = np.unique(np.concatenate((logticks_min, linticks, logticks_max)))
+        #cb.set_ticks(np.concatenate((ticks,symlog(ticks_))), []) # Set major ticks
+
+        logticks = symlog(ticks_, linthresh)
+        logticks = [x for x in logticks if x not in ticks]
+        cb.set_ticks(np.concatenate((ticks,logticks ))) # Set major ticks
+        cb.ax.set_xticklabels(ticklabels + ['']*len(logticks))
+
+        minorticks = np.linspace(-linthresh, linthresh, 5)
+        minorticks2 = np.arange(2,10)*linthresh
+
+        for i in range(len(logticks_min)):
+            minorticks = np.concatenate((-10**i*minorticks2,minorticks))
+        for i in range(len(logticks_max)):
+            minorticks = np.concatenate((minorticks, 10**i*minorticks2))
+
+        minorticks = symlog(minorticks, linthresh)
+        minorticks = minorticks[ (minorticks >= ticks[0]) & ( minorticks<= ticks[-1]) ] 
+        cb.ax.xaxis.set_ticks(minorticks, minor=True)
+
+    cb.ax.tick_params(which="both", axis="x", direction="in", labelsize=fontsize,)
+    cb.ax.xaxis.labelpad = 0
+    # workaround for issue with viewers, see colorbar docstring
+    cb.solids.set_edgecolor("face")
+    return cb
+"""
