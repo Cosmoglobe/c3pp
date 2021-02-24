@@ -166,7 +166,7 @@ def trygveplot(input, dataset=None, nside=None, auto=False, min=False, max=False
 
             click.echo(click.style("FWHM: ", fg="green") + f"{fwhm}")
             click.echo(click.style("nside: ", fg="green") + f"{nside}")
-            click.echo(click.style("Ticks: ", fg="green") + f"{ticks}")
+            click.echo(click.style("Ticks: ", fg="green") + f"{ticklabels}")
             click.echo(click.style("Unit: ", fg="green") + f"{unt}")
             click.echo(click.style("Title: ", fg="green") + f"{ttl}")
             for width in get_sizes(size):
