@@ -32,7 +32,6 @@ def unpack_alms(maps, lmax):
                 i += 1
     return alms
 
-
 def alm2fits_tool(input, dataset, nside, lmax, fwhm, save=True):
     """
     Function for converting alms in hdf file to fits
@@ -60,7 +59,7 @@ def alm2fits_tool(input, dataset, nside, lmax, fwhm, save=True):
 
     print("Making map from alms")
     pol=False if alms_unpacked.shape[0] == 1 else True
-    maps = hp.sphtfunc.alm2map(alms_unpacked, nside, lmax=lmax, mmax=mmax, fwhm=arcmin2rad(fwhm),pol=pol, pixwin=True,)
+    maps = hp.sphtfunc.alm2map(alms_unpacked, int(nside), lmax=int(lmax), mmax=int(mmax), fwhm=arcmin2rad(fwhm), pol=pol, pixwin=True,)
 
     outfile = dataset.replace("/", "_")
     outfile = outfile.replace("_alm", "")
@@ -68,7 +67,6 @@ def alm2fits_tool(input, dataset, nside, lmax, fwhm, save=True):
         outfile += f"_{str(int(fwhm))}arcmin" if fwhm > 0.0 else ""
         hp.write_map(outfile + f"_n{str(nside)}_lmax{lmax}.fits", maps, overwrite=True, dtype=None)
     return maps, nside, lmax, fwhm, outfile
-
 
 def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command, pixweight=None, zerospin=False, lowmem=False, notchain=False):
     """
@@ -314,7 +312,6 @@ def sync(nu, As, alpha, nuref=0.408):
     s_s = As*(nu_0/nu)**2*f/f0
     return s_s
 
-
 def ffEM(nu,EM,Te):
     """
     Freefree spectrum using emission measure
@@ -360,7 +357,6 @@ def sdust(nu, Asd, nu_p, polfrac, fnu = None, f_ = None, nuref=22.,):
         
     s_sd = polfrac*Asd*(nuref/nu)**2*f/f0
     return s_sd
-
 
 def tdust(nu,Ad,betad,Td,nuref=545.):
     """
@@ -425,8 +421,6 @@ def rspectrum(nu, r, sig, scaling=1.0):
     bl = hp.gauss_beam(40/(180/np.pi*60), lmax,pol=True)
     A = np.sqrt(sum( 4*np.pi * cl[2:,signal]*bl[2:,signal]**2/(2*l+1) ))
     return cmb(nu, A*scaling)
-
-
 
 def fits_handler(input, min, max, minchain, maxchain, chdir, output, fwhm, nside, zerospin, drop_missing, pixweight, command, lowmem=False, fields=None, write=False):
     """

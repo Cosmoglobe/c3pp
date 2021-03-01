@@ -115,7 +115,6 @@ def specplot(input,cmap,long):
 @click.option("-scale", default=None, type=click.FLOAT, help="Scale input map [ex. 1e-6 for muK to K]",)
 @click.option("-outdir", type=click.Path(exists=True), help="Output directory for plot",)
 @click.option("-outname", type=click.STRING, help="Output filename, overwrites autonaming",)
-@click.option("-labelsize", default=10, type=click.INT, help="Title size.",)
 @click.option("-gif", is_flag=True, help="Make gifs from input",)
 @click.option("-oldfont", is_flag=True, help="Use the old DejaVu font and not Times",)
 @click.option("-fontsize", default=11, type=click.INT, help="Fontsize",)
@@ -123,7 +122,10 @@ def specplot(input,cmap,long):
 @click.option("-xsize", default=2000, type=click.INT, help="figuresize in px (2000 default)",)
 @click.option("-hires", is_flag=True, help="sets dpi to 3000 and xsize to 10000",)
 @click.option("-verbose", is_flag=True, help="Verbose mode")
-def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, outname, labelsize,gif, oldfont, fontsize, dpi, xsize, hires, verbose,):
+def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule, 
+        lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, 
+        size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, 
+        outdir, outname, gif, oldfont, fontsize, dpi, xsize, hires, verbose,):
     """
     Plots map from .fits or h5 file.
     ex. c3pp plot coolmap.fits -bar -auto -lmax 60 -darkmode -pdf -title $\beta_s$
@@ -133,12 +135,11 @@ def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule,
     RECOMMENDED: Use -auto to autodetect map type and set parameters.\n
     Some autodetected maps use logscale, you will be warned.
     """
-    if hires:
-        xsize=10000
-        dpi=1000
-
     from src.plotter import trygveplot
-    trygveplot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule, lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, outdir, outname, verbose,labelsize,gif,oldfont, fontsize, dpi, xsize)
+    trygveplot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule,
+                lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, 
+                size, white_background, darkmode, png, cmap, title, ltitle, unit, scale, 
+                outdir, outname, verbose, fontsize, gif, oldfont, dpi, xsize, hires)
 
 
 @commands_plotting.command()
