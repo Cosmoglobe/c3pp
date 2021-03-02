@@ -13,11 +13,10 @@ def unpack_alms(maps, lmax):
     # Nalms is length of target alms
     Nalms = int(mmax * (2 * lmax + 1 - mmax) / 2 + lmax + 1)
     alms = np.zeros((nmaps, Nalms), dtype=np.complex128)
-
     # Unpack alms as output by commander
     for sig in range(nmaps):
         i = 0
-        for l in range(lmax + 1):
+        for l in range(lmax+1):
             j_real = l ** 2 + l
             alms[sig, i] = complex(maps[sig, j_real], 0.0)
             i += 1
@@ -56,11 +55,9 @@ def alm2fits_tool(input, dataset, nside, lmax, fwhm, save=True):
     mmax = lmax
 
     alms_unpacked = unpack_alms(alms, lmax)  # Unpack alms
-
     print("Making map from alms")
-    pol=False if alms_unpacked.shape[0] == 1 else True
+    pol=False # Not true. But not sure why.
     maps = hp.sphtfunc.alm2map(alms_unpacked, int(nside), lmax=int(lmax), mmax=int(mmax), fwhm=arcmin2rad(fwhm), pol=pol, pixwin=True,)
-
     outfile = dataset.replace("/", "_")
     outfile = outfile.replace("_alm", "")
     if save:
