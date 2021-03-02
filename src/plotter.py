@@ -164,7 +164,7 @@ def trygveplot(input, dataset=None, nside=None, auto=False, min=False, max=False
     ### Terminal output for 
     click.echo("")
     click.echo(click.style("{:#^48}".format(""), fg="green"))
-    click.echo(click.style("Plotting",fg="green") + f" {input}")
+    click.echo(click.style("Plotting",fg="green") + f" {input} dset={dataset}")
 
     ####   READ MAP   #####
     maps_, lmax, outfile, signal_labels = get_map(input, sig, dataset, nside, lmax, fwhm,)
@@ -236,6 +236,13 @@ def trygveplot(input, dataset=None, nside=None, auto=False, min=False, max=False
             ticks = get_ticks(m, ticks, mn, md, mx, min, mid, max, rng, auto)
             ticklabels = [fmt(i, 1) for i in ticks]
             
+            # Terminal ouput
+            click.echo(click.style("FWHM: ", fg="green") + f"{fwhm}")
+            click.echo(click.style("nside: ", fg="green") + f"{nside}")
+            click.echo(click.style("Ticks: ", fg="green") + f"{ticks}")
+            click.echo(click.style("Unit: ", fg="green") + f"{unt}")
+            click.echo(click.style("Title: ", fg="green") + f"{ttl}")
+            
             #### Logscale ####
             if lgscale: m, ticks = apply_logscale(m, ticks, linthresh=1)
             
@@ -248,12 +255,6 @@ def trygveplot(input, dataset=None, nside=None, auto=False, min=False, max=False
             #### Mask ##########
             grid_map, cmap_ = apply_mask(m, mask, grid_pix, mfill, polt, cmap_) if mask else (m[grid_pix], cmap_)
 
-            # Terminal ouput
-            click.echo(click.style("FWHM: ", fg="green") + f"{fwhm}")
-            click.echo(click.style("nside: ", fg="green") + f"{nside}")
-            click.echo(click.style("Ticks: ", fg="green") + f"{ticklabels}")
-            click.echo(click.style("Unit: ", fg="green") + f"{unt}")
-            click.echo(click.style("Title: ", fg="green") + f"{ttl}")
 
             for width in get_sizes(size):
                 click.echo(click.style("Size: ", fg="green") + str(width))
@@ -587,7 +588,7 @@ def get_map(input, sig, dataset, nside, lmax, fwhm,):
 def get_ticks(m, ticks, mn, md, mx, min, mid, max, rng, auto):
 
     # If min and max have been specified, set.
-    if False: #rng == "auto":# and not auto: # Mathew: I have changed this to give the desired behaviour for make_diff_plots, but I don't know if this breaks other functionality
+    if rng == "auto" and not auto: # Mathew: I have changed this to give the desired behaviour for make_diff_plots, but I don't know if this breaks other functionality
     # it used to be
     # if rng == "auto" and not auto:
         click.echo(click.style("Setting range from 97.5th percentile of data",fg="yellow"))

@@ -31,7 +31,7 @@ def unpack_alms(maps, lmax):
                 i += 1
     return alms
 
-def alm2fits_tool(input, dataset, nside, lmax, fwhm, save=True):
+def alm2fits_tool(input, dataset, nside, lmax, fwhm, save=True,):
     """
     Function for converting alms in hdf file to fits
     """
@@ -55,8 +55,9 @@ def alm2fits_tool(input, dataset, nside, lmax, fwhm, save=True):
     mmax = lmax
 
     alms_unpacked = unpack_alms(alms, lmax)  # Unpack alms
-    print("Making map from alms")
-    pol=False # Not true. But not sure why.
+    # If not amp map, set spin 0.
+    pol = False if "amp_alm" not in dataset else True
+    print(f"Making map from alms, setting pol={pol}")
     maps = hp.sphtfunc.alm2map(alms_unpacked, int(nside), lmax=int(lmax), mmax=int(mmax), fwhm=arcmin2rad(fwhm), pol=pol, pixwin=True,)
     outfile = dataset.replace("/", "_")
     outfile = outfile.replace("_alm", "")
