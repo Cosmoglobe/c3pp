@@ -82,7 +82,7 @@
     "freefree": {
         "tags": ["ff_", "freefree"],
         "unit": "$\\mu\\mathrm{K}_{\\mathrm{RJ}}$",
-        "comp": "d",
+        "comp": "ff",
         "param": "$A$",
         "cmap": ["freeze"],
         "ticks": [[40, 400, 2000]],
@@ -102,7 +102,7 @@
     "ame": {
         "tags": ["ame_", "ame1", "ame2"],
         "unit": "$\\mu\\mathrm{K}_{\\mathrm{RJ}}$",
-        "comp": "d",
+        "comp": "ame",
         "param": "$A$",
         "cmap": ["amber"],
         "ticks": [[30, 300, 3000]],
