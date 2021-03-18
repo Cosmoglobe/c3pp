@@ -1051,13 +1051,11 @@ def make_diff_plots(ctx, dir1, dir2, type1, type2):
   
         from src.plotter import trygveplot
  
-        units = None
         size = 'm'
         if comp in ['030', '044', '070']:
-            units = '$\mu\mathrm{K}_{\mathrm{CMB}}$'
             size = 's'
 
-        trygveplot(diff_map, outname=comp + '_diff' + '.pdf', auto=True, rng='auto', colorbar=True, size=size, unit=units, )
+        trygveplot(diff_map, outname=comp + '_diff' + '.pdf', auto=True, rng='auto', colorbar=True, size=size,)
 
 @commands_plotting.command()
 @click.option("-pol", is_flag=True, help="",)
