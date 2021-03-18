@@ -318,10 +318,18 @@ def get_params(m, outfile, outname, signal_label,):
         if tag_lookup(comp["tags"], outfile+signal_label):
             click.echo(click.style("{:-^48}".format(f"Detected {label} signal {sl}"),fg="yellow"))
             if label in ["residual", "freqmap",  "smap", "bpcorr"]:
-                from re import findall
+                from re import findall 
                 if label == "smap": tit = str(findall(r"tod_(.*?)_Smap", outfile)[0])
                 if label == "freqmap": 
-                    tit = str(findall(r"BP_(.*?)_", outfile)[0])
+                    #TODO generalize this
+                    if "30" in outfile:
+                        tit = "30"
+                    elif "44" in outfile:
+                        tit = "44"
+                    elif "70" in outfile:
+                        tit = "70"
+                    elif "353" in outfile:
+                        tit = "353"
                 if label == "bpcorr": 
                     tit = str(findall(r"tod_(.*?)_bpcorr", outfile)[0])
                 if label == "residual":
