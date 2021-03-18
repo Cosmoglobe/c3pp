@@ -229,7 +229,7 @@ def trygveplot(input, dataset=None, nside=None, auto=False, min=False, max=False
             #if "diff" in outname+outfile:
             #    click.echo(click.style("Changing cmap to planck because diff map!", fg="yellow", blink=True, bold=True))
             #    cmp = "planck"
-            
+
             #### Commandline priority ####
             if logscale != None: lgscale = logscale
             if title: ttl = title
@@ -285,7 +285,7 @@ def trygveplot(input, dataset=None, nside=None, auto=False, min=False, max=False
                 ax.xaxis.set_ticklabels([]); ax.yaxis.set_ticklabels([]) # rm lonlat ticklabs
                 
                 #### Colorbar ####
-                if colorbar: apply_colorbar(fig, image, ticks, ticklabels, unit, fontsize, linthresh=1, logscale=lgscale)
+                if colorbar: apply_colorbar(fig, image, ticks, ticklabels, unt, fontsize, linthresh=1, logscale=lgscale)
                 
                 #### Right Title ####
                 plt.text(4.5, 1.1, r"%s" % ttl, ha="center", va="center", fontsize=fontsize,)
