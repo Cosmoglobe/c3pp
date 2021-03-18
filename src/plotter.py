@@ -226,6 +226,9 @@ def trygveplot(input, dataset=None, nside=None, auto=False, min=False, max=False
                 lgscale = False
                 cmp = "planck"
 
+            if "diff" in outname+outfile:
+                click.echo(click.style("Changing cmap to planck because diff map!", fg="yellow", blink=True, bold=True))
+                cmp = "planck"
             #### Commandline priority ####
             if logscale != None: lgscale = logscale
             if title: ttl = title
