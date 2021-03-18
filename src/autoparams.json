@@ -170,7 +170,7 @@
         "special": false
     },
     "freqmap": {
-        "tags": ["BP_030", "BP_044", "BP_070"],
+        "tags": ["030", "044", "070"],
         "unit": "$\\mu\\mathrm{K}$",
         "comp": "",
         "param": "$A$",
