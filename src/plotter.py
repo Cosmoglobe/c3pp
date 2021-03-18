@@ -601,7 +601,7 @@ def get_map(input, sig, dataset, nside, lmax, fwhm,):
 def get_ticks(m, ticks, mn, md, mx, min, mid, max, rng, auto):
 
     # If min and max have been specified, set.
-    if rng == "auto" and not auto: # Mathew: I have changed this to give the desired behaviour for make_diff_plots, but I don't know if this breaks other functionality
+    if rng == "auto": # Mathew: I have changed this to give the desired behaviour for make_diff_plots, but I don't know if this breaks other functionality
     # it used to be
     # if rng == "auto" and not auto:
         click.echo(click.style("Setting range from 97.5th percentile of data",fg="yellow"))
