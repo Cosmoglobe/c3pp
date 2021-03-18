@@ -202,7 +202,7 @@ def trygveplot(input, dataset=None, nside=None, auto=False, min=False, max=False
 
             #### Scaling factor #####
             if scale:
-                if "chisq" in outfile:
+                if "chisq" in outfile+outname:
                     click.echo(click.style(f"Scaling chisq data with dof={scale}",fg="yellow"))
                     m = (m-scale)/np.sqrt(2*scale)
                 else:
@@ -211,7 +211,7 @@ def trygveplot(input, dataset=None, nside=None, auto=False, min=False, max=False
 
             #### Automatic variables #####
             if auto:
-                (m, ttl, lttl, unt, ticks, cmp, lgscale,) = get_params(m, outfile, signal_label,)
+                (m, ttl, lttl, unt, ticks, cmp, lgscale,) = get_params(m, outfile, outname, signal_label,)
                 # Tick bug fix
                 mn, md, mx= (ticks[0], None, ticks[-1])
                 if not mid and len(ticks)>2:
@@ -300,8 +300,9 @@ def trygveplot(input, dataset=None, nside=None, auto=False, min=False, max=False
                     plt.close()
                 click.echo("Totaltime:", (time.time() - totaltime),) if verbose else None
 
-def get_params(m, outfile, signal_label,):
+def get_params(m, outfile, outname, signal_label,):
     outfile = os.path.split(outfile)[-1] # Remove path 
+    outfile = outfile + outname
     sl = signal_label.split("_")[0]
     if sl in ["Q", "U", "QU"]:
         i = 1
@@ -538,7 +539,11 @@ def get_map(input, sig, dataset, nside, lmax, fwhm,):
             if not nside: nside=hp.get_nside(input_)
             if not lmax:  lmax = 2.5*nside
             outfile = "figure"
-            maps_ = input_[sig]
+            if input_.ndim > 1:
+                maps_ = input_[sig]
+            else:
+                maps_ = input_
+
         elif input_.endswith(".h5"):
             from src.commands_hdf import h5map2fits
             from src.tools import alm2fits_tool
