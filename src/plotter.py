@@ -202,7 +202,8 @@ def trygveplot(input, dataset=None, nside=None, auto=False, min=False, max=False
 
             #### Scaling factor #####
             if scale:
-                if "chisq" in outfile+outname:
+                datastring = f"{outfile}{outname}"
+                if "chisq" in datastring:
                     click.echo(click.style(f"Scaling chisq data with dof={scale}",fg="yellow"))
                     m = (m-scale)/np.sqrt(2*scale)
                 else:
@@ -213,6 +214,7 @@ def trygveplot(input, dataset=None, nside=None, auto=False, min=False, max=False
             if auto:
                 (m, ttl, lttl, unt, ticks, cmp, lgscale,) = get_params(m, outfile, outname, signal_label,)
                 # Tick bug fix
+
                 mn, md, mx= (ticks[0], None, ticks[-1])
                 if not mid and len(ticks)>2:
                     if ticks[0]<ticks[1]  and ticks[-2]<ticks[-1]:
@@ -235,7 +237,7 @@ def trygveplot(input, dataset=None, nside=None, auto=False, min=False, max=False
             if title: ttl = title
             if ltitle: lttl = ltitle 
             if unit: unt = unit 
-            
+
             #### Colorbar ticks ####
             ticks = get_ticks(m, ticks, mn, md, mx, min, mid, max, rng, auto)
             ticklabels = [fmt(i, 1) for i in ticks]
@@ -306,7 +308,8 @@ def trygveplot(input, dataset=None, nside=None, auto=False, min=False, max=False
 
 def get_params(m, outfile, outname, signal_label,):
     outfile = os.path.split(outfile)[-1] # Remove path 
-    outfile = outfile + outname
+    outfile = f"{outfile}{outname}"
+    datastring = f"{outfile}{signal_label}"
     sl = signal_label.split("_")[0]
     if sl in ["Q", "U", "QU"]:
         i = 1
@@ -319,7 +322,7 @@ def get_params(m, outfile, outname, signal_label,):
     with open(Path(__file__).parent /'autoparams.json', 'r') as f:
         params = json.load(f)
     for label, comp in params.items():
-        if tag_lookup(comp["tags"], outfile+signal_label):
+        if tag_lookup(comp["tags"], datastring):
             click.echo(click.style("{:-^48}".format(f"Detected {label} signal {sl}"),fg="yellow"))
             if label in ["residual", "freqmap",  "smap", "bpcorr"]:
                 from re import findall 
@@ -354,14 +357,12 @@ def get_params(m, outfile, outname, signal_label,):
                     elif "Haslam" in outfile:
                         comp["ticks"] = [[-1e4, 0, 1e4]]
                 comp["comp"] = r"${"+tit+"}$"
-
             comp["comp"] = comp["comp"].lstrip('0')    
             #print(i,sl,len(comp["cmap"]),len(comp["ticks"]))
             if i>=len(comp["cmap"]): i = len(comp["cmap"])-1
             comp["cmap"] = comp["cmap"][i]
             comp["ticks"] = comp["ticks"][i]
             ttl, lttl = get_title(comp,outfile,signal_label,)
-            
             if comp["ticks"] == "auto": comp["ticks"] = get_percentile(m,97.5)
             if label == "chisq": ttl = r"$\chi^2$"
             if label == "bpcorr": ttl ="$s_{\mathrm{leak}}^{"+tit.lstrip('0')+"}}$"
@@ -502,7 +503,8 @@ def get_cmap(cmap, cmp, logscale=False):
 
 def get_title(comp, outfile, signal_label,):
     sl = signal_label.split("_")[0]
-    if tag_lookup(["STDDEV","_stddev"], outfile+signal_label):
+    datastring = f"{outfile}{signal_label}"
+    if tag_lookup(["STDDEV","_stddev"],datastring):
         if comp["special"]:
             ttl = r"$\sigma_{\mathrm{" + comp["param"].replace("$","") + "}}$"
         else:
@@ -510,14 +512,14 @@ def get_title(comp, outfile, signal_label,):
         comp["cmap"] = "neutral"
         comp["ticks"] = "auto"
         comp["logscale"] = comp["special"] = False
-    elif tag_lookup(["RMS","_rms",], outfile+signal_label):
+    elif tag_lookup(["RMS","_rms",],datastring):
         ttl =  comp["param"] + r"$_{\mathrm{" + comp["comp"] + "}}^{\mathrm{RMS}}$" 
         comp["cmap"] = "neutral"
         comp["ticks"] = "auto"
         comp["logscale"] = comp["special"] = False
-    elif tag_lookup(["mean"], outfile+signal_label):
+    elif tag_lookup(["mean"],datastring):
         ttl = r"$\langle $" + comp["param"] + r"$_{\mathrm{" + comp["comp"] + "}}^{ }$" + r"$\rangle$"
-    elif tag_lookup(["diff"], outfile+signal_label):
+    elif tag_lookup(["diff"],datastring):
         if "dx12" in outfile: difflabel = "\mathrm{2018}"
         difflabel = "\mathrm{NPIPE}" if "npipe" in outfile else ""
         ttl = r"$\Delta$ " + comp["param"] + r"$_{\mathrm{" + comp["comp"] + "}}^{" + difflabel + "}$"
