@@ -617,9 +617,9 @@ def fits_handler(input, min, max, minchain, maxchain, chdir, output, fwhm, nside
             outdata = hp.sphtfunc.smoothing(outdata, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol,use_pixel_weights=True,datapath=pixweight)
         else: #use ring weights
             outdata = hp.sphtfunc.smoothing(outdata, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol,use_weights=True)
-
     # Outputs fits map if output name is .fits
     if write:
+        print("debug 3")
         if output.endswith(".fits"):
             hp.write_map(output, outdata, overwrite=True, dtype=None)
         elif output.endswith(".dat"):

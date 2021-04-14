@@ -186,8 +186,8 @@ def get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types, cm
 
     if extname.endswith("RES"):
         N = len(types)
-        amp_mean = fits_handler(input=f"res_{component}_c0001_k000001.fits", min=burnin, max=None, minchain=cmin, maxchain=cmax, chdir=chdir, output="map", fwhm=fwhm, nside=nside, zerospin=False, drop_missing=True, pixweight=False, command=np.mean, lowmem=False, fields=fields, write=False)
-        amp_stddev = fits_handler(input=f"res_{component}_c0001_k000001.fits", min=burnin, max=None, minchain=cmin, maxchain=cmax, chdir=chdir, output="map", fwhm=fwhm, nside=nside, zerospin=False, drop_missing=True, pixweight=False, command=np.std, lowmem=False, fields=fields, write=False)
+        amp_mean = fits_handler(input=f"res_{component}_c0001_k000001.fits", min=burnin, max=None, minchain=cmin, maxchain=cmax, chdir=chdir, output="map", fwhm=fwhm, nside=nside, zerospin=False, drop_missing=True, pixweight=None, command=np.mean, lowmem=False, fields=fields, write=False)
+        amp_stddev = fits_handler(input=f"res_{component}_c0001_k000001.fits", min=burnin, max=None, minchain=cmin, maxchain=cmax, chdir=chdir, output="map", fwhm=fwhm, nside=nside, zerospin=False, drop_missing=True, pixweight=None, command=np.std, lowmem=False, fields=fields, write=False)
         dset = np.zeros((N, hp.nside2npix(nside)))
         print(amp_mean.shape, amp_stddev.shape)
         if len(fields)>1:
@@ -199,8 +199,8 @@ def get_data(chain, extname, component, burnin, maxchain, fwhm, nside, types, cm
 
     if extname.endswith("CHISQ"):
         
-        amp_mean = fits_handler(input="chisq_c0001_k000001.fits", min=burnin, max=None, minchain=cmin, maxchain=cmax, chdir=chdir, output="map", fwhm=fwhm, nside=nside, zerospin=False, drop_missing=True, pixweight=False, command=np.mean, lowmem=False, write=False)
-        #amp_stddev = fits_handler(input="chisq_c0001_k000001.fits", min=burnin, max=None, minchain=cmin, maxchain=cmax, chdir=chdir, output="map", fwhm=fwhm, nside=nside, zerospin=False, drop_missing=True, pixweight=False, command=np.std, lowmem=False, write=False)
+        amp_mean = fits_handler(input="chisq_c0001_k000001.fits", min=burnin, max=None, minchain=cmin, maxchain=cmax, chdir=chdir, output="map", fwhm=fwhm, nside=nside, zerospin=False, drop_missing=True, pixweight=None, command=np.mean, lowmem=False, write=False)
+        #amp_stddev = fits_handler(input="chisq_c0001_k000001.fits", min=burnin, max=None, minchain=cmin, maxchain=cmax, chdir=chdir, output="map", fwhm=fwhm, nside=nside, zerospin=False, drop_missing=True, pixweight=None, command=np.std, lowmem=False, write=False)
 
         dset = np.zeros((len(types), hp.nside2npix(nside)))
 

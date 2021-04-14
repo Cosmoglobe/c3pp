@@ -590,8 +590,8 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
     if diff:
         import healpy as hp
         try:
-            if not os.path.exists("diffs"):
-                os.mkdir("diffs")
+            if not os.path.exists(f"{procver}/diffs"):
+                os.mkdir(f"{procver}/diffs")
             click.echo("Creating frequency difference maps")
             path_dx12 = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/dx12"
             path_npipe = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/npipe"
@@ -624,7 +624,7 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
                 map_BP -= np.mean(map_BP,axis=1).reshape(-1,1)
                 map_npipe -= np.mean(map_npipe,axis=1).reshape(-1,1)
                 map_dx12 -= np.mean(map_dx12,axis=1).reshape(-1,1)
-
+                click.echo(f"creating {freq} GHz difference")
                 hp.write_map(f"{procver}/diffs/BP_{freq}_diff_npipe_{procver}.fits", np.array(map_BP-map_npipe), overwrite=True, column_names=["I_DIFF", "Q_DIFF", "U_DIFF"], dtype=None)
                 hp.write_map(f"{procver}/diffs/BP_{freq}_diff_dx12_{procver}.fits", np.array(map_BP-map_dx12), overwrite=True, column_names=["I_DIFF", "Q_DIFF", "U_DIFF"], dtype=None)
 
@@ -635,8 +635,8 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
     if diffcmb:
         import healpy as hp
         try:
-            if not os.path.exists("diffs"):
-                os.mkdir("diffs")
+            if not os.path.exists(f"{procver}/diffs"):
+                os.mkdir(f"{procver}/diffs")
             click.echo("Creating cmb difference maps")
             path_cmblegacy = "/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/cmb-legacy"
             mask_ = hp.read_map("/mn/stornext/u3/trygvels/compsep/cdata/like/BP_releases/masks/dx12_v3_common_mask_int_005a_1024_TQU.fits", verbose=False, dtype=np.bool,)
