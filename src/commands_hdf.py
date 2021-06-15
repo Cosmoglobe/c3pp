@@ -35,7 +35,9 @@ def split(input,dataset,output,min,max,maxchain,notchain):
 @click.option("-nside", default=None, type=click.INT, help="Nside for alm binning",)
 @click.option("-zerospin", is_flag=True, help="If smoothing, treat maps as zero-spin maps.",)
 @click.option("-pixweight", default=None, type=click.STRING, help="Path to healpy pixel weights.",)
-def mean(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, pixweight):
+@click.option("-lowmem", is_flag=True, help="Calculate using least amount of memory. For low RAM systems. This method is slower!",)
+@click.option("-chaindir", default=None, type=click.STRING, help="Base of chain directory, overwrites chain iteration from input file name to iteration over chain directories, BP_chain_c15 to BP_chain_c19 [ex. 'BP_chain', with minchain = 15 and maxchain = 19]",)
+def mean(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, pixweight, lowmem, chaindir):
     """
     Calculates the mean over sample range from .h5 file.
     ex. chains_c0001.h5 dust/amp_map 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40 -maxchain 3
@@ -47,7 +49,7 @@ def mean(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, pixw
         sys.exit()
 
 
-    h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.mean, pixweight, zerospin,)
+    h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.mean, pixweight, zerospin, lowmem=lowmem, chdir=chaindir, return_data=False)
 
 @commands_hdf.command()
 @click.argument("input", type=click.STRING)
@@ -60,7 +62,9 @@ def mean(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, pixw
 @click.option("-nside", default=None, type=click.INT, help="Nside for alm binning",)
 @click.option("-zerospin", is_flag=True, help="If smoothing, treat maps as zero-spin maps.",)
 @click.option("-pixweight", default=None, type=click.STRING, help="Path to healpy pixel weights.",)
-def stddev(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, pixweight,):
+@click.option("-lowmem", is_flag=True, help="Calculate using least amount of memory. For low RAM systems. This method is slower!",)
+@click.option("-chaindir", default=None, type=click.STRING, help="Base of chain directory, overwrites chain iteration from input file name to iteration over chain directories, BP_chain_c15 to BP_chain_c19 [ex. 'BP_chain', with minchain = 15 and maxchain = 19]",)
+def stddev(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, pixweight, lowmem, chaindir):
     """
     Calculates the stddev over sample range from .h5 file.
     ex. chains_c0001.h5 dust/amp_map 5 50 dust_5-50_mean_40arcmin.fits -fwhm 40 -maxchain 3
@@ -72,7 +76,7 @@ def stddev(input, dataset, output, min, max, maxchain, fwhm, nside, zerospin, pi
         click.echo("Please specify nside when handling alms.")
         sys.exit()
 
-    h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.std, pixweight, zerospin,)
+    h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.std, pixweight, zerospin, lowmem=lowmem, chdir=chaindir, return_data=False)
 
 @commands_hdf.command()
 @click.argument("filename", type=click.STRING)

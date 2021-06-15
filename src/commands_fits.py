@@ -229,8 +229,9 @@ def crosspec(input1, input2, output, beam1, beam2, mask,):
 @click.option("-zerospin", is_flag=True, help="If smoothing, treat maps as zero-spin maps.",)
 @click.option("-missing", is_flag=True, help="If files are missing, drop them. Else, exit computation",)
 @click.option("-pixweight", default=None, type=click.STRING, help="Path to healpy pixel weights.",)
+@click.option("-lowmem", is_flag=True, help="Calculate using least amount of memory. For low RAM systems. This method is slower!",)
 def fits_mean(
-        input, output, min, max, minchain, maxchain, chaindir, fwhm, nside, zerospin, missing, pixweight):
+        input, output, min, max, minchain, maxchain, chaindir, fwhm, nside, zerospin, missing, pixweight, lowmem):
     """
     Calculates the mean over sample range from fits-files.
     ex. res_030_c0001_k000001.fits res_030_20-100_mean_40arcmin.fits -min 20 -max 100 -fwhm 40 -maxchain 3\n
@@ -239,7 +240,7 @@ def fits_mean(
     Note: the input file name must have the 'c0001' chain identifier and the 'k000001' sample identifier. The -min/-max and -chainmin/-chainmax options set the actual samples/chains to be used in the calculation 
     """
 
-    fits_handler(input, min, max, minchain, maxchain, chaindir, output, fwhm, nside, zerospin, missing, pixweight, np.mean, write=True)
+    fits_handler(input, min, max, minchain, maxchain, chaindir, output, fwhm, nside, zerospin, missing, pixweight, np.mean, lowmem=lowmem, write=True, return_data=False)
 
 @commands_fits.command()
 @click.argument("input", type=click.STRING)
@@ -254,8 +255,9 @@ def fits_mean(
 @click.option("-zerospin", is_flag=True, help="If smoothing, treat maps as zero-spin maps.",)
 @click.option("-missing", is_flag=True, help="If files are missing, drop them. Else, exit computation",)
 @click.option("-pixweight", default=None, type=click.STRING, help="Path to healpy pixel weights.",)
+@click.option("-lowmem", is_flag=True, help="Calculate using least amount of memory. For low RAM systems. This method is slower!",)
 def fits_stddev(
-        input, output, min, max, minchain, maxchain, chaindir, fwhm, nside, zerospin, missing, pixweight):
+        input, output, min, max, minchain, maxchain, chaindir, fwhm, nside, zerospin, missing, pixweight, lowmem):
     """
     Calculates the standard deviation over sample range from fits-files.
     ex. res_030_c0001_k000001.fits res_030_20-100_mean_40arcmin.fits -min 20 -max 100 -fwhm 40 -maxchain 3
@@ -264,4 +266,4 @@ def fits_stddev(
     Note: the input file name must have the 'c0001' chain identifier and the 'k000001' sample identifier. The -min/-max and -chainmin/-chainmax options set the actual samples/chains to be used in the calculation 
     """
 
-    fits_handler(input, min, max, minchain, maxchain, chaindir, output, fwhm, nside, zerospin, missing, pixweight, np.std, write=True)
+    fits_handler(input, min, max, minchain, maxchain, chaindir, output, fwhm, nside, zerospin, missing, pixweight, np.std, lowmem=lowmem, write=True, return_data=False)

@@ -66,7 +66,7 @@ def alm2fits_tool(input, dataset, nside, lmax, fwhm, save=True,):
         hp.write_map(outfile + f"_n{str(nside)}_lmax{lmax}.fits", maps, overwrite=True, dtype=None)
     return maps, nside, lmax, fwhm, outfile
 
-def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command, pixweight=None, zerospin=False, lowmem=False, notchain=False):
+def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command, pixweight=None, zerospin=False, lowmem=False, chdir=None, notchain=False, write=True, return_data=True):
     """
     Function for calculating mean and stddev of signals in hdf file
     """
@@ -76,7 +76,11 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command, 
     from tqdm import tqdm
 
     if (lowmem and command == np.std): #need to compute mean first
-        mean_data = h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.mean, pixweight, zerospin, lowmem,)
+        if ('stddev' in output):
+            temp_output=output.replace('stddev','mean')
+            mean_data = h5handler(input, dataset, min, max, maxchain, temp_output, fwhm, nside, np.mean, pixweight, zerospin, lowmem, chdir=chdir,)
+        else:
+            mean_data = h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, np.mean, pixweight, zerospin, lowmem, chdir=chdir, write=False)
 
     print()
     if command: print("{:-^50}".format(f" {dataset} calculating {command.__name__} "))
@@ -103,7 +107,10 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command, 
     maxnone = True if max == None else False  # set length of keys for maxchains>1
     pol = True if zerospin == False else False  # treat maps as TQU maps (polarization)
     for c in range(1, maxchain + 1):
-        filename = input.replace("c0001", "c" + str(c).zfill(4))
+        if (chdir==None):
+            filename = input.replace("c0001", "c" + str(c).zfill(4))
+        else:
+            filename = chdir+'_c%i/'%(c)+input
         with h5py.File(filename, "r") as f:
 
             if notchain:
@@ -224,20 +231,22 @@ def h5handler(input, dataset, min, max, maxchain, output, fwhm, nside, command, 
             outdata = hp.sphtfunc.smoothing(outdata, fwhm=arcmin2rad(fwhm),verbose=False,pol=pol,use_weights=True)
 
     # Outputs fits map if output name is .fits
-    if output.endswith(".fits"):
-        hp.write_map(output, outdata, overwrite=True, dtype=None)
-    elif output.endswith(".dat"):
-        while np.ndim(outdata)>2: 
-            if outdata.shape[-1]==4:
-                tdata = outdata[:,0,0]
-                print(tdata)
-                outdata = outdata[:,:,3]
-                outdata[:,0] = tdata
-            else:
-                outdata = outdata[:,:,0]
+    if (write):
+        if output.endswith(".fits"):
+            hp.write_map(output, outdata, overwrite=True, dtype=None)
+        elif output.endswith(".dat"):
+            while np.ndim(outdata)>2: 
+                if outdata.shape[-1]==4:
+                    tdata = outdata[:,0,0]
+                    print(tdata)
+                    outdata = outdata[:,:,3]
+                    outdata[:,0] = tdata
+                else:
+                    outdata = outdata[:,:,0]
 
-        np.savetxt(output, outdata)
-    return outdata
+            np.savetxt(output, outdata)
+    if return_data:
+        return outdata
 
 def arcmin2rad(arcmin):
     return arcmin * (2 * np.pi) / 21600
@@ -420,7 +429,7 @@ def rspectrum(nu, r, sig, scaling=1.0):
     A = np.sqrt(sum( 4*np.pi * cl[2:,signal]*bl[2:,signal]**2/(2*l+1) ))
     return cmb(nu, A*scaling)
 
-def fits_handler(input, min, max, minchain, maxchain, chdir, output, fwhm, nside, zerospin, drop_missing, pixweight, command, lowmem=False, fields=None, write=False):
+def fits_handler(input, min, max, minchain, maxchain, chdir, output, fwhm, nside, zerospin, drop_missing, pixweight, command, lowmem=False, fields=None, write=True, return_data=True):
     """
     Function for handling fits files.
     """
@@ -434,7 +443,11 @@ def fits_handler(input, min, max, minchain, maxchain, chdir, output, fwhm, nside
         exit()
 
     if (lowmem and command == np.std): #need to compute mean first
-        mean_data = fits_handler(input, min, max, minchain, maxchain, chdir, output, fwhm, nside, zerospin, drop_missing, pixweight, lowmem, np.mean, fields, write=False)
+        if ('stddev' in output):
+            temp_output=output.replace('stddev','mean')
+            mean_data = fits_handler(input, min, max, minchain, maxchain, chdir, temp_output, fwhm, nside, zerospin, drop_missing, pixweight, np.mean, lowmem, fields, write=True, return_data=True)
+        else:
+            mean_data = fits_handler(input, min, max, minchain, maxchain, chdir, output, fwhm, nside, zerospin, drop_missing, pixweight, np.mean, lowmem, fields, write=False, return_data=True)
 
     if (minchain > maxchain):
         print('Minimum chain number larger that maximum chain number. Exiting')
@@ -624,6 +637,6 @@ def fits_handler(input, min, max, minchain, maxchain, chdir, output, fwhm, nside
             hp.write_map(output, outdata, overwrite=True, dtype=None)
         elif output.endswith(".dat"):
             np.savetxt(output, outdata)
-    else:
+    if (return_data):
         return outdata
 
