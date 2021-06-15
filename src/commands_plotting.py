@@ -150,18 +150,20 @@ def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule,
 @click.option("-sig", default=0, help="Which sky signal to plot",)
 @click.option("-min", "min_", type=click.FLOAT, help="Min value of colorbar, overrides autodetector.",)
 @click.option("-max", "max_", type=click.FLOAT, help="Max value of colorbar, overrides autodetector.",)
+@click.option("-mid", multiple=True, help='Adds tick values "-mid 2 -mid 4"',)
 @click.option("-range", "rng", type=click.FLOAT, help="Color bar range")
 @click.option("-title", default=None, type=click.STRING, help="Set title, has LaTeX functionality. Ex. $\mu$",)
 @click.option("-unit", default=None, type=click.STRING, help="Set unit (Under color bar), has LaTeX functionality. Ex. $\mu$",)
+@click.option("-png", is_flag=True, help="Saves output as .png ().pdf by default)",)
 @click.option("-cmap", default="planck", help="Choose different color map (string), such as Jet or planck",)
 @click.option("-graticule", is_flag=True, help="Add graticule",)
-@click.option("-log", is_flag=True, help="Add graticule",)
+@click.option("-log", is_flag=True, help="Use semi-logscale",)
 @click.option("-nobar", is_flag=True, help="remove colorbar",)
 @click.option("-fwhm", default=0.0, type=click.FLOAT, help="FWHM of smoothing, in arcmin.",)
 @click.option("-remove_dipole", default=None, type=click.STRING, help="Fits a dipole to the map and removes it. Specify mask or type auto.",)
 @click.option("-remove_monopole", default=None, type=click.STRING, help="Fits a monopole to the map and removes it.",)
 @click.option("-outname", help="Output filename, else, filename with different format.",)
-def gnomplot(filename, lon, lat, sig, size, min_, max_, rng, title, unit, cmap, graticule, log, nobar, fwhm, remove_dipole, remove_monopole, outname):
+def gnomplot(filename, lon, lat, sig, size, min_, max_, mid, rng, title, unit, png, cmap, graticule, log, nobar, fwhm, remove_dipole, remove_monopole, outname):
     """
     Gnomonic view plotting. 
     """
@@ -171,7 +173,9 @@ def gnomplot(filename, lon, lat, sig, size, min_, max_, rng, title, unit, cmap, 
     from functools import partial
     
     from matplotlib import rcParams, rc
-    rcParams["backend"] = "pdf"
+    plt.rcParams["backend"] = "agg" if png else "pdf"
+    if outname:
+        plt.rcParams["backend"] = "agg" if outname.endswith("png") else "pdf"
     rcParams["legend.fancybox"] = True
     rcParams["lines.linewidth"] = 2
     rcParams["savefig.dpi"] = 300
@@ -198,18 +202,58 @@ def gnomplot(filename, lon, lat, sig, size, min_, max_, rng, title, unit, cmap, 
     fontsize=10
     x = hp.read_map(filename, field=sig, verbose=False, dtype=None)
     nside=hp.get_nside(x)
-        
+
     if float(fwhm) > 0:
         click.echo(click.style(f"Smoothing fits map to {fwhm} arcmin fwhm",fg="yellow"))
         x = hp.smoothing(x, fwhm=arcmin2rad(fwhm), lmax=3*nside,)
     if remove_dipole or remove_monopole: x = remove_md(x, remove_dipole, remove_monopole, nside)
 
-    proj = hp.projector.GnomonicProj(rot=[lon,lat,0.0], coord='G', xsize=xsize, ysize=xsize, reso=reso)
-    reproj_im = proj.projmap(x, vec2pix_func = partial(hp.vec2pix, nside))
+    linthresh=1
+    if log:
+        x = x/linthresh/(2*np.log(10))
+        x = np.log10(0.5 * (x + np.sqrt(4.0 + x * x)))
 
     if rng:
         min_ = -rng
         max_ = rng
+        
+    if mid:
+        ticks=[min_, *mid, max_]
+    else:
+        ticks=[min_,max_]
+    ticks=[float(i) for i in ticks]
+
+    ticklabels=[]
+    for i in ticks:
+        """
+        Format color bar labels
+        """
+        if abs(i) > 1e4 or (abs(i) <= 1e-3 and abs(i) > 0):
+            a, b = f"{i:.2e}".split("i")
+            b = int(b)
+            if float(a) == 1.00:
+                ticklabels.append(r"$10^{"+str(b)+"}$")
+            elif float(a) == -1.00:
+                ticklabels.append(r"$-10^{"+str(b)+"}$")
+            else:
+                ticklabels.append(fr"${a} \cdot 10^{b}$")
+        elif abs(i) > 1e1 or (float(abs(i))).is_integer():
+            ticklabels.append(fr"${int(i):d}$")
+        else:
+            ticklabels.append(round(i, 2))
+
+
+    if log:
+        for i in range(len(ticks)):
+            m=ticks[i]/linthresh/(2*np.log(10))
+            ticks[i]=np.log10(0.5 * (m + np.sqrt(4.0 + m * m)))
+        min_=ticks[0]
+        max_=ticks[-1]
+
+
+    proj = hp.projector.GnomonicProj(rot=[lon,lat,0.0], coord='G', xsize=xsize, ysize=xsize, reso=reso)
+    reproj_im = proj.projmap(x, vec2pix_func = partial(hp.vec2pix, nside))
+
     #norm="log" if log else None
     fig, ax = plt.subplots()
     image = plt.imshow(reproj_im, origin='lower', interpolation='nearest', vmin=min_, vmax=max_, cmap=cmap)
@@ -219,18 +263,61 @@ def gnomplot(filename, lon, lat, sig, size, min_, max_, rng, title, unit, cmap, 
     if not nobar:
         # colorbar
         from matplotlib.ticker import FuncFormatter
-        cb = plt.colorbar(image, orientation="horizontal", shrink=0.5, pad=0.03, format=FuncFormatter(fmt))
-        cb.ax.tick_params(which="both", axis="x", direction="in", labelsize=fontsize)
+        cb = fig.colorbar(image, orientation="horizontal", shrink=0.5, pad=0.03, ticks=ticks, format=FuncFormatter(fmt),)
+
+        cb.ax.set_xticklabels(ticklabels)
         cb.ax.xaxis.set_label_text(unit)
-        cb.ax.xaxis.label.set_size(fontsize+2)
+        cb.ax.xaxis.label.set_size(fontsize)
+        if log:
+            linticks = np.linspace(-1, 1, 3)*linthresh
+            logmin = np.round(ticks[0])
+            logmax = np.round(ticks[-1])
+
+            logticks_min = -10**np.arange(0, abs(logmin)+1)
+            logticks_max = 10**np.arange(0, logmax+1)
+            ticks_ = np.unique(np.concatenate((logticks_min, linticks, logticks_max)))
+
+            
+            m=ticks_/linthresh/(2*np.log(10))
+            logticks = np.log10(0.5 * (m + np.sqrt(4.0 + m * m)))
+            logticks = [m for m in logticks if m not in ticks]
+
+            cb.set_ticks(np.concatenate((ticks,logticks ))) # Set major ticks
+            cb.ax.set_xticklabels(ticklabels + ['']*len(logticks))
+
+            minorticks = np.linspace(-linthresh, linthresh, 5)
+            minorticks2 = np.arange(2,10)*linthresh
+
+            for i in range(len(logticks_min)):
+                minorticks = np.concatenate((-10**i*minorticks2,minorticks))
+            for i in range(len(logticks_max)):
+                minorticks = np.concatenate((minorticks, 10**i*minorticks2))
+
+            minorticks=minorticks/linthresh/(2*np.log(10))
+            minorticks = np.log10(0.5 * (minorticks + np.sqrt(4.0 + minorticks * minorticks)))
+            minorticks = minorticks[ (minorticks >= ticks[0]) & ( minorticks<= ticks[-1]) ] 
+            cb.ax.xaxis.set_ticks(minorticks, minor=True)
+
+
+        cb.ax.tick_params(which="both", axis="x", direction="in", labelsize=fontsize-2,)
+        cb.ax.xaxis.labelpad = 0
+        # workaround for issue with viewers, see colorbar docstring
+        cb.solids.set_edgecolor("face")
 
     if graticule:
         hp.graticule()
+
+    filetype = "png" if png else "pdf"
+    if outname:
+        filetype = "png" if outname.endswith(".png") else "pdf"
+
     if not outname:
-        outname = filename.replace(".fits", f"_gnomonic_{lon}lon{lat}lat_{size}x{size}deg.pdf")
+        outname = filename.replace(".fits", f"_gnomonic_{lon}lon{lat}lat_{size}x{size}deg.{filetype}")
 
     click.echo(f"Outputting {outname}")
-    plt.savefig(outname, bbox_inches="tight", pad_inches=0.02, transparent=True, format="pdf",)
+
+
+    plt.savefig(outname, bbox_inches="tight", pad_inches=0.02, transparent=True, format=filetype,)
 
 
 @commands_plotting.command()
