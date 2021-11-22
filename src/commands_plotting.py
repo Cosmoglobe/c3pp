@@ -14,7 +14,11 @@ def commands_plotting():
 @click.argument("input", type=click.STRING)
 @click.option("-cmap", default="Plotly", help="set colormap from plotly qualitative colors", type=click.STRING)
 @click.option("-long", is_flag=True, help="Full page version")
-def specplot(input,cmap,long):
+@click.option("-lambdacdm", is_flag=True, help="overplot lambdacdm")
+@click.option("-min", "min_", type=click.FLOAT, help="Min value of colorbar, overrides autodetector.",)
+@click.option("-max", "max_", type=click.FLOAT, help="Max value of colorbar, overrides autodetector.",)
+@click.option("-lmax", default=200, type=click.INT, help="Max value of colorbar, overrides autodetector.",)
+def specplot(input,cmap,long,lambdacdm,min_,max_, lmax):
     """
     Plots the file output by the Crosspec function.
     """
@@ -44,41 +48,97 @@ def specplot(input,cmap,long):
         'font.serif': 'Times',
     }
     sns.set_style(custom_style)
-    lmax = 200
     ell, ee, bb, eb = np.loadtxt(input, usecols=(0,2,3,6), skiprows=3, max_rows=lmax, unpack=True)
-                                 
+
     ee = ee*(ell*(ell+1)/(2*np.pi))
     bb = bb*(ell*(ell+1)/(2*np.pi))
     eb = eb*(ell*(ell+1)/(2*np.pi))
-    
+    ratio = False
     if long:
         f, (ax1, ax2) = plt.subplots(2, 1, figsize=(24,6), gridspec_kw={'height_ratios': [3, 1]}, sharex=True)
     else:
-        f, (ax1, ax2) = plt.subplots(2, 1, figsize=(12,8), gridspec_kw={'height_ratios': [3, 1]}, sharex=True)
+        if ratio:
+            f, (ax1, ax2) = plt.subplots(2, 1, figsize=(12,8), gridspec_kw={'height_ratios': [3, 1]}, sharex=True)
+            sns.despine(top=True, right=True, left=False, bottom=False, ax=ax1,)
+            sns.despine(top=True, right=True, left=False, bottom=True, ax=ax2,)
+            l3 = ax2.semilogx(ell, bb/ee, linewidth=2, label="BB/EE", color='C2')
+            ax2.set_ylabel(r"BB/EE",)
+            ax2.set_xlabel(r'Multipole moment, $l$',)
+
+        else:
+            fig = plt.figure(figsize=(12,8))
+            ax2 = plt.gca()
+
+            ax1 = ax2
+    
+
+    if lambdacdm:
+        import camb
+        import healpy as hp
+        #Set up a new set of parameters for CAMB
+        pars = camb.CAMBparams()
+        #This function sets up CosmoMC-like settings, with one massive neutrino and helium set using BBN consistency
+        pars.set_cosmology(H0=67.5, ombh2=0.022, omch2=0.122, mnu=0.06, omk=0, tau=0.06)
+        pars.InitPower.set_params(As=2e-9, ns=0.965, r=0.07)
+        pars.set_for_lmax(lmax+1,  lens_potential_accuracy=0)
+        pars.WantTensors = True
+        results = camb.get_results(pars)
+        powers = results.get_cmb_power_spectra(params=pars, lmax=lmax+1, CMB_unit='muK', raw_cl=True,)
+
+        TT_lcdm=powers['unlensed_scalar'][2:,0]*(ell*(ell+1)/(2*np.pi))
+        EE_lcdm=powers['unlensed_scalar'][2:,1]*(ell*(ell+1)/(2*np.pi))
+        TE_lcdm=powers['unlensed_scalar'][2:,3]*(ell*(ell+1)/(2*np.pi))
+        from sklearn.linear_model import LinearRegression
+
+        idx = 50
+        x = TT_lcdm[10:idx].reshape(-1,1)
+        eebb = (ee+bb)/2
+        reg = LinearRegression().fit(x,eebb[10:idx])
+        scaling_TT = [1e-6] #-1*reg.coef_
+
+        x = EE_lcdm[10:idx].reshape(-1,1)
+        reg = LinearRegression().fit(x,eebb[10:idx])
+        scaling_EE = [1e-1] #-1*reg.coef_
+
+        scaling_TE = [1e-3] #-1*reg.coef_
+        from src.spectrum import fmt
+        ax1.loglog(ell,scaling_TT[0]*TT_lcdm, linewidth=2, ls=":", label=r"TT $\lambda$CDM"+f" - scaled by "+fmt(scaling_TT[0],1))
+        ax1.loglog(ell,scaling_EE[0]*EE_lcdm, linewidth=2, ls=":", label=r"EE $\lambda$CDM"+f" - scaled by "+fmt(scaling_EE[0],1))
+        ax1.loglog(ell,scaling_TE[0]*np.abs(TE_lcdm), linewidth=2, ls=":", label=r"TE $\lambda$CDM"+f" - scaled by "+fmt(scaling_TE[0],1))
+        ax1.loglog(ell,abs(scaling_TE[0]*TE_lcdm+scaling_TT[0]*TT_lcdm), linewidth=2, ls=":", label=r"TT+TE $\lambda$CDM")
+        #BB_lcdm = ax1.loglog(ell, powers['tensor'][2:,2]*(ell*(ell+1)/(2*np.pi)), linewidth=2, ls=":", label=r"BB $\lambda CDM$")
+
 
     l1 = ax1.loglog(ell, ee, linewidth=2, label="EE", color='C0')
     l2 = ax1.loglog(ell, bb, linewidth=2, label="BB", color='C1')
     ax1.set_ylabel(r"$D_l$ [$\mu K^2$]",)
 
-    l3 = ax2.semilogx(ell, bb/ee, linewidth=2, label="BB/EE", color='C2')
-    ax2.set_ylabel(r"BB/EE",)
-    ax2.set_xlabel(r'Multipole moment, $l$',)
     #plt.semilogx(ell, eb, label="EB")
-	
-    sns.despine(top=True, right=True, left=True, bottom=False, ax=ax1)
-    sns.despine(top=True, right=True, left=True, bottom=True, ax=ax2)
+
+
+    color = "black"
+    for ax in [ax1, ax2]:
+        for i in ["left", "right", "top", "bottom"]:
+            ax.spines[i].set_edgecolor("black")
+
     #plt.xlim(0,200)
-    ax1.set_ylim(0.11,150)
-    ax2.set_ylim(-0.,2.)
-    #ax.axes.xaxis.grid()
-    ls = l1+l2+l3
-    labs = [l.get_label() for l in ls]
-    ax1.legend(ls, labs, frameon=False,)
+    ax1.set_ylim(min_,max_)
+    ax1.grid(b=True, which='minor', axis="x")
+    ax2.grid(b=True, which='minor', axis="x")
+    import matplotlib.ticker as mticker
+    #ax2.xaxis.set_minor_formatter(mticker.ScalarFormatter())
+    ax2.xaxis.set_major_formatter(mticker.ScalarFormatter())
+    #ax2.set_xticklabels(["20",])
+    ax2.set_xticks([2,5,10,20,50,100,200])#,200,500,1000])
+    ax1.tick_params(axis='y', labelrotation=90) 
+    ax1.set_yticklabels(ax1.get_yticks(), va="center")
+    ax2.tick_params(axis='y', labelrotation=90) 
+    ax2.set_yticklabels(ax2.get_yticks(), va="center")
+
+    plt.minorticks_on()
+    ax1.legend(frameon=False,)
     #ax1.legend(frameon=False)
-    if long:
-        outname = input.replace(".dat","_long.pdf")
-    else:
-        outname = input.replace(".dat",".pdf")
+    outname = input.replace(".dat",".pdf")
 
     plt.tight_layout(h_pad=0.3)
     plt.subplots_adjust(wspace=0, hspace=0.01)
@@ -170,13 +230,15 @@ def gnomplot(filename, lon, lat, sig, size, min_, max_, rng, title, unit, cmap, 
     from src.plotter import fmt, remove_md
     from functools import partial
     
-    from matplotlib import rcParams, rc
-    rcParams["backend"] = "pdf"
-    rcParams["legend.fancybox"] = True
-    rcParams["lines.linewidth"] = 2
-    rcParams["savefig.dpi"] = 300
-    rcParams["axes.linewidth"] = 1
-    rc("text.latex", preamble=r"\usepackage{sfmath}",)
+    plt.rcParams["backend"] = "pdf"
+    plt.rcParams["legend.fancybox"] = True
+    plt.rcParams["lines.linewidth"] = 2
+    plt.rcParams["savefig.dpi"] = 300
+    plt.rcParams["axes.linewidth"] = 1
+    plt.rcParams["mathtext.fontset"] = "stix"
+    plt.rc('font', family='serif',)
+    plt.rc("text.latex", preamble=r"\usepackage{sfmath}",)
+
 
     if cmap == "planck":
         import matplotlib.colors as col
@@ -215,7 +277,7 @@ def gnomplot(filename, lon, lat, sig, size, min_, max_, rng, title, unit, cmap, 
     image = plt.imshow(reproj_im, origin='lower', interpolation='nearest', vmin=min_, vmax=max_, cmap=cmap)
     plt.xticks([])
     plt.yticks([])
-    plt.text(0.02,0.98,title, color="black", va="top", transform=ax.transAxes)
+    plt.text(0.02,0.98,title, color="black", va="top", weight='bold', transform=ax.transAxes)
     if not nobar:
         # colorbar
         from matplotlib.ticker import FuncFormatter
@@ -612,7 +674,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
         mask2=f"{maskpath}/mask_70GHz_t100.fits"
                 
         print("Data read, making plots, this may take a while")
-
+        """
         for long in [False,True]:
             for pol in [True,False]:
                 ctx.invoke(output_sky_model, pol=pol, long=long,
@@ -621,7 +683,17 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                            t_e=t_e, a_ame1=a_ame1, a_ame2=a_ame2, nup=nup, polfrac=polfrac, a_d=a_d, b_d=b_d,
                            t_d=t_d, a_co10=a_co10, a_co21=a_co21, a_co32=a_co32, mask1=mask1,
                            mask2=mask2,)
-        
+        """
+        for long in [True, False]:
+            for pol in [True, False]:
+                ctx.invoke(output_sky_model, pol=pol, long=long,
+                           darkmode=False, png=False,
+                           nside=64, a_cmb=a_cmb, a_s=a_s, b_s=b_s, a_ff=a_ff,
+                           t_e=t_e, a_ame1=a_ame1, a_ame2=a_ame2, nup=nup, polfrac=polfrac, a_d=a_d, b_d=b_d,
+                           t_d=t_d, a_co10=a_co10, a_co21=a_co21, a_co32=a_co32, mask1=mask1,
+                           mask2=mask2,)
+
+        print("Renaming old files")
         outdir = "figs/sky-model/"
         if not os.path.exists(outdir):
             os.mkdir(outdir)
@@ -700,17 +772,14 @@ def hist(chainfile, dataset, burnin, maxchain, nbins,sig, prior):
     sns.set_style(custom_style)
     fontsize = 14
     x = df2.to_numpy()
-    n1, bins, _ = plt.hist(x[:,1],bins=50, histtype='step', density=True, stacked=True)
-    for i in range(x.shape[1]):
-        plt.hist(x[:,i],bins=bins, histtype='step', density=True, stacked=True)
-    plt.legend(frameon=False)
 
-    """
+
     if "synch" in dataset:
         xmin, xmax = (-3.38,-2.61)
         bins = np.linspace(xmin,xmax,50)
         n1, _, _ = plt.hist(x[:,1],bins=bins, histtype='step', color="#636efa", density=True, stacked=True, linewidth=2, label=r"$P_{-3.1}(\beta^{\mathrm{Spur}}_{\mathrm{s}}|\,d)$")
-        #plt.hist(x[:,3],bins=20, histtype='step', color="#00cc96", density=True, stacked=True, linewidth=2, label=r"$P_{-3.1}(\beta^{\mathrm{Plane}}_{\mathrm{s}}|\,d, \omega_{\mathrm{TOD}})$")
+        plt.hist(x[:,3],bins=20, histtype='step', color="#00cc96", density=True, stacked=True, linewidth=2, label=r"$P_{-3.1}(\beta^{\mathrm{Plane}}_{\mathrm{s}}|\,d, \omega_{\mathrm{TOD}})$")
+        """
         #t3 = np.loadtxt("sampletrace_t3.csv",delimiter=",",) #"regdatat3.dat", delimiter=",")
         t3 = np.loadtxt("regdatat3.dat", delimiter=",")
         plt.hist(t3[:,4],  bins=bins, histtype='step', density=True, stacked=True, linestyle="--", color="#ef553b", label=r"$P_{-2.8}(\beta^{\mathrm{Spur}}_{\mathrm{s}}|\,d, \omega_{\mathrm{TOD}})$")
@@ -718,14 +787,15 @@ def hist(chainfile, dataset, burnin, maxchain, nbins,sig, prior):
         plt.hist(bp8r[:,2],bins=bins, histtype='step', density=True, stacked=True, linestyle="--", color="#636efa", label=r"$P_{-3.1}(\beta^{\mathrm{Spur}}_{\mathrm{s}}|\,d, \omega_{\mathrm{TOD}})$")
         #n1, bins, _ = plt.hist(x[:,4],bins=20, histtype='step', color="#636efa", label=r"$P(\beta^{\mathrm{Spur}}_{\mathrm{s}}|\,d)$")
         #xmin, xmax = (-3.25,-2.75)
+        """
         if prior:
             import scipy.stats as stats
             N = len(x[:,1])
             x = np.linspace(xmin,xmax,N)
             dx = bins[1]-bins[0]
             norm = sum(n1)*dx
-            Pprior = stats.norm.pdf(x, -2.8, 0.1)#*norm
-            plt.plot(x, Pprior*norm, color="#ef553b", linestyle=":", label=r"$P(\beta_{\mathrm{s}})=\mathcal{N}(-2.8,0.1)$")
+            #Pprior = stats.norm.pdf(x, -2.8, 0.1)#*norm
+            #plt.plot(x, Pprior*norm, color="#ef553b", linestyle=":", label=r"$P(\beta_{\mathrm{s}})=\mathcal{N}(-2.8,0.1)$")
             Pprior = stats.norm.pdf(x, prior[0], prior[1])#*norm
             plt.plot(x, Pprior*norm, color="#636efa", linestyle=":", label=r"$P(\beta_{\mathrm{s}})=\mathcal{N}(-3.1,0.1)$")
 
@@ -733,7 +803,7 @@ def hist(chainfile, dataset, burnin, maxchain, nbins,sig, prior):
         plt.xlim(xmin,xmax,)
         plt.ylim(0,11)
         plt.legend(frameon=False,loc=1, fontsize=13)
-    else:
+    elif "dust" in dataset:
         n, bins, _ = plt.hist(x,bins=20, histtype='step', color="black", label=r"$P(\beta_{\mathrm{d}}|\,d)$")
         N = len(x)
         xmin, xmax = (1.46, 1.74)
@@ -748,7 +818,13 @@ def hist(chainfile, dataset, burnin, maxchain, nbins,sig, prior):
         plt.xlabel(r"Thermal dust index, $\beta_{\mathrm{d}}$", fontsize=fontsize)
         plt.xlim(xmin,xmax)
         plt.legend(frameon=False,loc=2)
-    """
+
+    else: 
+        n1, bins, _ = plt.hist(x[:,1],bins=50, histtype='step', density=True, stacked=True)
+        for i in range(x.shape[1]):
+            plt.hist(x[:,i],bins=bins, histtype='step', density=True, stacked=True)
+        plt.legend(frameon=False)
+
     #plt.ylabel(r"Normalized number of samples", fontsize=fontsize)
     plt.title(" ")
 
@@ -833,7 +909,7 @@ def pixreg2trace(chainfile, dataset, burnin, maxchain, plot, freeze, nbins, prio
              
     
  
-    if "bp_delta" in dataset:
+    if "bp_delta" in dataset or "bandpass" in dataset:
         label = dataset.replace("/","-")
         outname = f"sampletrace_{label}"
 
@@ -940,7 +1016,7 @@ def traceplotter(df, header, xlabel, nbins, outname, min_,ylabel, cmap="Plotly",
 
     cmap = mpl.colors.ListedColormap(colors)
     #cmap = plt.cm.get_cmap('tab10')# len(y))
-
+    df = df[min_:]
     means = df[min_:].mean()
     stds = df[min_:].std()
     # Reduce points
@@ -1121,7 +1197,7 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
     if pol:
         # 15, 120, 40, (0,4, 12), (1.2,50)
         p = 0.6 if long else 15
-        sd = 2 if long else 70
+        sd = 2.5 if long else 70
         foregrounds = {
             "Synchrotron" : {"function": "lf", 
                              "params"  : [a_s, b_s,],
@@ -1142,7 +1218,7 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
             "Sum fg."      : {"function": "sum", 
                              "params"  : [],
                              "position": 70,
-                             "color"   : "grey",
+                             "color"   : "C10",
                              "sum"     : False,
                              "linestyle": "--",
                              "gradient": False,
@@ -1150,7 +1226,7 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
             r"BB $r=10^{-2}$"   :  {"function": "rspectrum", 
                              "params"  : [0.01, "BB",],
                              "position": p,
-                             "color"   : "grey",
+                             "color"   : "C10",
                              "sum"     : False,
                              "linestyle": "dotted",
                              "gradient": True,
@@ -1158,7 +1234,7 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
             r"BB $r=10^{-4}$"   :  {"function": "rspectrum", 
                              "params"  : [1e-4, "BB",],
                              "position": p,
-                             "color"   : "grey",
+                             "color"   : "C10",
                              "sum"     : False,
                              "linestyle": "dotted",
                              "gradient": True,
@@ -1185,10 +1261,11 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
         #120, 12, 40, (2,57), 20, 70
         p = 3 if long else 65
         td = 10 if long else 17
+        s = 2 if long else 170
         foregrounds = {
             "Synchrotron" : {"function": "lf", 
                              "params"  : [a_s, b_s,],
-                             "position": 170,
+                             "position": s,
                              "color"   : "C2",
                              "sum"     : True,
                              "linestyle": "solid",
@@ -1204,7 +1281,7 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
                          }, 
             "Free-Free"  : {"function": "ff", 
                              "params"  : [a_ff, t_e],
-                             "position": 50,
+                             "position": 17,
                              "color"   : "C0",
                              "sum"     : True,
                              "linestyle": "solid",

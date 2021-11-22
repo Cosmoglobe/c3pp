@@ -1,16 +1,11 @@
-from matplotlib import rcParams, rc
+from matplotlib import rcParams
 import matplotlib.patheffects as path_effects
 import matplotlib.ticker as ticker
 import matplotlib.pyplot as plt
-import matplotlib.font_manager
 from cycler import cycler
-from tqdm import trange, tqdm
+from tqdm import tqdm
 import numpy as np
 import healpy as hp
-import sys
-import math
-import plotly.colors as pcol
-from brokenaxes import brokenaxes
 
 import src.tools as tls
 def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly"):
@@ -33,7 +28,6 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
               'xtick.major.width'   : 1.5,
               'xtick.minor.width'   : 1.5,
               'axes.linewidth'      : 1.5,
-              'axes.prop_cycle'     : cycler(color=getattr(pcol.qualitative, cmap)),
               'mathtext.fontset': 'dejavusans',
               #'ytick.major.size'   : 6,
               #'ytick.minor.size'   : 3,
@@ -41,8 +35,17 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
               #'xtick.minor.size'   : 3,
               
     }
-    blue, red, green, purple, orange, teal, lightred, lightgreen, pink, yellow = ("C0","C1","C2","C3","C4","C5","C6","C7","C8","C9",)
     black = 'k'
+    if darkmode:
+        brokecol="white"
+        grey="#C0C0C0"
+    else:
+        brokecol=black
+        grey="grey"
+    colors=['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52', grey,]
+    rcParams['axes.prop_cycle'] = cycler(color=colors)
+    blue, red, green, purple, orange, teal, lightred, lightgreen, pink, yellow, grey = ("C0","C1","C2","C3","C4","C5","C6","C7","C8","C9","C10")
+
     if darkmode:
         rcParams['text.color']   = 'white'   # axes background color
         rcParams['axes.facecolor']   = 'white'   # axes background color
@@ -80,8 +83,6 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
         ratio = 5
         w, h = (16,8)
         fig, (ax2, ax) = plt.subplots(2,1,sharex=True,figsize=(w,h),gridspec_kw = {'height_ratios':[1, ratio]})
-        aspect_ratio = w/h*1.25 # Correct for ratio
-        rotdir = -1
 
         ax2.spines['bottom'].set_visible(False)
         ax.spines['top'].set_visible(False)
@@ -90,7 +91,7 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
 
         # ---- Adding broken axis lines ----
         d = .005  # how big to make the diagonal lines in axes coordinates
-        kwargs = dict(transform=ax2.transAxes, color=black, clip_on=False)
+        kwargs = dict(transform=ax2.transAxes, color=brokecol, clip_on=False)
         ax2.plot((-d, +d), (-d*ratio, + d*ratio), **kwargs)        # top-left diagonal
         ax2.plot((1 - d, 1 + d), (-d*ratio, +d*ratio), **kwargs)  # top-right diagonal
         kwargs.update(transform=ax.transAxes)  # switch to the bottom axes
@@ -106,9 +107,6 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
         ymax15=ymax
         w, h = (12,8)
         fig, ax = plt.subplots(1,1,figsize=(w,h))
-        aspect_ratio = w/h
-        rotdir = 1
-        #ax.set_aspect('equal', adjustable='box')
         
         freqtext = 20
         fgtext = 20
@@ -136,6 +134,7 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
     skyfracs = np.sum(m,axis=1)/npix*100
     print(f"Using sky fractions {skyfracs}%")
     # Looping over foregrounds and calculating spectra
+    print("Foreground items:", foregrounds.items())
     i = 0
     add_error = True
     for fg in foregrounds.keys():
@@ -165,14 +164,10 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
     # ---- Plotting foregrounds and labels ----
     j=0
     for label, fg in foregrounds.items(): # Plot all fgs except sumf
+        print(f"plotting {label}")
         if fg["gradient"]:
-            if label == "Spinning Dust":
-                k = 1
-                gradient_fill_between(ax, nu, fg["spectrum"][0], fg["spectrum"][1], color=fg["color"])
-            else:
-                k = 0
-                gradient_fill(nu, fg["spectrum"][k], fill_color=fg["color"], ax=ax, alpha=0.5, linewidth=0.0,)
-
+            k = fg["spectrum"].shape[0] - 1
+            gradient_fill_between(ax, nu, fg["spectrum"][k]*1e-2, fg["spectrum"][k], color=fg["color"])
         else:
             if label == "Sum fg.":
                 ax.loglog(nu,fg["spectrum"][0], linestyle=fg["linestyle"], linewidth=2, color=fg["color"])
@@ -203,35 +198,42 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
                 else:
                     #gradient_fill(nu, fg["spectrum"][0], fill_color=fg["color"], ax=ax, alpha=0.5, linewidth=0.0,)
                     
-                    ax.loglog(nu,fg["spectrum_mean"], linestyle=fg["linestyle"], linewidth=4, color=fg["color"])
-                    ax.fill_between(nu,fg["spectrum"][0],fg["spectrum"][1], color=fg["color"],alpha=0.5)
+                    #ax.loglog(nu,fg["spectrum_mean"], linestyle=fg["linestyle"], linewidth=4, color=fg["color"])
+                    ax.fill_between(nu,fg["spectrum"][0],fg["spectrum"][1], color=fg["color"],alpha=0.8)
 
                     if long:
-                        ax2.loglog(nu,fg["spectrum_mean"], linestyle=fg["linestyle"], linewidth=4, color=fg["color"])
-                        ax2.fill_between(nu,fg["spectrum"][0],fg["spectrum"][1], color=fg["color"], alpha=0.5)
+                        #ax2.loglog(nu,fg["spectrum_mean"], linestyle=fg["linestyle"], linewidth=4, color=fg["color"])
+                        ax2.fill_between(nu,fg["spectrum"][0],fg["spectrum"][1], color=fg["color"], alpha=0.8)
                     k = 1
 
         if label == "Thermal Dust" and fg["spectrum"].shape[0]>1:
             _, fsky_idx = find_nearest(nu, 900)
-            ax.annotate(r"$f_{sky}=$"+"{:d}%".format(int(skyfracs[1])), xy=(nu[fsky_idx], fg["spectrum"][1][fsky_idx]), ha="center", va="bottom", fontsize=fgtext, color="grey", xytext=(0,5), textcoords="offset pixels",)
-            ax.annotate(r"$f_{sky}=$"+"{:d}%".format(int(skyfracs[0])), xy=(nu[fsky_idx], fg["spectrum"][0][fsky_idx]), ha="center", va="top", fontsize=fgtext, color="grey", xytext=(0,-15), textcoords="offset pixels",)
+            ax.annotate(r"$f_{sky}=$"+"{:d}%".format(int(skyfracs[1])), xy=(nu[fsky_idx], fg["spectrum"][1][fsky_idx]), ha="center", va="bottom", fontsize=fgtext, color="grey", xytext=(0,5), textcoords="offset pixels",path_effects=[path_effects.withSimplePatchShadow(alpha=0.8,offset=(0.5, -0.5)),])
+            ax.annotate(r"$f_{sky}=$"+"{:d}%".format(int(skyfracs[0])), xy=(nu[fsky_idx], fg["spectrum"][0][fsky_idx]), ha="center", va="top", fontsize=fgtext, color="grey", xytext=(0,-15), textcoords="offset pixels",path_effects=[path_effects.withSimplePatchShadow(alpha=0.8,offset=(0.5, -0.5)),])
        
         if label.startswith("CO"):
             ax.text(lfreq, np.max(fg["spectrum"][k])*0.5, label, color=fg["color"], alpha=0.7, ha='right',va='center',rotation=90,fontsize=fgtext, path_effects=[path_effects.withSimplePatchShadow(alpha=0.8, offset=(1, -1))], zorder=1000)
         else:
+            print(label, fg["position"])
             x0, idx1 = find_nearest(nu, fg["position"])
             idx2 = idx1+2
             x1 = nu[idx2] 
             # idx2 = find_nearest(nu, fg["position"]**1.05)
             y0 = fg["spectrum"][k][idx1]
             y1 = fg["spectrum"][k][idx2]
-            datascaling  = np.log(xmin/xmax)/np.log(ymin/ymax)
+            if y0>ymax:
+                aspect_ratio = w/(h/6) if long else w/h
+                datascaling  = np.log(xmin/xmax)/np.log(ymax15/ymax2)
+            else:
+                aspect_ratio = w/(h*5/6) if long else w/h
+                datascaling  = np.log(xmin/xmax)/np.log(ymin/ymax)
             rotator = (datascaling/aspect_ratio)
             alpha = np.arctan(np.log(y1/y0)/np.log(x1/x0)*rotator)
             rotation =  np.rad2deg(alpha)#*rotator
-            ax.annotate(label, xy=(x0,y0), xytext=(0,7), textcoords="offset pixels",  rotation=rotation, rotation_mode='anchor', fontsize=fgtext, color=fg["color"], path_effects=[path_effects.withSimplePatchShadow(alpha=0.8,offset=(1, -1)),], horizontalalignment="center")
-    
-        
+            if y0>ymax:
+                ax2.annotate(label, xy=(x0,y0), xytext=(0,5), textcoords="offset pixels",  rotation=rotation, rotation_mode='anchor', fontsize=fgtext, color=fg["color"], path_effects=[path_effects.withSimplePatchShadow(alpha=0.8,offset=(1, -1)),], horizontalalignment="center")
+            else:
+                ax.annotate(label, xy=(x0,y0), xytext=(0,5), textcoords="offset pixels",  rotation=rotation, rotation_mode='anchor', fontsize=fgtext, color=fg["color"], path_effects=[path_effects.withSimplePatchShadow(alpha=0.8,offset=(1, -1)),], horizontalalignment="center")
     
     # ---- Data band ranges ----
     if long:
@@ -250,96 +252,128 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
     wmap = True
     planck = True
     dirbe = True
-    databands = {"Haslam":  {"0.408\nHaslam": {"pol": False, "show": haslam, "position": [.408, ymin*yscaletextup],  "range": [.406,.410], "color": purple,}},
-                 "S-PASS":  {"2.303\nS-PASS":  {"pol": True, "show": spass,  "position": [2.35, ymax2*yscaletext],  "range": [2.1,2.4], "color": green,}},
+    bicep=False
+    spider=False
+    SPT=False
+    act=False
+    so = False
+    spass_special = ymax2*yscaletext if pol else ymin*yscaletextup 
+    databands = {"Haslam":  {"0.4\nHaslam": {"pol": False, "show": haslam, "position": [.408, ymin*yscaletextup],  "range": [.406,.410], "color": green,}},
+                 "S-PASS":  {"2.3\nS-PASS":  {"pol": True, "show": spass,  "position": [2.35, spass_special],  "range": [2.1,2.4], "color": green,}},
                  "C-BASS":  {"5.0\nC-BASS":   {"pol": True, "show": cbass,  "position": [5., ymax2*yscaletext],    "range": [4.,6.], "color": blue,}},
-                 "CHI-PASS":{"1.394\nCHI-PASS":{"pol": False, "show": chipass,"position": [1.3945, ymin*yscaletextup],"range": [1.3945-0.064/2, 1.3945+0.064/2], "color": lightred,}},
-                 "QUIJOTE": {"11\nQUIJOTE":    {"pol": True, "show": quijote,"position": [11, ymax2*yscaletext],    "range":  [10.,12.], "color": red,},
-                             "13":             {"pol": True, "show": quijote, "position": [13, ymax2*yscaletext], "range":  [12.,14.], "color": red,},
-                             "17":             {"pol": True, "show": quijote, "position": [17, ymax2*yscaletext], "range":  [16.,18.], "color": red,},
-                             "19":             {"pol": True, "show": quijote, "position": [20, ymax2*yscaletext], "range":  [18.,21.], "color": red,},
+                 "CHI-PASS":{"CHI-PASS\n1.4":{"pol": False, "show": chipass,"position": [1.35, ymin*yscaletextup],"range": [1.3945-0.064/2, 1.3945+0.064/2], "color": lightred,}},
+                 "QUIJOTE": {"11":    {"pol": True, "show": quijote,"position": [10.5, ymax2*yscaletext],    "range":  [10.,12.], "color": red,},
+                             "13":             {"pol": True, "show": quijote, "position": [13.5, ymax2*yscaletext], "range":  [12.,14.], "color": red,},
+                             "17\nQUIJOTE":             {"pol": True, "show": quijote, "position": [17, ymax2*yscaletext], "range":  [16.,18.], "color": red,},
+                             "19":             {"pol": True, "show": quijote, "position": [21, ymax2*yscaletext], "range":  [18.,21.], "color": red,},
                              ".\n31":             {"pol": True, "show": quijote, "position": [31, ymax2*yscaletext], "range":  [26.,36.], "color": red,},
                              ".\n41":             {"pol": True, "show": quijote, "position": [42, ymax2*yscaletext], "range":  [35.,47.], "color": red,}},
                  "Planck":  {"30":          {"pol": True, "show": planck, "position": [27,  ymax2*yscaletext], "range": [23.9,34.5],"color": orange,},      # Planck 30
                              "44":          {"pol": True, "show": planck, "position": [40,  ymax2*yscaletext], "range": [39,50]    ,"color": orange,},      # Planck 44
                              "70":          {"pol": True, "show": planck, "position": [60,  ymax2*yscaletext], "range": [60,78]    ,"color": orange,},      # Planck 70
-                             "100\nPlanck": {"pol": True, "show": planck, "position": [90,  ymax2*yscaletext], "range": [82,120]   ,"color": orange,},      # Planck 100
-                             "143":         {"pol": True, "show": planck, "position": [130, ymax2*yscaletext], "range": [125,170]  ,"color": orange,},      # Planck 143
+                             "100": {"pol": True, "show": planck, "position": [90,  ymax2*yscaletext], "range": [82,120]   ,"color": orange,},      # Planck 100
+                             "143\nPlanck":         {"pol": True, "show": planck, "position": [130, ymax2*yscaletext], "range": [125,170]  ,"color": orange,},      # Planck 143
                              "217":         {"pol": True, "show": planck, "position": [195, ymax2*yscaletext], "range": [180,265]  ,"color": orange,},      # Planck 217
                              "353":         {"pol": True, "show": planck, "position": [320, ymax2*yscaletext], "range": [300,430]  ,"color": orange,},      # Planck 353
                              "545":         {"pol": False, "show": planck, "position": [490, ymax2*yscaletext], "range": [450,650]  ,"color": orange,},      # Planck 545
                              "857":         {"pol": False, "show": planck, "position": [730, ymax2*yscaletext], "range": [700,1020] ,"color": orange,}},      # Planck 857
                  "DIRBE":   {"DIRBE\n1250":  {"pol": False, "show": dirbe, "position": [1000, ymin*yscaletextup], "range": [1000,1540] , "color": red,},     # DIRBE 1250
-                             "2140":         {"pol": False, "show": dirbe, "position": [1750, ymin*yscaletextup], "range": [1780,2500] , "color": red,},     # DIRBE 2140
+                             "2140":         {"pol": False, "show": dirbe, "position": [1650, ymin*yscaletextup], "range": [1780,2500] , "color": red,},     # DIRBE 2140
                              "3000":         {"pol": False, "show": dirbe, "position": [2500, ymin*yscaletextup], "range": [2600,3500] , "color": red,}},     # DIRBE 3000
                  "WMAP":    {"K": {"pol": True, "show": wmap, "position": [21.8, ymin*yscaletextup], "range": [21,25.5], "color": teal,}, 
                              "WMAP\nKa":      {"pol": True, "show": wmap, "position": [31.5, ymin*yscaletextup], "range": [30,37], "color": teal,},
                              "Q":       {"pol": True, "show": wmap, "position": [39.,  ymin*yscaletextup], "range": [38,45], "color": teal,}, 
                              "V":       {"pol": True, "show": wmap, "position": [58.,  ymin*yscaletextup], "range": [54,68], "color": teal,}, 
                              "W":       {"pol": True, "show": wmap, "position": [90.,  ymin*yscaletextup], "range": [84,106], "color": teal,}}, 
+                 "BICEPx/KECK":    {"95\nBICEPx/KECK": {"pol": True, "show": bicep, "position": [21.8, ymin*yscaletextup], "range": [21,25.5], "color": teal,}, 
+                                    "150":      {"pol": True, "show": bicep, "position": [31.5, ymin*yscaletextup], "range": [30,37], "color": teal,},
+                                    "220":       {"pol": True, "show": bicep, "position": [39.,  ymin*yscaletextup], "range": [38,45], "color": teal,}},
+                 "SPT":    {"90": {"pol": True, "show": SPT, "position": [21.8, ymin*yscaletextup], "range": [21,25.5], "color": teal,}, 
+                            "150":      {"pol": True, "show": SPT, "position": [31.5, ymin*yscaletextup], "range": [30,37], "color": teal,},
+                            "220\nSPT":       {"pol": True, "show": SPT, "position": [39.,  ymin*yscaletextup], "range": [38,45], "color": teal,}}, 
+                 "SPIDER":    {"100": {"pol": True, "show": spider, "position": [21.8, ymin*yscaletextup], "range": [21,25.5], "color": teal,}, 
+                               "150":      {"pol": True, "show": spider, "position": [31.5, ymin*yscaletextup], "range": [30,37], "color": teal,},
+                               "280\nSPIDER":       {"pol": True, "show": spider, "position": [39.,  ymin*yscaletextup], "range": [38,45], "color": teal,}}, 
+                 "SO":     {"27":           {"pol": True, "show": so, "position": [27,  ymax2*yscaletext], "range": [23.9,34.5],"color": orange,},      # Planck 30
+                            "39\nSO":       {"pol": True, "show": so, "position": [40,  ymax2*yscaletext], "range": [39,50]    ,"color": orange,},      # Planck 44
+                             "93":          {"pol": True, "show": so, "position": [60,  ymax2*yscaletext], "range": [60,78]    ,"color": orange,},      # Planck 70
+                             "145":         {"pol": True, "show": so, "position": [90,  ymax2*yscaletext], "range": [82,120]   ,"color": orange,},      # Planck 100
+                             "225":         {"pol": True, "show": so, "position": [130, ymax2*yscaletext], "range": [125,170]  ,"color": orange,},      # Planck 143
+                             "280":         {"pol": True, "show": so, "position": [195, ymax2*yscaletext], "range": [180,265]  ,"color": orange,}},      # Planck 217
+                 "ACT":     {"28":          {"pol": True, "show": act, "position": [27,  ymax2*yscaletext], "range": [23.9,34.5],"color": orange,},      # Planck 30
+                             "41":          {"pol": True, "show": act, "position": [40,  ymax2*yscaletext], "range": [39,50]    ,"color": orange,},      # Planck 44
+                             "90\nACT":          {"pol": True, "show": act, "position": [60,  ymax2*yscaletext], "range": [60,78]    ,"color": orange,},      # Planck 70
+                             "150": {"pol": True, "show": act, "position": [90,  ymax2*yscaletext], "range": [82,120]   ,"color": orange,},      # Planck 100
+                             "220":         {"pol": True, "show": act, "position": [130, ymax2*yscaletext], "range": [125,170]  ,"color": orange,}},      # Planck 143            
     }
-    """
-    BP SETUP
-    """
-    """
-    haslam = True
-    chipass = False
-    spass = False
-    cbass = False
-    quijote = False
-    wmap = True
-    planck = True
-    dirbe = False
     
-    databands = {"Haslam":  {"0.408\nHaslam": {"pol": False, "show": haslam, "position": [.408, ymin*yscaletextup],  "range": [.406,.410], "color": purple,}},
-                 "S-PASS":  {"2.303\nS-PASS":  {"pol": True, "show": spass,  "position": [2.35, ymax2*yscaletext],  "range": [2.1,2.4], "color": green,}},
-                 "C-BASS":  {"5.0\nC-BASS":   {"pol": True, "show": cbass,  "position": [5., ymax2*yscaletext],    "range": [4.,6.], "color": blue,}},
-                 "CHI-PASS":{"1.394\nCHI-PASS":{"pol": False, "show": chipass,"position": [1.3945, ymin*yscaletextup],"range": [1.3945-0.064/2, 1.3945+0.064/2], "color": lightred,}},
-                 "QUIJOTE": {"11\nQUIJOTE":    {"pol": True, "show": quijote,"position": [11, ymax2*yscaletext],    "range":  [10.,12.], "color": orange,},
-                             "13":             {"pol": True, "show": quijote, "position": [13, ymax2*yscaletext], "range":  [12.,14.], "color": orange,},
-                             "17":             {"pol": True, "show": quijote, "position": [17, ymax2*yscaletext], "range":  [16.,18.], "color": orange,},
-                             "19":             {"pol": True, "show": quijote, "position": [20, ymax2*yscaletext], "range":  [18.,21.], "color": orange,},
-                             "31":             {"pol": True, "show": quijote, "position": [31, ymax2*yscaletext], "range":  [26.,36.], "color": orange,},
-                             "41":             {"pol": True, "show": quijote, "position": [42, ymax2*yscaletext], "range":  [35.,47.], "color": orange,}},
-                 "Planck":  {"30":          {"pol": True, "show": planck, "position": [27,  ymax2*yscaletext], "range": [23.9,34.5],"color": orange,},      # Planck 30
-                             "44":          {"pol": True, "show": planck, "position": [40,  ymax2*yscaletext], "range": [39,50]    ,"color": orange,},      # Planck 44
-                             "70\nPlanck":  {"pol": True, "show": planck, "position": [60,  ymax2*yscaletext], "range": [60,78]    ,"color": orange,},      # Planck 70
-                             "100":         {"pol": True, "show": True, "position": [90,  ymax2*yscaletext], "range": [82,120]   ,"color": orange,},      # Planck 100
-                             "143":         {"pol": True, "show": True, "position": [130, ymax2*yscaletext], "range": [125,170]  ,"color": orange,},      # Planck 143
-                             "217":         {"pol": True, "show": True, "position": [195, ymax2*yscaletext], "range": [180,265]  ,"color": orange,},      # Planck 217
-                             "353":         {"pol": True, "show": True, "position": [320, ymax2*yscaletext], "range": [300,430]  ,"color": orange,},      # Planck 353
-                             "545":         {"pol": False, "show": True, "position": [490, ymax2*yscaletext], "range": [450,650]  ,"color": orange,},      # Planck 545
-                             "857":         {"pol": False, "show": planck, "position": [730, ymax2*yscaletext], "range": [700,1020] ,"color": orange,}},      # Planck 857
-                 "DIRBE":   {"DIRBE\n1250":  {"pol": False, "show": dirbe, "position": [1000, ymin*yscaletextup], "range": [1000,1540] , "color": red,},     # DIRBE 1250
-                             "2140":         {"pol": False, "show": dirbe, "position": [1750, ymin*yscaletextup], "range": [1780,2500] , "color": red,},     # DIRBE 2140
-                             "3000":         {"pol": False, "show": dirbe, "position": [2500, ymin*yscaletextup], "range": [2600,3500] , "color": red,}},     # DIRBE 3000
-                 "WMAP":     {"K": {"pol": True, "show": True, "position": [21.8, ymin*yscaletextup], "range": [21,25.5], "color": teal,}, 
-                             "WMAP\nKa":      {"pol": True, "show": wmap, "position": [31.5, ymin*yscaletextup], "range": [30,37], "color": teal,},
-                             "Q":       {"pol": True, "show": wmap, "position": [39.,  ymin*yscaletextup], "range": [38,45], "color": teal,}, 
-                             "V":       {"pol": True, "show": wmap, "position": [58.,  ymin*yscaletextup], "range": [54,68], "color": teal,}, 
-                             "W":       {"pol": True, "show": True, "position": [90.,  ymin*yscaletextup], "range": [84,106], "color": teal,}}, 
-    }
-    """
+    bands2 = {"Planck": [30,44,70,100,143,216,353,545,857],
+              "WMAP": [23,33,41,61,94],
+              "S-PASS": [2.303],
+              "C-BASS": [5.0],
+              "CHI-PASS": [1.4],
+              "QUIJOTE": [11, 13, 17, 19, 31, 41],
+              "LiteBIRD": [40, 50, 60, 68, 78, 89, 100, 119, 140, 166, 195, 235, 280, 337, 402],
+              "GroundBIRD": [145,220],
+              "LSPE": [43,240],
+              "QUBIC": [150, 220],
+              "SO": [27,39,93,145,225,280],
+              "ACT": [28,41,90, 150, 220,],
+              "PICO": [21, 25, 30, 36, 43, 52, 62, 75, 90, 108, 129, 155, 186, 223, 268, 321, 385, 462, 555, 666, 799],
+              "SPT": [90,150,220],
+              "SPIDER": [100,150,280],
+              "BICEP": [95,150,220],
+              "CMB-S4": [30,40,85,95,145,155,220,270,20,27,39,93,145,225,278,27,39,93,145,225,278],
+              "CMB-BHARAT": [60,600],
+          }
+
     # Set databands from dictonary
-    for experiment, bands in databands.items():
-        for label, band in bands.items():
-            if band["show"]:
-                #if label == "353" and not pol: continue # SPECIFIC FOR BP SETUP
-                if pol and not band["pol"]:
-                    continue # Skip non-polarization bands
-                if band["position"][0]>=xmax or band["position"][0]<=xmin:
-                    continue # Skip databands outside range
-                va = "bottom" if experiment in ["WMAP", "CHI-PASS", "DIRBE", "Haslam"] else "top" # VA for WMAP on bottom
-                ha = "left" if experiment in ["Planck", "WMAP", "DIRBE",] else "center"
-                ax.axvspan(*band["range"], color=band["color"], alpha=0.3, zorder=0, label=experiment)
-                if long:
-                    ax2.axvspan(*band["range"], color=band["color"], alpha=0.3, zorder=0, label=experiment)
-                    if experiment in  ["WMAP", "CHI-PASS", "DIRBE", "Haslam"]:
-                        ax.text(*band["position"], label, color=band["color"], va=va, ha=ha, size=freqtext, path_effects=[path_effects.withSimplePatchShadow(alpha=0.8, offset=(1,-1))])
-                    else:
-                        ax2.text(*band["position"], label, color=band["color"], va=va, ha=ha, size=freqtext, path_effects=[path_effects.withSimplePatchShadow(alpha=0.8, offset=(1,-1))])
+    yrows=np.logspace(0,2,8)[::-1]
+    cm = plt.cm.get_cmap('tab20')
+    if False:
+        c=0
+        k=0
+        for label, freqs in bands2.items():
+            va="top"
+            xpos=max(freqs)
+            if xpos<10:
+                ax2.text(xpos,ymax2*yscaletext, label, color=cm.colors[c], va=va, ha="center", size=freqtext, path_effects=[path_effects.withSimplePatchShadow(alpha=0.8, offset=(1,-1))])
+            else:
+                if k>7:               
+                    ax.text(4,yrows[k-8], label, color=cm.colors[c], va=va, ha="left", size=freqtext, path_effects=[path_effects.withSimplePatchShadow(alpha=0.8, offset=(1,-1))])
                 else:
-                    ax.text(*band["position"], label, color=band["color"], va=va, ha=ha, size=freqtext, path_effects=[path_effects.withSimplePatchShadow(alpha=0.8, offset=(1,-1))])
+                    ax.text(1.4,yrows[k], label, color=cm.colors[c], va=va, ha="left", size=freqtext, path_effects=[path_effects.withSimplePatchShadow(alpha=0.8, offset=(1,-1))])
+                k+=1
+
+            for nu in freqs:
+                ax.axvline(nu,color=cm.colors[c], alpha=0.4, zorder=0)
+                if long:
+                    ax2.axvline(nu,color=cm.colors[c],alpha=0.4,zorder=0)
+            c+=1
+    else:
+        for experiment, bands in databands.items():
+            for label, band in bands.items():
+                if band["show"]:
+                    #if label == "353" and not pol: continue # SPECIFIC FOR BP SETUP
+                    if pol and not band["pol"]:
+                        continue # Skip non-polarization bands
+                    if band["position"][0]>=xmax or band["position"][0]<=xmin:
+                        continue # Skip databands outside range
+
+                    bottombands = ["WMAP", "CHI-PASS", "DIRBE", "Haslam"]
+                    if not pol: 
+                        bottombands.append("S-PASS")
+                    va = "bottom" if experiment in bottombands else "top" # VA for WMAP on bottom
+                    ha = "left" if experiment in ["Planck", "WMAP", "DIRBE",] else "center"
+                    ax.axvspan(*band["range"], color=band["color"], alpha=0.3, zorder=-20, label=experiment)
+                    if long:
+                        ax2.axvspan(*band["range"], color=band["color"], alpha=0.3, zorder=-20, label=experiment)
+                        if experiment in bottombands:
+                            ax.text(*band["position"], label, color=band["color"], va=va, ha=ha, size=freqtext, path_effects=[path_effects.withSimplePatchShadow(alpha=0.8, offset=(1,-1))])
+                        else:
+                            ax2.text(*band["position"], label, color=band["color"], va=va, ha=ha, size=freqtext, path_effects=[path_effects.withSimplePatchShadow(alpha=0.8, offset=(1,-1))])
+                    else:
+                        ax.text(*band["position"], label, color=band["color"], va=va, ha=ha, size=freqtext, path_effects=[path_effects.withSimplePatchShadow(alpha=0.8, offset=(1,-1))])
 
     # ---- Axis stuff ----
     lsize=20
@@ -377,16 +411,26 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
         ax2.set_yticklabels([fmt(x,1) for x in ax2.get_yticks()], va="center")
 
     # Axis labels
+    sax = fig.add_subplot(111, frameon=False)
+    plt.tick_params(
+        labelcolor="none",
+        top=False,
+        bottom=False,
+        left=True,
+        right=False,
+        width=0.0,
+    )
     if pol:
-        plt.ylabel(r"RMS polarization amplitude [$\mu\mathrm{K}_{\mathrm{RJ}}$]",fontsize=lsize)
+        sax.set_ylabel(r"RMS polarization amplitude [$\mu\mathrm{K}_{\mathrm{RJ}}$]",fontsize=lsize)
     else:
-        plt.ylabel(r"RMS brightness temperature [$\mu\mathrm{K}_{\mathrm{RJ}}$]",fontsize=lsize)
-    plt.xlabel(r"Frequency [GHz]",fontsize=lsize)
+        sax.set_ylabel(r"RMS brightness temperature [$\mu\mathrm{K}_{\mathrm{RJ}}$]",fontsize=lsize)
+    sax.set_xlabel(r"Frequency [GHz]",fontsize=lsize)
+    plt.subplots_adjust(wspace=0.0, hspace=0.02)
 
     #ax.legend(loc=6,prop={'size': 20}, frameon=False)
 
     # ---- Plotting ----
-    plt.tight_layout(h_pad=0.3)
+    #plt.tight_layout(h_pad=0.3)
     filename = "spectrum"
     filename += "_pol" if pol else ""
     filename += "_long" if long else ""
@@ -406,7 +450,7 @@ def fmt(x, pos):
     elif float(a) == -1.00:
         return r"$-10^{"+str(b)+"}$"
     else:
-        return fr"${a} \cdot 10^{b}$"
+        return r"$"+str(a)+"\cdot 10^{"+str(b)+"}$"
 
 	
 def gradient_fill(x, y, fill_color=None, ax=None, alpha=1.0, invert=False, **kwargs):
@@ -465,7 +509,7 @@ def gradient_fill(x, y, fill_color=None, ax=None, alpha=1.0, invert=False, **kwa
     return line, im
 
 
-def gradient_fill_between(ax, x, y1, y2, color="#ffa15a", alpha=0.5):
+def gradient_fill_between(ax, x, y1, y2, color="#ffa15a", alpha=0.8):
     N = 100
     y = np.zeros((N, len(y1)))
     for i in range(len(y1)):

@@ -605,9 +605,8 @@ def get_map(input, sig, dataset, nside, lmax, fwhm,):
     return maps, lmax, outfile, signal_labels
 
 def get_ticks(m, ticks, mn, md, mx, min, mid, max, rng, auto):
-
     # If min and max have been specified, set.
-    if rng == "auto": # Mathew: I have changed this to give the desired behaviour for make_diff_plots, but I don't know if this breaks other functionality
+    if rng == "auto" and not auto: # Mathew: I have changed this to give the desired behaviour for make_diff_plots, but I don't know if this breaks other functionality
     # it used to be
     # if rng == "auto" and not auto:
         click.echo(click.style("Setting range from 97.5th percentile of data",fg="yellow"))
@@ -634,7 +633,6 @@ def get_ticks(m, ticks, mn, md, mx, min, mid, max, rng, auto):
         max = mx
     else:
         max = float(max)   
-
     ticks[0] = min
     ticks[-1] = max
     if mid:
@@ -764,7 +762,7 @@ def output_map(fig, outfile, png, fwhm, colorbar, mask, remove_dipole, darkmode,
     if gif:
         click.echo(click.style("Outputing GIF:", fg="green") + f" {fn}")
         import matplotlib.animation as animation
-        interval = 100 #500
+        interval = 500 #100
         ani = animation.ArtistAnimation(fig, imgs, interval=interval, blit=True, repeat_delay=1000)
         ani.save(fn.replace(filetype,"gif"),dpi=dpi)
     else:
