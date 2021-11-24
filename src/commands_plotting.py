@@ -150,8 +150,8 @@ def specplot(input,cmap,long,lambdacdm,min_,max_, lmax):
 @click.option("-dataset", type=click.STRING, help="for .h5 plotting (ex. 000007/cmb/amp_alm)")
 @click.option("-nside", type=click.INT, help="nside for optional ud_grade.",)
 @click.option("-auto", is_flag=True, help="Automatically sets all plotting parameters.",)
-@click.option("-min", default=False, help="Min value of colorbar, overrides autodetector.",)
-@click.option("-max", default=False, help="Max value of colorbar, overrides autodetector.",)
+@click.option("-min", default=None, help="Min value of colorbar, overrides autodetector.",)
+@click.option("-max", default=None, help="Max value of colorbar, overrides autodetector.",)
 @click.option("-mid", multiple=True, help='Adds tick values "-mid 2 -mid 4"',)
 @click.option("-range", default="auto", type=click.STRING, help='Color range. "-range auto" sets to 97.5 percentile of data., or "minmax" which sets to data min and max values.',)  # str until changed to float
 @click.option("-colorbar", "-bar", is_flag=True, help='Adds colorbar ("cb" in filename)',)
@@ -195,6 +195,8 @@ def plot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule,
     RECOMMENDED: Use -auto to autodetect map type and set parameters.\n
     Some autodetected maps use logscale, you will be warned.
     """
+    if min is None: min = False
+    if max is None: max = False
     from src.plotter import trygveplot
     trygveplot(input, dataset, nside, auto, min, max, mid, range, colorbar, graticule,
                 lmax, fwhm, mask, mfill, sig, remove_dipole, remove_monopole, logscale, 
@@ -442,15 +444,16 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
             try:
                 # CMB I with dip
                 ctx.invoke(plot, input=f"BP_cmb_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True,  range=3400)
+            
                 # CMB I no dip
                 ctx.invoke(plot, input=f"BP_cmb_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask, )
                 ctx.invoke(plot, input=f"BP_cmb_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask,  fwhm=np.sqrt(60.0**2-14**2),)
                 ctx.invoke(plot, input=f"BP_cmb_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask,  fwhm=np.sqrt(420.0**2-14**2),range=150)
 
                 # CMB QU at 14 arcmin, 1 degree and 7 degree smoothing
-                for hehe, fwhm in enumerate([0.0, np.sqrt(60.0**2-14**2), np.sqrt(420.0**2-14**2)]):
-                    rng = 5 if hehe == 2 else None
-                    ctx.invoke(plot, input=f"BP_cmb_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  fwhm=fwhm, range=rng)
+                for i, fwhm in enumerate([0.0, np.sqrt(60.0**2-14**2), np.sqrt(420.0**2-14**2)]):
+                    rng = 5 if i == 2 else None
+                    ctx.invoke(plot, input=f"BP_cmb_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], fwhm=fwhm, range=rng)
 
                 # RMS maps
                 ctx.invoke(plot, input=f"BP_cmb_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,], min=0, max=30)
@@ -492,7 +495,8 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
     
             try:
                 # Synch IQU
-                ctx.invoke(plot, input=f"BP_synch_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3,], )
+                ctx.invoke(plot, input=f"BP_synch_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0], min=1, mid=[10], max=100, scale=1e-6, unit="$\mathrm{K}$")
+                ctx.invoke(plot, input=f"BP_synch_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2, 3,], )
                 ctx.invoke(plot, input=f"BP_synch_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[6,], min=0, max=3)
                 ctx.invoke(plot, input=f"BP_synch_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[7, 8,], min=0, max=5)
                 ctx.invoke(plot, input=f"BP_synch_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[9,], min=0, max=10)
@@ -581,11 +585,11 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                 try:
                     input = f"diffs/BP_cmb_diff_{method.lower()}_{procver}.fits"
                     ttl = "$\mathrm{"+method+"}$"
-                    ctx.invoke(plot, input=input, size="s", outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask3, remove_monopole=mask3, sig=[0,],  range=10, title=ttl, ltitle=" ", mask=mask3, mfill="gray", labelsize=6)
-                    ctx.invoke(plot, input=input, size="s", outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], remove_monopole=mask2, range=4, title=ttl, ltitle=" ", mask=mask2, mfill="gray", labelsize=6)
+                    ctx.invoke(plot, input=input, size="s", unit='$\\mathrm{K}$', outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask3, remove_monopole=mask3, sig=[0,],  range=10, title=ttl, ltitle=" ", mask=mask3, mfill="gray", labelsize=6)
+                    ctx.invoke(plot, input=input, size="s", unit='$\\mathrm{K}$', outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], remove_monopole=mask2, range=4, title=ttl, ltitle=" ", mask=mask2, mfill="gray", labelsize=6)
 
-                    ctx.invoke(plot, input=input, size="ml", outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask3, remove_monopole=mask3, sig=[0,],  range=10, title=ttl, ltitle=" ", mask=mask3, mfill="gray",)
-                    ctx.invoke(plot, input=input, size="ml", outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], remove_monopole=mask2, range=4, title=ttl, ltitle=" ", mask=mask2, mfill="gray",)
+                    ctx.invoke(plot, input=input, size="ml", unit='$\\mathrm{K}$', outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask3, remove_monopole=mask3, sig=[0,],  range=10, title=ttl, ltitle=" ", mask=mask3, mfill="gray",)
+                    ctx.invoke(plot, input=input, size="ml", unit='$\\mathrm{K}$', outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], remove_monopole=mask2, range=4, title=ttl, ltitle=" ", mask=mask2, mfill="gray",)
                 except Exception as e:
                     print(e)
                     click.secho("Continuing...", fg="yellow")
@@ -618,10 +622,10 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                         sig = [0,1,2,3] if not band in ["030_IQU","044_IQU","070_IQU"] else [1,2,4,5]
                         b = glob.glob(f'goodness/BP_res_{band}*fits')[0]
                         if band in ["033-WMAP_Ka_P", "041-WMAP_Q_P", "061-WMAP_V_P",]:
-                            ctx.invoke(plot, input=b, size='x', outdir=outdir, colorbar=colorbar, auto=True, sig=sig, mask=mask_path+masks[m], mfill="gray")                
+                            ctx.invoke(plot, input=b, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=sig, mask=mask_path+masks[m], mfill="gray")                
                             m+=1
                         else:
-                            ctx.invoke(plot, input=b, size='x', outdir=outdir, colorbar=colorbar, auto=True, sig=sig,)                
+                            ctx.invoke(plot, input=b, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=sig,)                
                     except Exception as e:
                         print(e)
                         click.secho("Continuing...", fg="yellow")
@@ -648,7 +652,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
         
         a_cmb = None
         #BP_synch_IQU_n1024_BP8_noMedianFilter.fits
-        a_s = hp.read_map(f"unprocessed/BP_synch_IQU_n1024_{procver}_noMedianFilter.fits", field=(0,1,2), dtype=None, verbose=False)
+        a_s = hp.read_map(f"BP_synch_IQU_n1024_{procver}.fits", field=(0,1,2), dtype=None, verbose=False)
         b_s = hp.read_map(f"BP_synch_IQU_n1024_{procver}.fits", field=(4,5), dtype=None, verbose=False)
         
         a_ff = hp.read_map(f"BP_freefree_I_n1024_{procver}.fits", field=(0,), dtype=None, verbose=False)
@@ -1198,10 +1202,11 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
         # 15, 120, 40, (0,4, 12), (1.2,50)
         p = 0.6 if long else 15
         sd = 2.5 if long else 70
+        s=20 if long else 30
         foregrounds = {
             "Synchrotron" : {"function": "lf", 
                              "params"  : [a_s, b_s,],
-                             "position": 20,
+                             "position": s,
                              "color"   : "C2",
                              "sum"     : True,
                              "linestyle": "solid",
@@ -1261,10 +1266,12 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
         #120, 12, 40, (2,57), 20, 70
         p = 3 if long else 65
         td = 10 if long else 17
-        s = 2 if long else 170
+        s = 2 if long else 120
+        f=17 if long else 22
+        sfg=25 if long else 70
         foregrounds = {
             "Synchrotron" : {"function": "lf", 
-                             "params"  : [a_s, b_s,],
+                             "params"  : [a_s, b_s, 0.4e9],
                              "position": s,
                              "color"   : "C2",
                              "sum"     : True,
@@ -1281,7 +1288,7 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
                          }, 
             "Free-Free"  : {"function": "ff", 
                              "params"  : [a_ff, t_e],
-                             "position": 17,
+                             "position": f,
                              "color"   : "C0",
                              "sum"     : True,
                              "linestyle": "solid",
@@ -1321,7 +1328,7 @@ def output_sky_model(pol, long, darkmode, png, nside, a_cmb, a_s, b_s, a_ff, t_e
                          },
             "Sum fg."      : {"function": "sum", 
                              "params"  : [],
-                             "position": 25,
+                             "position": sfg,
                              "color"   : "grey",
                              "sum"     : False,
                              "linestyle": "--",

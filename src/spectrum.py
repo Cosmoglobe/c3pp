@@ -230,7 +230,7 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
             rotator = (datascaling/aspect_ratio)
             alpha = np.arctan(np.log(y1/y0)/np.log(x1/x0)*rotator)
             rotation =  np.rad2deg(alpha)#*rotator
-            if y0>ymax:
+            if y0>ymax and long:
                 ax2.annotate(label, xy=(x0,y0), xytext=(0,5), textcoords="offset pixels",  rotation=rotation, rotation_mode='anchor', fontsize=fgtext, color=fg["color"], path_effects=[path_effects.withSimplePatchShadow(alpha=0.8,offset=(1, -1)),], horizontalalignment="center")
             else:
                 ax.annotate(label, xy=(x0,y0), xytext=(0,5), textcoords="offset pixels",  rotation=rotation, rotation_mode='anchor', fontsize=fgtext, color=fg["color"], path_effects=[path_effects.withSimplePatchShadow(alpha=0.8,offset=(1, -1)),], horizontalalignment="center")
@@ -257,6 +257,7 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
     SPT=False
     act=False
     so = False
+    dirbepos=1000 if long else 950
     spass_special = ymax2*yscaletext if pol else ymin*yscaletextup 
     databands = {"Haslam":  {"0.4\nHaslam": {"pol": False, "show": haslam, "position": [.408, ymin*yscaletextup],  "range": [.406,.410], "color": green,}},
                  "S-PASS":  {"2.3\nS-PASS":  {"pol": True, "show": spass,  "position": [2.35, spass_special],  "range": [2.1,2.4], "color": green,}},
@@ -277,7 +278,7 @@ def Spectrum(pol, long, darkmode, png, foregrounds, masks, nside, cmap="Plotly")
                              "353":         {"pol": True, "show": planck, "position": [320, ymax2*yscaletext], "range": [300,430]  ,"color": orange,},      # Planck 353
                              "545":         {"pol": False, "show": planck, "position": [490, ymax2*yscaletext], "range": [450,650]  ,"color": orange,},      # Planck 545
                              "857":         {"pol": False, "show": planck, "position": [730, ymax2*yscaletext], "range": [700,1020] ,"color": orange,}},      # Planck 857
-                 "DIRBE":   {"DIRBE\n1250":  {"pol": False, "show": dirbe, "position": [1000, ymin*yscaletextup], "range": [1000,1540] , "color": red,},     # DIRBE 1250
+                 "DIRBE":   {"DIRBE\n1250":  {"pol": False, "show": dirbe, "position": [dirbepos, ymin*yscaletextup], "range": [1000,1540] , "color": red,},     # DIRBE 1250
                              "2140":         {"pol": False, "show": dirbe, "position": [1650, ymin*yscaletextup], "range": [1780,2500] , "color": red,},     # DIRBE 2140
                              "3000":         {"pol": False, "show": dirbe, "position": [2500, ymin*yscaletextup], "range": [2600,3500] , "color": red,}},     # DIRBE 3000
                  "WMAP":    {"K": {"pol": True, "show": wmap, "position": [21.8, ymin*yscaletextup], "range": [21,25.5], "color": teal,}, 

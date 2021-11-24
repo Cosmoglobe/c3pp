@@ -4,7 +4,7 @@
         "unit": "$\\mu\\mathrm{K}_{\\mathrm{CMB}}$",
         "comp": "cmb",
         "param": "$A$",
-        "cmap": ["planck"],
+        "cmap": ["planck","planck"],
         "ticks": [[-300,0,300], [-10,0,10]],
         "logscale": false,
         "special": false
@@ -25,7 +25,7 @@
         "comp": "s",
         "param": "$\\beta$",
         "cmap": ["fusion"],
-        "ticks": [[-3.2, -3.15, -3.1]],
+        "ticks": [[-3.2, -3.1, -3.0]],
         "logscale": false,
         "special": false
     },
@@ -35,7 +35,7 @@
         "comp": "s",
         "param": "$A$",
         "cmap": ["swamp", "wildfire"],
-        "ticks": [[50, 100, 200, 400],[-100, 0, 100],[5, 10, 25, 50]],
+        "ticks": [[1e6, 1e7, 1e8],[-100, 0, 100],[5, 10, 25, 50]],
         "logscale": true,
         "special": false
     },

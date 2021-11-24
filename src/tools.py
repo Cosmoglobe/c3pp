@@ -300,6 +300,7 @@ def sync(nu, As, alpha, nuref=0.408):
     """
     Synchrotron spectrum using template
     """
+    print("nuref", nuref)
     #alpha = 1., As = 30 K (30*1e6 muK)
     nu_0 = nuref*1e9 # 408 MHz
     from pathlib import Path

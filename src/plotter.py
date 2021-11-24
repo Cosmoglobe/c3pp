@@ -183,14 +183,14 @@ def trygveplot(input, dataset=None, nside=None, auto=False, min=False, max=False
             m = hp.ma(maps[pl])
             signal_label = signal_labels[polt] if signal_labels else get_signallabel(polt) 
             nsid = hp.get_nside(m)
-
+            filename=input[i] if isinstance(input, list) else input
             #### Smooth  #####
-            if float(fwhm) > 0 and input[i].endswith(".fits"):
+            if float(fwhm) > 0 and filename.endswith(".fits"):
                 click.echo(click.style(f"Smoothing fits map to {fwhm} arcmin fwhm",fg="yellow"))
                 m = hp.smoothing(m, fwhm=arcmin2rad(fwhm), lmax=lmax,)
 
             #### ud_grade #####
-            if nside is not None and input[i].endswith(".fits"):
+            if nside is not None and filename.endswith(".fits"):
                 if nsid != nside:
                     click.echo(click.style(f"UDgrading map from {nsid} to {nside}", fg="yellow"))
                     m = hp.ud_grade(m, nside,)
@@ -323,7 +323,8 @@ def get_params(m, outfile, outname, signal_label,):
         params = json.load(f)
     for label, comp in params.items():
         if tag_lookup(comp["tags"], datastring):
-            click.echo(click.style("{:-^48}".format(f"Detected {label} signal {sl}"),fg="yellow"))
+            if label=="freefree" and tag_lookup(["diff"], datastring): continue
+            click.echo(click.style("{:-^48}".format(f"Detected {label} signal {sl} in {datastring}"),fg="yellow"))
             if label in ["residual", "freqmap",  "smap", "bpcorr"]:
                 from re import findall 
                 if label == "smap": tit = str(findall(r"tod_(.*?)_Smap", outfile)[0])
@@ -793,7 +794,7 @@ def cm2inch(cm):
     return cm * 0.393701
 
 def tag_lookup(tags, outfile):
-    return any(e in outfile for e in tags)
+    return any(e.lower() in outfile.lower() for e in tags)
 
 def project_map(nside, xsize, ysize,):
     theta = np.linspace(np.pi, 0, ysize)
