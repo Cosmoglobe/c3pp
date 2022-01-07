@@ -413,6 +413,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
     elif goodness:
         goodness_temp = goodness_pol = chisq = True
 
+
     size = "mls"
     for colorbar in [True, False]:
         if (cmbresamp and mask) or (cmbresamp and defaultmask):
@@ -472,7 +473,8 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                 ctx.invoke(plot, input=f"BP_030_IQU_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=3400,)
                 ctx.invoke(plot, input=f"BP_030_IQU_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  fwhm=60.0, range=30,)
                 ctx.invoke(plot, input=f"BP_030_IQU_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3, 4, 5], min=0, max=75)
-                ctx.invoke(plot, input=f"BP_030_IQU_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[6, 7, 8], min=0, max=2)
+                ctx.invoke(plot, input=f"BP_030_IQU_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[6,], min=0, max=2, scale=1/3, title="$\sigma_{30}/3$",)
+                ctx.invoke(plot, input=f"BP_030_IQU_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[7, 8], min=0, max=2)
                 # 044 GHz IQU
                 ctx.invoke(plot, input=f"BP_044_IQU_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=3400,)
                 ctx.invoke(plot, input=f"BP_044_IQU_n0512_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  fwhm=60.0, range=30,)
@@ -481,8 +483,8 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                 # 070 GHz IQU
                 ctx.invoke(plot, input=f"BP_070_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=3400,)
                 ctx.invoke(plot, input=f"BP_070_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  fwhm=60.0, range=30,)
-                ctx.invoke(plot, input=f"BP_070_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,4,5,], min=0, max=75)
-                ctx.invoke(plot, input=f"BP_070_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[6, 7, 8], min=0, max=2)
+                ctx.invoke(plot, input=f"BP_070_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3,4,5,], min=0, max=75, title="$A^{\mathrm{RMS}}_{30}/2$",scale=1/2)
+                ctx.invoke(plot, input=f"BP_070_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[6, 7, 8], min=0, max=2,)
 
             except Exception as e:
                 print(e)
@@ -492,16 +494,16 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
             outdir = "figs/synchrotron/"
             if not os.path.exists(outdir):
                 os.mkdir(outdir)
-    
+
             try:
                 # Synch IQU
-                ctx.invoke(plot, input=f"BP_synch_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0], min=1, mid=[10], max=100, scale=1e-6, unit="$\mathrm{K}$")
+                ctx.invoke(plot, input=f"BP_synch_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0], min=10, mid=[100], max=200, scale=1e-6, unit="$\mathrm{K_{RJ}}$")
                 ctx.invoke(plot, input=f"BP_synch_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2, 3,], )
-                ctx.invoke(plot, input=f"BP_synch_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[6,], min=0, max=3)
+                ctx.invoke(plot, input=f"BP_synch_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[6,], min=1, mid=[2], max=3, scale=1e-6,  unit="$\mathrm{K_{RJ}}$")
                 ctx.invoke(plot, input=f"BP_synch_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[7, 8,], min=0, max=5)
                 ctx.invoke(plot, input=f"BP_synch_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[9,], min=0, max=10)
 
-                ctx.invoke(plot, input=f"BP_synch_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[4, 5,], min=-3.2, max=-3.05, mid=[-3.1,-3.15], cmap="fusion" )
+                ctx.invoke(plot, input=f"BP_synch_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[4, 5,], min=-3.4, max=-3.00, mid=[-3.2,], cmap="fusion" )
                 ctx.invoke(plot, input=f"BP_synch_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[10,11], min=0, mid=[0.05,0.1], max=0.15, cmap="neutral_r")
             except Exception as e:
                 print(e)
@@ -514,7 +516,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
             try:
                 # freefree mean and rms
                 ctx.invoke(plot, input=f"BP_freefree_I_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1,], )
-                ctx.invoke(plot, input=f"BP_freefree_I_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[2,], min=0, max=50)
+                ctx.invoke(plot, input=f"BP_freefree_I_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[2,], min=0, mid=[25], max=50)
                 #Dont plot te
             except Exception as e:
                 print(e)
@@ -526,8 +528,9 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                 os.mkdir(outdir)
             try:
                 # ame mean and rms
-                ctx.invoke(plot, input=f"BP_ame_I_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1,], )
-                ctx.invoke(plot, input=f"BP_ame_I_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[2,], min=0, max=80)
+                ctx.invoke(plot, input=f"BP_ame_I_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,1], )
+                ctx.invoke(plot, input=f"BP_ame_I_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1,], )
+                ctx.invoke(plot, input=f"BP_ame_I_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[2,], min=0, max=80, mid=[40])
             except Exception as e:
                 print(e)
                 click.secho("Continuing...", fg="yellow")
@@ -541,7 +544,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                 # I Q U P IBETA QUBETA ITMEAN QUTMEAN   ISTDDEV QSTDDEV USTDDEV PSTDDEV    IBETASTDDEV QUBETASTDDEV ITSTDDEV QUTSTDDEV
                 # dust IQU
                 ctx.invoke(plot, input=f"BP_dust_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3, 4, 5, 6, 7,], )
-                ctx.invoke(plot, input=f"BP_dust_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[8,], min=0, max=50)
+                ctx.invoke(plot, input=f"BP_dust_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[8,], min=0, mid=[10], max=20)
                 ctx.invoke(plot, input=f"BP_dust_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[9, 10], min=0, max=3)
                 ctx.invoke(plot, input=f"BP_dust_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[11,], min=0, max=6)
             except Exception as e:
@@ -555,20 +558,20 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                 
             try:
                 # Plot difference to npipe and dx12
-                ctx.invoke(plot, input=f"diffs/BP_030_diff_npipe_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=10)
-                ctx.invoke(plot, input=f"diffs/BP_030_diff_npipe_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
-                ctx.invoke(plot, input=f"diffs/BP_030_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=10)
-                ctx.invoke(plot, input=f"diffs/BP_030_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
+                ctx.invoke(plot, input=f"diffs/BP_030_diff_npipe_{procver}.fits", title="$\Delta A_{30}^{\mathrm{DR4}}$", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=10)
+                ctx.invoke(plot, input=f"diffs/BP_030_diff_npipe_{procver}.fits", title="$\Delta A_{30}^{\mathrm{DR4}}$", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
+                ctx.invoke(plot, input=f"diffs/BP_030_diff_dx12_{procver}.fits",title="$\Delta A_{30}^{\mathrm{2018}}$", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=10)
+                ctx.invoke(plot, input=f"diffs/BP_030_diff_dx12_{procver}.fits",title="$\Delta A_{30}^{\mathrm{2018}}$", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
 
-                ctx.invoke(plot, input=f"diffs/BP_044_diff_npipe_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=10)
-                ctx.invoke(plot, input=f"diffs/BP_044_diff_npipe_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
-                ctx.invoke(plot, input=f"diffs/BP_044_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=10)
-                ctx.invoke(plot, input=f"diffs/BP_044_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
+                ctx.invoke(plot, input=f"diffs/BP_044_diff_npipe_{procver}.fits", title="$\Delta A_{44}^{\mathrm{DR4}}$", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=10)
+                ctx.invoke(plot, input=f"diffs/BP_044_diff_npipe_{procver}.fits", title="$\Delta A_{44}^{\mathrm{DR4}}$", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
+                ctx.invoke(plot, input=f"diffs/BP_044_diff_dx12_{procver}.fits",  title="$\Delta A_{44}^{\mathrm{2018}}$", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=10)
+                ctx.invoke(plot, input=f"diffs/BP_044_diff_dx12_{procver}.fits",  title="$\Delta A_{44}^{\mathrm{2018}}$", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
             
-                ctx.invoke(plot, input=f"diffs/BP_070_diff_npipe_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=10)
-                ctx.invoke(plot, input=f"diffs/BP_070_diff_npipe_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
-                ctx.invoke(plot, input=f"diffs/BP_070_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=10)
-                ctx.invoke(plot, input=f"diffs/BP_070_diff_dx12_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
+                ctx.invoke(plot, input=f"diffs/BP_070_diff_npipe_{procver}.fits", title="$\Delta A_{70}^{\mathrm{DR4}}$", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=10)
+                ctx.invoke(plot, input=f"diffs/BP_070_diff_npipe_{procver}.fits", title="$\Delta A_{70}^{\mathrm{DR4}}$", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
+                ctx.invoke(plot, input=f"diffs/BP_070_diff_dx12_{procver}.fits",  title="$\Delta A_{70}^{\mathrm{2018}}$", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,],  range=10)
+                ctx.invoke(plot, input=f"diffs/BP_070_diff_dx12_{procver}.fits",  title="$\Delta A_{70}^{\mathrm{2018}}$", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,],  range=4)
             except Exception as e:
                 print(e)
                 click.secho("Continuing...", fg="yellow")
@@ -585,8 +588,8 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                 try:
                     input = f"diffs/BP_cmb_diff_{method.lower()}_{procver}.fits"
                     ttl = "$\mathrm{"+method+"}$"
-                    ctx.invoke(plot, input=input, size="s", unit='$\\mathrm{K}$', outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask3, remove_monopole=mask3, sig=[0,],  range=10, title=ttl, ltitle=" ", mask=mask3, mfill="gray", labelsize=6)
-                    ctx.invoke(plot, input=input, size="s", unit='$\\mathrm{K}$', outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], remove_monopole=mask2, range=4, title=ttl, ltitle=" ", mask=mask2, mfill="gray", labelsize=6)
+                    ctx.invoke(plot, input=input, size="s", unit='$\\mathrm{K}$', outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask3, remove_monopole=mask3, sig=[0,],  range=10, title=ttl, ltitle=" ", mask=mask3, mfill="gray",)
+                    ctx.invoke(plot, input=input, size="s", unit='$\\mathrm{K}$', outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], remove_monopole=mask2, range=4, title=ttl, ltitle=" ", mask=mask2, mfill="gray",)
 
                     ctx.invoke(plot, input=input, size="ml", unit='$\\mathrm{K}$', outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask3, remove_monopole=mask3, sig=[0,],  range=10, title=ttl, ltitle=" ", mask=mask3, mfill="gray",)
                     ctx.invoke(plot, input=input, size="ml", unit='$\\mathrm{K}$', outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], remove_monopole=mask2, range=4, title=ttl, ltitle=" ", mask=mask2, mfill="gray",)
@@ -716,7 +719,9 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
 @click.option('-nbins', default=1, help='Bins for plotting')
 @click.option('-sig', default="P", help='T or P')
 @click.option('-prior', nargs=2, type=float, help='Specify mean and stddev')
-def hist(chainfile, dataset, burnin, maxchain, nbins,sig, prior):
+@click.option('-min', default=None, type=click.FLOAT, help='Minimum valued on x')
+@click.option('-max', default=None, type=click.FLOAT, help='Maximum valued on x')
+def hist(chainfile, dataset, burnin, maxchain, nbins,sig, prior, min, max):
     """
     Make histogram
     """

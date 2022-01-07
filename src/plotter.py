@@ -185,12 +185,12 @@ def trygveplot(input, dataset=None, nside=None, auto=False, min=False, max=False
             nsid = hp.get_nside(m)
             filename=input[i] if isinstance(input, list) else input
             #### Smooth  #####
-            if float(fwhm) > 0 and filename.endswith(".fits"):
+            if float(fwhm) > 0:# and filename.endswith(".fits"):
                 click.echo(click.style(f"Smoothing fits map to {fwhm} arcmin fwhm",fg="yellow"))
                 m = hp.smoothing(m, fwhm=arcmin2rad(fwhm), lmax=lmax,)
 
             #### ud_grade #####
-            if nside is not None and filename.endswith(".fits"):
+            if nside is not None:# and filename.endswith(".fits"):
                 if nsid != nside:
                     click.echo(click.style(f"UDgrading map from {nsid} to {nside}", fg="yellow"))
                     m = hp.ud_grade(m, nside,)
