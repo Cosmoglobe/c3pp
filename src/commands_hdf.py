@@ -329,7 +329,7 @@ def release(ctx, chain, burnin, procver, resamp, copy_, freqmaps, ame, ff, cmb, 
     Run mean and stddev from min to max sample (Choose min manually or start at 1?)
     """
     if resamp:
-        chain = f"{procver}/BP_c0001_{pol}resamp_v1.h5"
+        chain = f"{procver}/BP_c0001_{pol}resamp_{procver}.h5"
     else:
         chain = f"{procver}/BP_c0001_{procver}.h5"
     if freqmaps:
