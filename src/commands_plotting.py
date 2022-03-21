@@ -43,6 +43,7 @@ def specplot(input,cmap,long,lambdacdm,min_,max_, lmax):
         'font.size': 20, 
         'axes.linewidth': 1.5,
         'axes.prop_cycle': cycler(color=colors),
+        'text.usetex': True,
         'mathtext.fontset': 'stix',
         'font.family': 'serif',
         'font.serif': 'Times',
@@ -237,6 +238,7 @@ def gnomplot(filename, lon, lat, sig, size, min_, max_, rng, title, unit, cmap, 
     plt.rcParams["lines.linewidth"] = 2
     plt.rcParams["savefig.dpi"] = 300
     plt.rcParams["axes.linewidth"] = 1
+    plt.rcParams["text.usetex"] = True
     plt.rcParams["mathtext.fontset"] = "stix"
     plt.rc('font', family='serif',)
     plt.rc("text.latex", preamble=r"\usepackage{sfmath}",)
@@ -498,10 +500,14 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
             try:
                 # Synch IQU
                 ctx.invoke(plot, input=f"BP_synch_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0], min=10, mid=[100], max=200, scale=1e-6, unit="$\mathrm{K_{RJ}}$")
-                ctx.invoke(plot, input=f"BP_synch_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2, 3,], )
+                ctx.invoke(plot, input=f"BP_synch_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1, 2,], )
                 ctx.invoke(plot, input=f"BP_synch_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[6,], min=1, mid=[2], max=3, scale=1e-6,  unit="$\mathrm{K_{RJ}}$")
                 ctx.invoke(plot, input=f"BP_synch_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[7, 8,], min=0, max=5)
                 ctx.invoke(plot, input=f"BP_synch_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[9,], min=0, max=10)
+
+                #P
+                ctx.invoke(plot, input=f"BP_synch_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3], cmap="swamp", min=5, max=50, mid=[10, 25])
+
 
                 ctx.invoke(plot, input=f"BP_synch_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[4, 5,], min=-3.4, max=-3.00, mid=[-3.2,], cmap="fusion" )
                 ctx.invoke(plot, input=f"BP_synch_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[10,11], min=0, mid=[0.05,0.1], max=0.15, cmap="neutral_r")
@@ -543,10 +549,13 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
             try:
                 # I Q U P IBETA QUBETA ITMEAN QUTMEAN   ISTDDEV QSTDDEV USTDDEV PSTDDEV    IBETASTDDEV QUBETASTDDEV ITSTDDEV QUTSTDDEV
                 # dust IQU
-                ctx.invoke(plot, input=f"BP_dust_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 3, 4, 5, 6, 7,], )
+                ctx.invoke(plot, input=f"BP_dust_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0, 1, 2, 4, 5, 6, 7,], )
                 ctx.invoke(plot, input=f"BP_dust_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[8,], min=0, mid=[10], max=20)
                 ctx.invoke(plot, input=f"BP_dust_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[9, 10], min=0, max=3)
-                ctx.invoke(plot, input=f"BP_dust_IQU_full_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[11,], min=0, max=6)
+
+                #P
+                ctx.invoke(plot, input=f"BP_dust_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[3], cmap="sunburst", min=5, max=50, mid=[10, 25])
+                ctx.invoke(plot, input=f"BP_dust_IQU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[11,], min=0, max=6)
             except Exception as e:
                 print(e)
                 click.secho("Continuing...", fg="yellow")
@@ -610,7 +619,7 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                     try:
                         sig = [0,1] if not band in ["030","044","070"] else [0,3]
                         b = glob.glob(f'goodness/BP_res_{band}*fits')[0]
-                        ctx.invoke(plot, input=b, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=sig,)
+                        ctx.invoke(plot, input=b, size="msx", outdir=outdir, colorbar=colorbar, auto=True, sig=sig,)
                     except Exception as e:
                         print(e)
                         click.secho("Continuing...", fg="yellow")
@@ -625,18 +634,19 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
                         sig = [0,1,2,3] if not band in ["030_IQU","044_IQU","070_IQU"] else [1,2,4,5]
                         b = glob.glob(f'goodness/BP_res_{band}*fits')[0]
                         if band in ["033-WMAP_Ka_P", "041-WMAP_Q_P", "061-WMAP_V_P",]:
-                            ctx.invoke(plot, input=b, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=sig, mask=mask_path+masks[m], mfill="gray")                
+                            ctx.invoke(plot, input=b, size="msx", outdir=outdir, colorbar=colorbar, auto=True, sig=sig, mask=mask_path+masks[m], mfill="gray")                
                             m+=1
                         else:
-                            ctx.invoke(plot, input=b, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=sig,)                
+                            ctx.invoke(plot, input=b, size="msx", outdir=outdir, colorbar=colorbar, auto=True, sig=sig,)                
                     except Exception as e:
                         print(e)
                         click.secho("Continuing...", fg="yellow")
 
             if chisq:
                 nsides = [16, 16, 16, 512, 512, 1024, 1024]
-                scale = 2*(np.sum([(x/16)**2 for x in nsides])-3*(64/16)**2)
-                ctx.invoke(plot, input=f"goodness/BP_chisq_n16_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1,], scale=scale)
+                fudge=1.02
+                scale = fudge*2*(np.sum([(x/16)**2 for x in nsides])-3*(64/16)**2)
+                ctx.invoke(plot, input=f"goodness/BP_chisq_n16_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[1,], scale=scale,)
                 #ctx.invoke(plot, input=f"goodness/BP_chisq_n16_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[4,5], min=0.001, max=0.01, scale=scale)
 
                 nsides = [512, 512, 1024, 512, 512, 512, 512, 512, 512, 1024]
@@ -716,21 +726,38 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
 @click.argument("dataset", type=click.STRING)
 @click.option('-burnin', default=0, help='Min sample of dataset (burnin)')
 @click.option("-maxchain", default=1, help="max number of chains c0005 [ex. 5]",)
-@click.option('-nbins', default=1, help='Bins for plotting')
+@click.option("-lloc", default=0, help="Legend location",)
+@click.option('-nbins', default=40, help='Bins for plotting')
 @click.option('-sig', default="P", help='T or P')
-@click.option('-prior', nargs=2, type=float, help='Specify mean and stddev')
+@click.option('-idx', default=[0,], multiple=True, help='This is regions for synch')
+@click.option('-prior', default=[], nargs=2, multiple=True, help='Specify mean and stddev')
 @click.option('-min', default=None, type=click.FLOAT, help='Minimum valued on x')
 @click.option('-max', default=None, type=click.FLOAT, help='Maximum valued on x')
-def hist(chainfile, dataset, burnin, maxchain, nbins,sig, prior, min, max):
+def hist(chainfile, dataset, burnin, maxchain, lloc, nbins, sig, idx, prior, min, max):
     """
     Make histogram
+    ex.
+    c3pp hist synch/beta_pixreg_val -maxchain 2 -idx 1 -idx 3 -prior -3.3 0.1 -min -3.4 -max -2.8 -lloc 1 -nbins 40
     """
-    
     # Check if you want to output a map
     import h5py
-    import healpy as hp
     import pandas as pd
     from tqdm import tqdm
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    import plotly.colors as pcol
+    from cycler import cycler
+    colors=getattr(pcol.qualitative,"Plotly")
+
+    plt.rcParams["mathtext.fontset"] = "stix"
+    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["font.serif"] = "Times"
+    plt.rcParams["axes.prop_cycle"] = cycler(color=colors)
+    
+    fontsize = 8
+    WIDTH = 3.52
+
+    # Get data
     dats = []
     for c in range(1, maxchain + 1):
         chainfile_ = chainfile.replace("c0001", "c" + str(c).zfill(4))
@@ -756,38 +783,24 @@ def hist(chainfile, dataset, burnin, maxchain, nbins,sig, prior, min, max):
                     print(f"Found no dataset called {dataset}")
                     # Append sample to list
              
-
     df = pd.DataFrame.from_records(dats,columns=["T","P"])
     df2 = pd.DataFrame(df[sig].to_list())
-    import seaborn as sns
-    import matplotlib.pyplot as plt
-    import plotly.colors as pcol
-    from cycler import cycler
-    colors=getattr(pcol.qualitative,"Plotly")
-    sns.set_context("notebook", font_scale=1.5, rc={"lines.linewidth": 1.2})
-    sns.set_style("whitegrid")
-    plt.rcParams["mathtext.fontset"] = "stix"
-    custom_style = {
-        'grid.color': '0.8',
-        'grid.linestyle': '--',
-        'grid.linewidth': 0.5,
-        'savefig.dpi':300,
-        'axes.linewidth': 1.5,
-        'axes.prop_cycle': cycler(color=colors),
-        'mathtext.fontset': 'stix',
-        'font.family': 'serif',
-        'font.serif': 'times',
-    }
-    sns.set_style(custom_style)
-    fontsize = 14
+
     x = df2.to_numpy()
 
+    fig = plt.figure(figsize=(WIDTH,0.75*WIDTH))
 
     if "synch" in dataset:
-        xmin, xmax = (-3.38,-2.61)
-        bins = np.linspace(xmin,xmax,50)
-        n1, _, _ = plt.hist(x[:,1],bins=bins, histtype='step', color="#636efa", density=True, stacked=True, linewidth=2, label=r"$P_{-3.1}(\beta^{\mathrm{Spur}}_{\mathrm{s}}|\,d)$")
-        plt.hist(x[:,3],bins=20, histtype='step', color="#00cc96", density=True, stacked=True, linewidth=2, label=r"$P_{-3.1}(\beta^{\mathrm{Plane}}_{\mathrm{s}}|\,d, \omega_{\mathrm{TOD}})$")
+        labels=['High lat.', 'Spur', 'Center', 'Plane', ]
+        bins = np.linspace(min,max,nbins)
+        for i, idx in enumerate(idx):
+            if i==0:
+                n1, _, _ = plt.hist(x[:,idx],bins=bins, histtype='step', color=f"k", density=True, stacked=True, label=r"$P(\beta^{\mathrm{"+labels[idx]+r"}}_{\mathrm{s}}|\,d)$")
+                ymax=np.max(n1)
+            else:
+                nn, _, _ = plt.hist(x[:,idx],bins=bins, histtype='step', color=f"k", linestyle="--", density=True, stacked=True, label=r"$P(\beta^{\mathrm{"+labels[idx]+r"}}_{\mathrm{s}}|\,d)$")
+                if np.max(nn)>ymax:
+                    ymax=np.max(nn)
         """
         #t3 = np.loadtxt("sampletrace_t3.csv",delimiter=",",) #"regdatat3.dat", delimiter=",")
         t3 = np.loadtxt("regdatat3.dat", delimiter=",")
@@ -797,49 +810,74 @@ def hist(chainfile, dataset, burnin, maxchain, nbins,sig, prior, min, max):
         #n1, bins, _ = plt.hist(x[:,4],bins=20, histtype='step', color="#636efa", label=r"$P(\beta^{\mathrm{Spur}}_{\mathrm{s}}|\,d)$")
         #xmin, xmax = (-3.25,-2.75)
         """
-        if prior:
-            import scipy.stats as stats
-            N = len(x[:,1])
-            x = np.linspace(xmin,xmax,N)
-            dx = bins[1]-bins[0]
-            norm = sum(n1)*dx
-            #Pprior = stats.norm.pdf(x, -2.8, 0.1)#*norm
-            #plt.plot(x, Pprior*norm, color="#ef553b", linestyle=":", label=r"$P(\beta_{\mathrm{s}})=\mathcal{N}(-2.8,0.1)$")
-            Pprior = stats.norm.pdf(x, prior[0], prior[1])#*norm
-            plt.plot(x, Pprior*norm, color="#636efa", linestyle=":", label=r"$P(\beta_{\mathrm{s}})=\mathcal{N}(-3.1,0.1)$")
+        if prior!=[]:
+            for i, pri in enumerate(prior):
+                import scipy.stats as stats
+                N = len(x[:,1])
+                xs = np.linspace(min,max,N)
+                dx = bins[1]-bins[0]
+                norm = sum(n1)*dx
+                #Pprior = stats.norm.pdf(x, -2.8, 0.1)#*norm
+                #plt.plot(x, Pprior*norm, color="#ef553b", linestyle=":", label=r"$P(\beta_{\mathrm{s}})=\mathcal{N}(-2.8,0.1)$")
+                Pprior = stats.norm.pdf(xs, float(pri[0]), float(pri[1]))*norm
+                plt.plot(xs, Pprior, color=f"k", linestyle=":", label=r"$P(\beta_{\mathrm{s}})=\mathcal{N}("+f"{pri[0]}, {pri[1]}"+")$")
 
         plt.xlabel(r"Synchrotron index, $\beta_{\mathrm{s}}$", fontsize=fontsize)
-        plt.xlim(xmin,xmax,)
-        plt.ylim(0,11)
-        plt.legend(frameon=False,loc=1, fontsize=13)
+        
     elif "dust" in dataset:
-        n, bins, _ = plt.hist(x,bins=20, histtype='step', color="black", label=r"$P(\beta_{\mathrm{d}}|\,d)$")
+        bins = np.linspace(min,max,nbins)
+        n, bins, _ = plt.hist(x,bins=bins, histtype='step', color="black", label=r"$P(\beta_{\mathrm{d}}|\,d)$")
+        ymax = np.max(n)
         N = len(x)
-        xmin, xmax = (1.46, 1.74)
-        if prior:
-            import scipy.stats as stats
-            N = len(x)
-            x = np.linspace(xmin,xmax,N)
-            dx = bins[1]-bins[0]
-            norm = sum(n)*dx
-            Pprior = stats.norm.pdf(x, prior[0], prior[1])*norm
-            plt.plot(x, Pprior, color="black", linestyle="--", label=r"Prior $P(\beta_{\mathrm{d}})$")
+
+
+        if prior!=[]:
+            for pri in prior:
+                import scipy.stats as stats
+                N = len(x)
+                xs = np.linspace(min,max,N)
+                dx = bins[1]-bins[0]
+                norm = sum(n)*dx
+                Pprior = stats.norm.pdf(xs, float(pri[0]), float(pri[1]))*norm
+                plt.plot(xs, Pprior, color="black", linestyle=":", label=r"$P(\beta_{\mathrm{d}})=\mathcal{N}("+f"{pri[0]}, {pri[1]}"+")$")
         plt.xlabel(r"Thermal dust index, $\beta_{\mathrm{d}}$", fontsize=fontsize)
-        plt.xlim(xmin,xmax)
-        plt.legend(frameon=False,loc=2)
 
     else: 
-        n1, bins, _ = plt.hist(x[:,1],bins=50, histtype='step', density=True, stacked=True)
+        n1, bins, _ = plt.hist(x[:,1],bins=nbins, histtype='step', density=True, stacked=True)
+        ymax=np.max(n1)
         for i in range(x.shape[1]):
-            plt.hist(x[:,i],bins=bins, histtype='step', density=True, stacked=True)
-        plt.legend(frameon=False)
+            nn, _, _, = plt.hist(x[:,i],bins=bins, histtype='step', density=True, stacked=True)
+            if np.max(nn)>ymax:
+                ymax=np.max(nn)
 
+        if prior!=[]:
+            for pri in prior:
+                import scipy.stats as stats
+                N = len(x[:,1])
+                xs = np.linspace(min,max,N)
+                dx = bins[1]-bins[0]
+                norm = sum(n1)*dx
+                #Pprior = stats.norm.pdf(x, -2.8, 0.1)#*norm
+                #plt.plot(x, Pprior*norm, color="#ef553b", linestyle=":", label=r"$P(\beta_{\mathrm{s}})=\mathcal{N}(-2.8,0.1)$")
+                Pprior = stats.norm.pdf(xs, float(pri[0]), float(pri[1]))*norm
+                ymax=np.max(Pprior)*2.5
+                plt.plot(xs, Pprior, color=f"C{i}", linestyle=":", label=r"$\mathcal{N}("+f"{pri[0]}, {pri[1]}"+")$")
+
+
+    plt.xlim(min,max)
+
+    ax=plt.gca()
+    #ax.axes.get_xaxis().set_ticks([])
+    ax.axes.get_yaxis().set_ticks([])
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+
+    plt.ylim(0,ymax*1.1)
     #plt.ylabel(r"Normalized number of samples", fontsize=fontsize)
-    plt.title(" ")
-
+    plt.legend(frameon=False,fontsize=fontsize, loc=lloc)
     plt.yticks(rotation=90, va="center", fontsize=fontsize)
     plt.xticks(fontsize=fontsize)
-    sns.despine(top=True, right=True, left=True, bottom=True)
     plt.tight_layout()
     plt.savefig(dataset.replace("/","-")+"_histogram.pdf", dpi=300, bbox_inches="tight", pad_inches=0.02)
 
@@ -989,8 +1027,6 @@ def traceplotter(df, header, xlabel, nbins, outname, min_,ylabel, cmap="Plotly",
     sns.set_context("notebook", font_scale=1.5, rc={"lines.linewidth": 1.2})
     sns.set_style("whitegrid")
     plt.rcParams["mathtext.fontset"] = "stix"
-    plt.rcParams['font.family'] = 'serif'
-    plt.rcParams['font.serif'] = 'Times'
     custom_style = {
         'grid.color': '0.8',
         'grid.linestyle': '--',
@@ -998,6 +1034,7 @@ def traceplotter(df, header, xlabel, nbins, outname, min_,ylabel, cmap="Plotly",
         'savefig.dpi':300,
         'font.size': 20, 
         'axes.linewidth': 1.5,
+        'text.usetex': True,
         'mathtext.fontset': 'stix',
         'font.family': 'serif',
         'font.serif': 'Times',
