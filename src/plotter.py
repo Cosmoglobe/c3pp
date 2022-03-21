@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as col
 from src.tools import arcmin2rad
 import os
-hp.disable_warnings()
 # Fix for macos openMP duplicate bug
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
@@ -569,8 +568,9 @@ def get_map(input, sig, dataset, nside, lmax, fwhm,):
                     sys.exit()
 
                 click.echo(click.style("Converting alms to map",fg="green"))
+
                 (maps_, _, _, _, outfile,) = alm2fits_tool(input_, dataset, nside, lmax, fwhm, save=False,)
-                maps_=maps_[sig]
+                maps_=maps_[sig]    
             # Get maps from map data in .h5
             elif dataset.endswith("map"):
                 click.echo(click.style("Reading map from hdf",fg="green"))

@@ -419,6 +419,9 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
     size = "mls"
     for colorbar in [True, False]:
         if (cmbresamp and mask) or (cmbresamp and defaultmask):
+            """
+            Plot infilled CMB maps using the last sample of the chain
+            """
             outdir = "figs/cmb/"
             if not os.path.exists(outdir):
                 os.mkdir(outdir)
@@ -428,15 +431,25 @@ def plotrelease(ctx, procver, mask, defaultmask, freqmaps, cmb, cmbresamp, synch
 
             try:
                 # CMB I with dip
-                ctx.invoke(plot, input=f"BP_cmb_resamp_I_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, range=3400)
+                ctx.invoke(plot, input=f"BP_c0001_Tresamp_{procver}.h5", dataset = "cmb/amp_alm", nside=1024, fwhm=14, lmax=2000, size=size, outdir=outdir, colorbar=colorbar, auto=True, range=3400)
                 # CMB I without dip
-                ctx.invoke(plot, input=f"BP_cmb_resamp_I_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask,)
-                ctx.invoke(plot, input=f"BP_cmb_resamp_QU_n1024_{procver}.fits", size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,1])
+                ctx.invoke(plot, input=f"BP_c0001_Tresamp_{procver}.h5", dataset = "cmb/amp_alm", nside=1024, fwhm=14, lmax=2000, size=size, outdir=outdir, colorbar=colorbar, auto=True, remove_dipole=mask,)
             except Exception as e:
                 print(e)
                 click.secho("Continuing...", fg="yellow")
+            
+            try:
+                ctx.invoke(plot, input=f"BP_c0001_Presamp_{procver}.h5", dataset = "cmb/amp_alm", nside=1024,  fwhm=14, lmax=2000, size=size, outdir=outdir, colorbar=colorbar, auto=True, sig=[0,1])
+            except Exception as e:
+                print(e)
+                click.secho("Continuing...", fg="yellow")
+    
 
         if (cmb and mask) or (cmb and defaultmask):
+            """
+            Plot average CMB maps
+            """
+
             outdir = "figs/cmb/"
             if not os.path.exists(outdir):
                 os.mkdir(outdir)

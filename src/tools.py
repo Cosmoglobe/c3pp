@@ -38,6 +38,16 @@ def alm2fits_tool(input, dataset, nside, lmax, fwhm, save=True,):
     import h5py
     import healpy as hp
 
+    try:
+        sample = int(dataset.split("/")[0])
+        print(f"Using sample {sample}")
+    except:
+        print(f"No sample specified, fetching last smample")
+        with h5py.File(input, "r") as f:
+            sample = str(len(f.keys()) - 2).zfill(6)
+            dataset=sample+"/"+dataset
+        print(f"Sample {sample} found, dataset now {dataset}")
+
     with h5py.File(input, "r") as f:
         alms = f[dataset][()]
         lmax_h5 = f[f"{dataset[:-3]}lmax"][()]  # Get lmax from h5
@@ -56,7 +66,14 @@ def alm2fits_tool(input, dataset, nside, lmax, fwhm, save=True,):
 
     alms_unpacked = unpack_alms(alms, lmax)  # Unpack alms
     # If not amp map, set spin 0.
-    pol = False if "amp_alm" not in dataset else True
+    if "amp_alm" in dataset:
+        pol = True
+        if np.shape(alms_unpacked)[0]==1:
+            pol = False
+    else:
+        pol = False
+    
+
     print(f"Making map from alms, setting lmax={lmax}, pol={pol}")
     maps = hp.sphtfunc.alm2map(alms_unpacked, int(nside), lmax=int(lmax), mmax=int(mmax), fwhm=arcmin2rad(fwhm), pol=pol, pixwin=True,)
     outfile = dataset.replace("/", "_")
